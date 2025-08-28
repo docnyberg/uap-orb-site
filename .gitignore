@@ -1,0 +1,14 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Netlify cache (if present locally)
+.netlify/
+
+# Python caches (in case you keep scripts here)
+__pycache__/
+*.pyc

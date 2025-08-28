@@ -1,0 +1,10 @@
+[build]
+  publish   = "public"
+  functions = "netlify/functions"
+  # command left blank because you’re not building anything—just serving /public
+
+# (optional) speed up file serving for large folders
+[[headers]]
+  for = "/*"
+  [headers.values]
+  cache-control = "public, max-age=600"

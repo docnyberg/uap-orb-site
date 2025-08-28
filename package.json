@@ -1,0 +1,13 @@
+{
+  "name": "uap-orb-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Netlify deployable site with visitor counter and atlas viewer",
+  "scripts": {
+    "deploy": "netlify deploy --prod --dir public --functions netlify/functions",
+    "serve": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^6.4.0"
+  }
+}

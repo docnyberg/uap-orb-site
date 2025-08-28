@@ -1,0 +1,16 @@
+*          text=auto eol=lf
+
+# Texty web assets
+*.html     text
+*.css      text
+*.js       text
+*.svg      text
+
+# CSVs: make diffs readable
+*.csv      text diff=csv
+
+# Images as binary (no line-based diffs)
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.webp     binary

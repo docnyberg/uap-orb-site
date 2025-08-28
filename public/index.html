@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>UAP / Orb Atlas Viewer</title>
+
+    <!-- Styles -->
+    <style>
+        :root {
+            --bg: #0b0d12;
+            --fg: #e7eaf0;
+            --muted: #9aa3b2;
+            --card: #131722;
+            --border: #243041;
+            --chip: #1c2330;
+            --acc: #9bd1ff;
+            --thumb: 240px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 16px;
+            background: var(--bg);
+            color: var(--fg);
+            font: 14px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 10px 8px 0
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--chip);
+            border-radius: 999px;
+            font-size: 11px;
+            color: #c9d3e5;
+            margin-left: 8px
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin: 10px 0
+        }
+
+        .group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 10px
+        }
+
+        select, input[type="range"], button {
+            font: inherit
+        }
+
+        input[type="text"] {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg);
+            border-radius: 10px;
+            min-width: 260px
+        }
+
+        select {
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg);
+            border-radius: 10px
+        }
+
+        button {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg);
+            border-radius: 10px;
+            cursor: pointer
+        }
+
+            button:hover {
+                border-color: #395072
+            }
+
+        .drawer {
+            margin: 10px 0
+        }
+
+        details {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--card)
+        }
+
+        summary {
+            cursor: pointer;
+            padding: 8px 12px;
+            color: #c9d3e5
+        }
+
+        details .inner {
+            padding: 8px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: baseline
+        }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .chip {
+            width: 22px;
+            height: 16px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            cursor: pointer
+        }
+
+            .chip.sel {
+                outline: 2px solid #fff5
+            }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(var(--thumb),1fr));
+            gap: 12px
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative
+        }
+
+        .swatch {
+            height: 18px
+        }
+
+        .thumb-wrap {
+            width: 100%;
+            aspect-ratio: 1/1;
+            overflow: hidden;
+            background: #000
+        }
+
+        .thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block
+        }
+
+        .meta {
+            padding: 10px;
+            color: #c9d3e5;
+            font-size: 12px;
+            line-height: 1.35
+        }
+
+        .kv {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 2px 0
+        }
+
+            .kv code {
+                background: var(--chip);
+                padding: 0 6px;
+                border-radius: 6px
+            }
+
+        .actions {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            display: flex;
+            gap: 6px
+        }
+
+        .btn-mini {
+            background: #0008;
+            border: 1px solid #7688a3;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 6px
+        }
+
+        /* Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #000a;
+            z-index: 50
+        }
+
+        .modal {
+            max-width: 92vw;
+            max-height: 92vh;
+            margin: 4vh auto;
+            background: #0f1420;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: auto;
+            position: relative;
+            padding: 10px
+        }
+
+            .modal img {
+                max-width: 100%;
+                height: auto;
+                background: #000;
+                border-radius: 8px
+            }
+
+            .modal .close {
+                position: absolute;
+                top: 8px;
+                right: 8px
+            }
+    </style>
+
+    <!-- PapaParse for reliable CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <header style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <h1>UAP / Orb Atlas Viewer</h1>
+        <span id="countBadge" class="badge">0 items</span>
+        <span id="visitorsBadge" class="badge">— visitors</span>
+        <span id="note" class="badge">View: All • Sort: Hue ↑</span>
+    </header>
+
+    <div class="controls">
+        <div class="group">
+            <label>Tile size</label>
+            <input id="sizeRange" type="range" min="140" max="420" value="240">
+        </div>
+
+        <div class="group">
+            <label>Group by</label>
+            <select id="groupSelect">
+                <option value="none" selected>None (All)</option>
+                <option value="hue">Hue</option>
+                <option value="brightness">Brightness</option>
+                <option value="saturation">Saturation</option>
+                <option value="time">Time</option>
+            </select>
+        </div>
+
+        <div class="group">
+            <label>Sort by</label>
+            <select id="sortSelect">
+                <option value="hue" selected>Hue</option>
+                <option value="saturation">Saturation</option>
+                <option value="brightness">Brightness</option>
+                <option value="sharpness">Sharpness</option>
+                <option value="area">Area</option>
+                <option value="hueRange">ΔHue</option>
+            </select>
+            <button id="sortDirBtn" title="Toggle sort direction">↑</button>
+        </div>
+
+        <div class="group">
+            <label>Thumbs</label>
+            <select id="thumbMode">
+                <option value="object" selected>Object</option>
+                <option value="scene">Scene</option>
+            </select>
+        </div>
+
+        <div class="group">
+            <label>SVG style</label>
+            <select id="svgStyle">
+                <option value="default" selected>Default</option>
+                <option value="outline">Outline</option>
+                <option value="smooth">Smooth</option>
+                <option value="bezier">Bézier</option>
+                <option value="skeleton">Skeleton</option>
+                <option value="rings">Rings</option>
+                <option value="hull">Hull</option>
+                <option value="edges">Edges</option>
+                <option value="ellipse">Ellipse</option>
+            </select>
+        </div>
+
+        <div class="group">
+            <input type="checkbox" id="imgOnly" checked><label for="imgOnly">Images only</label>
+            <input type="checkbox" id="hideDup"><label for="hideDup">Hide duplicates</label>
+            <input type="checkbox" id="hideTT"><label for="hideTT">Hide TikTok watermarks</label>
+        </div>
+
+        <div class="group">
+            <label for="hmin">Hue</label>
+            <!-- LEFT slider = 3° -->
+            <input type="range" id="hmin" min="0" max="360" value="3">
+            <input type="range" id="hmax" min="0" max="360" value="360">
+            <span id="hbadge" class="badge">3°–360°</span>
+        </div>
+
+        <input id="search" type="text" placeholder="Search json/video/hex…">
+        <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="drawer">
+        <details id="advanced">
+            <summary>Advanced filters (shapes, motion tier, color groups)</summary>
+            <div class="inner">
+                <div>
+                    <label>
+                        <strong>Motion tier:</strong>
+                        <select id="motionTier">
+                            <option value="any" selected>Any</option>
+                            <option value="low">Low</option>
+                            <option value="med">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </label>
+                </div>
+                <div id="shapeBox" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <strong>Color:</strong>
+                    <div id="colorChips" class="chips"></div>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <div id="status" style="margin:8px 0 10px 0;font-weight:600"></div>
+    <div id="grid" class="grid"></div>
+    <!-- Streaming sentinel -->
+    <div id="sentinel" style="height:1px"></div>
+
+    <!-- Modal -->
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+            <button id="closeModal" class="close">✕</button>
+            <img id="modalImg" alt="">
+            <div id="modalMeta" style="margin-top:8px;color:#c9d3e5;font-size:13px"></div>
+        </div>
+    </div>
+
+    <!-- Viewer Script -->
+    <script>
+        /* ========== STATE & UTILS ========== */
+        let DATA = [], CURRENT = [], CURRENT_IDX = [];
+        let sortAsc = true, groupMode = "none", sortMode = "hue", thumbMode = "object", svgStyle = "default";
+        let hideDup = false, hideTT = false;
+
+        const $ = sel => document.querySelector(sel);
+        const gridEl = $("#grid"), note = $("#note"), countBadge = $("#countBadge"), sentinel = $("#sentinel");
+
+        const STYLE_ALIASES = {
+            default: ["", "_outline", "_smooth", "_bezier", "_skeleton", "_rings", "_hull", "_edges", "_ellipse", "_contour", "_convex"],
+            outline: ["_outline", "_contour"],
+            smooth: ["_smooth"],
+            bezier: ["_bezier"],
+            skeleton: ["_skeleton"],
+            rings: ["_rings"],
+            hull: ["_hull", "_convex"],
+            edges: ["_edges"],
+            ellipse: ["_ellipse"]
+        };
+
+        const num = (x, d = null) => { const v = parseFloat(x); return Number.isFinite(v) ? v : d; };
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        function hueOf(row) {
+            const h = num(row.h_deg_img, null);
+            if (h !== null) return (h % 360 + 360) % 360;
+            const hex = row.hex_img || row.hex; if (!hex || hex[0] !== "#") return 999;
+            const s = hex.slice(1); const n = parseInt(s.length === 3 ? s.split("").map(c => c + c).join("") : s, 16);
+            if (!Number.isFinite(n)) return 999;
+            const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b); if (max === min) return 999;
+            let hdeg = 0, d = max - min;
+            if (max === r) hdeg = ((g - b) / d) * 60; else if (max === g) hdeg = (2 + (b - r) / d) * 60; else hdeg = (4 + (r - g) / d) * 60;
+            if (hdeg < 0) hdeg += 360; return hdeg;
+        }
+        function pct(values, p) { if (!values.length) return 0; const a = [...values].sort((x, y) => x - y); const i = Math.floor(p * (a.length - 1)); return a[i]; }
+
+        /* ========== CSV NORMALIZATION ========== */
+        function normalizeRow(r, i) {
+            return {
+                _i: i,
+                h_deg_img: num(r.h_deg_img, num(r.h_deg, NaN)),
+                s_norm: num(r.s_norm, num(r.s, NaN)),
+                v_norm: num(r.v_norm, num(r.v, NaN)),
+                hex_img: r.hex_img || r.hex || "",
+                json_file: r.json_file || r.json || "",
+                video_file: r.video_file || r.video || "",
+                event_index: r.event_index || r.event || "",
+                start_ts: num(r.start_ts, num(r.t_start, 0)),
+                end_ts: num(r.end_ts, num(r.t_end, 0)),
+                thumb: r.thumb || r.thumb_path || "",
+                thumb_obj: r.thumb_obj || r.thumb_object || "",
+                svg: r.svg || r.svg_path || "",
+                shape: r.shape || r.shape_class || "other",
+                motion: r.motion || r.motion_class || "unknown",
+                sharpness: num(r.sharpness, NaN),
+                area_norm: num(r.area_norm, NaN),
+                circ: num(r.circ, NaN),
+                aspect_ratio: num(r.aspect_ratio, NaN),
+                h_range_deg: num(r.h_range_deg, NaN)
+            };
+        }
+
+        /* ========== FILTERS ========== */
+        function colorGroup(it) {
+            const h = hueOf(it), s = num(it.s_norm, 0), v = num(it.v_norm, 0);
+            if (!Number.isFinite(h) || s < 0.1) return v > 0.8 ? "White" : (v < 0.2 ? "Black" : "Gray");
+            if (h < 15 || h >= 345) return "Red"; if (h < 45) return "Orange"; if (h < 75) return "Yellow";
+            if (h < 150) return "Green"; if (h < 210) return "Cyan"; if (h < 270) return "Blue";
+            if (h < 300) return "Purple"; if (h < 345) return "Magenta"; return "Other";
+        }
+
+        function applyFilters() {
+            const q = ($("#search").value || "").toLowerCase().trim();
+            const imgOnly = $("#imgOnly").checked, hiTT = $("#hideTT").checked, hiDup = $("#hideDup").checked;
+            const hmin = parseInt($("#hmin").value, 10), hmax = parseInt($("#hmax").value, 10);
+            $("#hbadge").textContent = `${hmin}°–${hmax}°`;
+
+            const scb = [...document.querySelectorAll('#shapeBox input[type=checkbox]')];
+            const enabledShapes = new Set(scb.filter(cb => cb.checked).map(cb => cb.dataset.shape));
+            const chips = [...document.querySelectorAll('#colorChips .chip.sel')];
+            const colorSel = new Set(chips.map(c => c.dataset.color));
+            const tier = $("#motionTier").value;
+
+            const out = []; CURRENT_IDX = [];
+            for (let i = 0; i < DATA.length; i++) {
+                const it = DATA[i];
+                if (hiDup && it.isDuplicate) continue;
+                if (imgOnly && !(it.thumb || it.thumb_obj)) continue;
+
+                const h = hueOf(it);
+                if (Number.isFinite(h)) {
+                    const inRange = (hmin <= hmax) ? (h >= hmin && h <= hmax) : (h >= hmin || h <= hmax);
+                    if (!inRange) continue;
+                }
+                if (document.querySelector('#shapeBox input')) {
+                    if (!enabledShapes.has(it.shape)) continue;
+                }
+                if (colorSel.size && !colorSel.has(colorGroup(it))) continue;
+                if (tier !== "any" && it.motionTier !== tier) continue;
+
+                if (q) {
+                    const hay = `${it.json_file} ${it.video_file} ${it.hex_img}`.toLowerCase();
+                    if (!hay.includes(q)) continue;
+                }
+                CURRENT_IDX.push(i);
+                out.push(it);
+            }
+            return out;
+        }
+
+        /* ========== DEDUPE & BUILDERS ========== */
+        function dedupeByVideoClusters() {
+            const byVid = {}; DATA.forEach((it, i) => { const v = it.video_file || "_"; (byVid[v] || (byVid[v] = [])).push(i); });
+            for (const vid in byVid) {
+                const idxs = byVid[vid].sort((a, b) => num(DATA[a].start_ts, 0) - num(DATA[b].start_ts, 0));
+                let i = 0;
+                while (i < idxs.length) {
+                    let rep = idxs[i], repSharp = num(DATA[rep].sharpness, 0), j = i + 1;
+                    while (j < idxs.length) {
+                        const A = idxs[i], B = idxs[j];
+                        if (Math.abs(num(DATA[B].start_ts, 0) - num(DATA[A].start_ts, 0)) <= 1.0) {
+                            let dh = Math.abs(hueOf(DATA[B]) - hueOf(DATA[A])); dh = Math.min(dh, 360 - dh);
+                            const same = (DATA[B].shape === DATA[A].shape);
+                            if (dh < 15 && same) { const sB = num(DATA[B].sharpness, 0); if (sB > repSharp) { rep = idxs[j]; repSharp = sB; } j++; continue; }
+                        }
+                        break;
+                    }
+                    for (let k = i; k < j; k++) { const x = idxs[k]; DATA[x].isDuplicate = (x !== rep); }
+                    i = j;
+                }
+            }
+        }
+
+        function buildShapeCheckboxes() {
+            const box = $("#shapeBox"); box.innerHTML = "";
+            const counts = new Map(); DATA.forEach(it => counts.set(it.shape, (counts.get(it.shape) || 0) + 1));
+            const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
+            const shapes = new Set(top.concat(["other"]));
+            shapes.forEach(sh => {
+                const id = "shape-" + sh.replace(/\s+/g, "_");
+                const cb = document.createElement("input"); cb.type = "checkbox"; cb.id = id; cb.checked = true; cb.dataset.shape = sh; cb.addEventListener("change", refresh);
+                const lbl = document.createElement("label"); lbl.htmlFor = id; lbl.style.marginRight = "10px"; lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" " + sh));
+                box.appendChild(lbl);
+            });
+        }
+        function buildColorChips() {
+            const colors = new Set(DATA.map(colorGroup));
+            const wrap = $("#colorChips"); wrap.innerHTML = "";
+            colors.forEach(c => {
+                const b = document.createElement("div"); b.className = "chip"; b.title = c; b.dataset.color = c;
+                b.style.background = (c === "White" || c === "Gray" || c === "Black") ? c.toLowerCase() : c;
+                b.addEventListener("click", () => { b.classList.toggle("sel"); refresh(); });
+                wrap.appendChild(b);
+            });
+        }
+
+        /* ========== RENDERING (STREAMING) ========== */
+        let stream = { i: 0, FIRST: 400, STEP: 600, observer: null };
+
+        function cardHTML(it, globalIdx) {
+            const src = (thumbMode === "object" && it.thumb_obj) ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
+            const h = hueOf(it); const hueLbl = Number.isFinite(h) ? `${h.toFixed(1)}°` : "–";
+            return `
+          <div class="card" data-idx="${globalIdx}">
+            <div class="swatch" style="background:${it.hex_img || '#222'}"></div>
+            <div class="thumb-wrap"><img class="thumb" src="${src}" alt=""></div>
+            <div class="actions">
+              <button class="btn-mini" data-action="svg" title="Open SVG (${svgStyle})">SVG</button>
+              <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
+            </div>
+            <div class="meta">
+              <div class="kv"><div>hue</div><code>${hueLbl}</code></div>
+              <div class="kv"><div><strong>${it.json_file || "(no json)"}</strong></div><div>#${it.event_index || ""}</div></div>
+              <div class="kv"><div>${it.video_file || "(video)"} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div><div>${it.shape !== "other" ? it.shape : ""} ${it.motion && it.motion !== "unknown" ? "• " + it.motion : ""}</div></div>
+              <div class="kv"><div>hex</div><code>${it.hex_img || ""}</code></div>
+              <div class="kv"><div>S</div><code>${Number.isFinite(num(it.s_norm)) ? (+it.s_norm).toFixed(2) : ""}</code></div>
+              <div class="kv"><div>V</div><code>${Number.isFinite(num(it.v_norm)) ? (+it.v_norm).toFixed(2) : ""}</code></div>
+            </div>
+          </div>`;
+        }
+
+        function wireTileClicks(rangeStart, rangeEnd) {
+            const cards = gridEl.querySelectorAll(".card");
+            const slice = [...cards].slice(rangeStart, rangeEnd);
+            slice.forEach(card => {
+                const idx = +card.dataset.idx;
+                card.addEventListener("click", e => {
+                    if (e.target && e.target.dataset && (e.target.dataset.action === "sim" || e.target.dataset.action === "svg")) return;
+                    openModalByGlobalIndex(idx);
+                });
+                const btnSim = card.querySelector('[data-action="sim"]');
+                const btnSvg = card.querySelector('[data-action="svg"]');
+                btnSim.addEventListener("click", e => { e.stopPropagation(); findSimilarByGlobalIndex(idx); });
+                btnSvg.addEventListener("click", e => { e.stopPropagation(); openSVGByGlobalIndex(idx); });
+            });
+        }
+
+        function appendChunk(n) {
+            const start = stream.i;
+            const end = Math.min(stream.i + n, CURRENT.length);
+            if (start >= end) return;
+
+            const frag = CURRENT.slice(start, end).map((it, localIdx) => {
+                const gi = CURRENT_IDX[start + localIdx];
+                return cardHTML(it, gi);
+            }).join("");
+            gridEl.insertAdjacentHTML("beforeend", frag);
+            wireTileClicks(start, end);
+
+            stream.i = end;
+            countBadge.textContent = `${CURRENT.length} items`;
+
+            if (stream.i >= CURRENT.length && stream.observer) {
+                stream.observer.disconnect();
+                stream.observer = null;
+            }
+        }
+
+        function startStreaming() {
+            // Reset container and counters
+            gridEl.innerHTML = "";
+            stream.i = 0;
+
+            // First paint
+            appendChunk(stream.FIRST);
+
+            // Install observer for scroll-triggered streaming
+            if (stream.observer) stream.observer.disconnect();
+            stream.observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        appendChunk(stream.STEP);
+                    }
+                });
+            }, { root: null, rootMargin: "600px 0px 600px 0px", threshold: 0 });
+            stream.observer.observe(sentinel);
+
+            note.textContent = `View: All • Sort: ${sortMode} ${sortAsc ? "↑" : "↓"}`;
+        }
+
+        function groupAndRender(items) {
+            // Simple grouped rendering (no streaming for grouped mode)
+            const keys = {};
+            const order = [];
+
+            function add(key, item) {
+                if (!keys[key]) { keys[key] = []; order.push(key); }
+                keys[key].push(item);
+            }
+
+            if (groupMode === "hue") {
+                items.forEach(it => {
+                    const h = hueOf(it); const bin = Number.isFinite(h) ? Math.floor(h / 15) : 24;
+                    add(`Hue ${bin * 15}–${(bin + 1) * 15}°`, it);
+                });
+            } else if (groupMode === "brightness") {
+                items.forEach(it => {
+                    const v = num(it.v_norm, null);
+                    add((v === null) ? "Unknown" : (v < 0.33 ? "Dark" : (v < 0.66 ? "Medium" : "Bright")), it);
+                });
+            } else if (groupMode === "saturation") {
+                items.forEach(it => {
+                    const s = num(it.s_norm, null);
+                    add((s === null) ? "Unknown" : (s < 0.3 ? "Low" : (s < 0.7 ? "Medium" : "High")), it);
+                });
+            } else if (groupMode === "time") {
+                items.forEach(it => {
+                    const t = Math.floor(num(it.start_ts, 0) / 10) * 10; add(`${t}–${t + 10}s`, it);
+                });
+            }
+
+            gridEl.innerHTML = "";
+            let total = 0;
+            order.sort().forEach(key => {
+                const h = document.createElement("div");
+                h.textContent = `${key} (${keys[key].length})`;
+                h.style.cssText = "grid-column:1 / -1;margin:8px 0;font-weight:700;color:#c9d3e5";
+                gridEl.appendChild(h);
+
+                keys[key].forEach(it => {
+                    const gi = DATA.indexOf(it);
+                    gridEl.insertAdjacentHTML("beforeend", cardHTML(it, gi));
+                    total++;
+                });
+            });
+
+            wireTileClicks(0, gridEl.querySelectorAll(".card").length);
+            countBadge.textContent = `${total} items`;
+            note.textContent = `View: Grouped • Sort: ${sortMode} ${sortAsc ? "↑" : "↓"}`;
+        }
+
+        /* ========== MODAL / SIMILAR / SVG ========== */
+        function openModalByGlobalIndex(gi) {
+            const it = DATA[gi];
+            $("#overlay").style.display = "block";
+            const src = (thumbMode === "object" && it.thumb_obj) ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
+            $("#modalImg").src = src;
+            $("#modalMeta").innerHTML = `
+          <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
+          <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
+          <div>hex ${it.hex_img} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm, 0).toFixed(2)} • V ${num(it.v_norm, 0).toFixed(2)}</div>
+          <div>shape ${it.shape} • motion ${it.motion}</div>`;
+        }
+        $("#closeModal").addEventListener("click", () => { $("#overlay").style.display = "none"; });
+        $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") $("#overlay").style.display = "none"; });
+
+        function findSimilarByGlobalIndex(gi) {
+            const tgt = DATA[gi];
+            const TH = hueOf(tgt), TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0), TC = num(tgt.circ, 0), TA = num(tgt.area_norm, 0);
+            const tShape = tgt.shape;
+            const sim = [];
+            DATA.forEach((it, i) => {
+                if (i === gi) return;
+                let d = 0; const H = hueOf(it);
+                if (Number.isFinite(TH) && Number.isFinite(H)) { let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180); } else d += 1;
+                d += Math.abs(num(it.s_norm, 0) - TS); d += Math.abs(num(it.v_norm, 0) - TV); d += Math.abs(num(it.circ, 0) - TC); d += Math.abs(num(it.area_norm, 0) - TA);
+                if (tShape !== "other" && it.shape !== "other" && it.shape !== tShape) d += 2;
+                sim.push({ i, d });
+            });
+            sim.sort((a, b) => a.d - b.d);
+            const top = sim.slice(0, 30).map(s => s.i);
+            CURRENT = [tgt, ...top.map(i => DATA[i])];
+            CURRENT_IDX = [gi, ...top];
+            startStreaming();
+        }
+
+        function openSVGByGlobalIndex(gi) {
+            const it = DATA[gi];
+            const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
+
+            let base = null;
+            if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
+            else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
+            else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
+
+            if (!base) { alert("No SVG name to derive from."); return; }
+
+            const tries = [];
+            for (const suf of styles) {
+                if (suf === "") { if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`); }
+                else tries.push(`svgs/${encodeURIComponent(base + suf)}.svg`);
+            }
+            if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`);
+
+            (async () => {
+                for (const url of tries) {
+                    try { const r = await fetch(url, { method: "HEAD" }); if (r.ok) { window.open(url, "_blank"); return; } }
+                    catch { }
+                }
+                alert("No matching SVG file found for this item.");
+            })();
+        }
+
+        /* ========== REFRESH ENTRY ========== */
+        function refresh() {
+            const sz = parseInt($("#sizeRange")?.value || "240", 10);
+            document.documentElement.style.setProperty("--thumb", (isFinite(sz) ? sz : 240) + "px");
+
+            thumbMode = $("#thumbMode").value;
+            svgStyle = $("#svgStyle").value;
+            groupMode = $("#groupSelect").value;
+            sortMode = $("#sortSelect").value;
+
+            const list = applyFilters();
+
+            // sort
+            const orderKey = (it) => {
+                switch (sortMode) {
+                    case "hue": return hueOf(it);
+                    case "saturation": return num(it.s_norm, -999);
+                    case "brightness": return num(it.v_norm, -999);
+                    case "sharpness": return num(it.sharpness, -999);
+                    case "area": return num(it.area_norm, -999);
+                    case "hueRange": return num(it.h_range_deg, -999);
+                    default: return it._i;
+                }
+            };
+            const sortedIdx = [...list.keys()].sort((a, b) => {
+                const A = orderKey(list[a]); const B = orderKey(list[b]);
+                return ((Number.isFinite(A) ? A : -999) - (Number.isFinite(B) ? B : -999)) * (sortAsc ? 1 : -1);
+            });
+
+            CURRENT = sortedIdx.map(i => list[i]);
+            CURRENT_IDX = sortedIdx.map(i => CURRENT_IDX[i]); // CURRENT_IDX was set in applyFilters in the same order as 'list'
+
+            // View all (stream) vs grouped
+            if (groupMode === "none") {
+                startStreaming();
+            } else {
+                groupAndRender(CURRENT);
+            }
+        }
+
+        /* ========== CONTROLS WIRING ========== */
+        $("#sizeRange").addEventListener("input", () => {
+            document.documentElement.style.setProperty("--thumb", $("#sizeRange").value + "px");
+        });
+        $("#groupSelect").addEventListener("change", () => { refresh(); });
+        $("#sortSelect").addEventListener("change", () => { refresh(); });
+        $("#sortDirBtn").addEventListener("click", () => { sortAsc = !sortAsc; $("#sortDirBtn").textContent = sortAsc ? "↑" : "↓"; refresh(); });
+        $("#thumbMode").addEventListener("change", () => { refresh(); });
+        $("#svgStyle").addEventListener("change", () => { /* used by openSVG* */ });
+
+        ["imgOnly", "hideDup", "hideTT", "hmin", "hmax", "motionTier"].forEach(id => $("#" + id).addEventListener("input", refresh));
+        $("#search").addEventListener("input", refresh);
+
+        $("#resetBtn").addEventListener("click", () => {
+            $("#sizeRange").value = 240; document.documentElement.style.setProperty("--thumb", "240px");
+            $("#groupSelect").value = "none"; groupMode = "none";
+            $("#sortSelect").value = "hue"; sortMode = "hue"; sortAsc = true; $("#sortDirBtn").textContent = "↑";
+            $("#thumbMode").value = "object"; $("#svgStyle").value = "default";
+            $("#imgOnly").checked = true; $("#hideDup").checked = false; $("#hideTT").checked = false;
+            $("#hmin").value = 3; $("#hmax").value = 360; $("#hbadge").textContent = "3°–360°";
+            $("#search").value = "";
+            document.querySelectorAll('#shapeBox input[type=checkbox]').forEach(cb => cb.checked = true);
+            document.querySelectorAll('#colorChips .chip').forEach(c => c.classList.remove("sel"));
+            $("#motionTier").value = "any";
+            refresh();
+        });
+
+        /* ========== STARTUP ========== */
+        (async function init() {
+            const text = await fetch("atlas.csv").then(r => r.text());
+            const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+            DATA = parsed.data.map(normalizeRow);
+            console.log("CSV rows parsed:", DATA.length);
+
+            // motion tiers & dedupe
+            const mvals = DATA.map(it => num(it.motion, null)).filter(v => v !== null);
+            const t1 = pct(mvals, 0.33), t2 = pct(mvals, 0.66);
+            DATA.forEach(it => {
+                const mv = num(it.motion, null);
+                it.motionTier = (mv === null) ? ((it.motion || "").toLowerCase().includes("fast") ? "high" : ((it.motion || "").toLowerCase().includes("drift") ? "med" : "low"))
+                    : (mv <= t1 ? "low" : (mv <= t2 ? "med" : "high"));
+                it.shape = it.shape || "other";
+                it.isDuplicate = false;
+            });
+            dedupeByVideoClusters();
+
+            // Defaults for first paint: All items, sort by hue, HMIN = 3°
+            $("#groupSelect").value = "none";
+            $("#sortSelect").value = "hue";
+            $("#hmin").value = 3; $("#hbadge").textContent = `3°–${$("#hmax").value}°`;
+
+            // Build advanced UI
+            buildShapeCheckboxes();
+            buildColorChips();
+
+            refresh();
+        })();
+
+        /* ========== MODAL CLOSE ========== */
+        $("#closeModal").addEventListener("click", () => { $("#overlay").style.display = "none"; });
+        $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") $("#overlay").style.display = "none"; });
+
+        /* ========== VISITOR BADGE (graceful) ========== */
+        (function () {
+            function getOrSetUID() {
+                try {
+                    let id = localStorage.getItem('uap_uid');
+                    if (!id) {
+                        id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+                        localStorage.setItem('uap_uid', id);
+                        document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730);
+                    }
+                    return id;
+                } catch (e) {
+                    const m = document.cookie.match(/(?:^|;\s*)uap_uid=([^;]+)/); if (m) return m[1];
+                    const id = Math.random().toString(36).slice(2);
+                    document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730);
+                    return id;
+                }
+            }
+            async function postJSON(url, payload) {
+                const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
+                if (!res.ok) throw new Error('HTTP ' + res.status); return res.json();
+            }
+            async function updateVisitorsBadge() {
+                const el = document.getElementById('visitorsBadge'); if (!el) return;
+                const uid = getOrSetUID();
+                const endpoints = ['/api/unique', '/.netlify/functions/unique'];
+                for (const url of endpoints) {
+                    try { const { total } = await postJSON(url, { visitorId: uid }); if (Number.isFinite(total)) { el.textContent = total + ' visitors'; return; } } catch (e) { }
+                }
+                el.style.display = 'none';
+            }
+            updateVisitorsBadge();
+        })();
+    </script>
+</body>
+</html>
