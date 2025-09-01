@@ -2,12 +2,14 @@
   "name": "uap-orb-site",
   "private": true,
   "version": "1.0.0",
-  "description": "Netlify deployable site with visitor counter and atlas viewer",
+  "description": "Netlify deployable site with PayPal-verified Pro features",
+  "main": "index.js",
   "scripts": {
-    "deploy": "netlify deploy --prod --dir public --functions netlify/functions",
-    "serve": "netlify dev"
+    "serve": "netlify dev",
+    "deploy": "netlify deploy --prod --dir public --functions public/netlify/functions"
   },
   "dependencies": {
-    "@netlify/blobs": "^6.4.0"
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.6.12"
   }
 }
