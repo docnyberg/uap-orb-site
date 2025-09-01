@@ -2,14 +2,27 @@
   "name": "uap-orb-site",
   "private": true,
   "version": "1.0.0",
-  "description": "Netlify deployable site with PayPal-verified Pro features",
+  "description": "Netlify deployable site with visitor counter and atlas viewer",
   "main": "index.js",
   "scripts": {
-    "serve": "netlify dev",
-    "deploy": "netlify deploy --prod --dir public --functions public/netlify/functions"
+    "deploy": "netlify deploy --prod --dir public --functions public/netlify/functions",
+    "serve": "netlify dev"
   },
   "dependencies": {
+    "@netlify/blobs": "^6.4.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.12"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/docnyberg/uap-orb-site.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/docnyberg/uap-orb-site/issues"
+  },
+  "homepage": "https://github.com/docnyberg/uap-orb-site#readme"
 }
