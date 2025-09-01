@@ -241,7 +241,45 @@
                 top: 8px;
                 right: 8px
             }
-    </style>
+
+        .thumb.watermark {
+            /* watermark images flagged, effects only apply when hideTTActive */
+        }
+
+        .hideTTActive .thumb.watermark {
+            transform: scale(1.2);
+            transform-origin: center;
+        }
+    
+/* === Modal sequence controls & carousel === */
+.modal-controls{
+  display:flex;align-items:center;gap:10px;margin:8px 0 6px 0;flex-wrap:wrap
+}
+.modal-controls .spacer{flex:1}
+.modal-controls .toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.modal-controls .nav{
+  display:flex;gap:6px
+}
+.modal-controls .nav button{
+  background:#0008;border:1px solid #7688a3;color:#fff;font-size:12px;padding:4px 8px;border-radius:6px
+}
+.modal-carousel{
+  display:flex;gap:4px;overflow-x:auto;padding:6px 2px;border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);
+  scroll-snap-type:x mandatory
+}
+.modal-carousel img.carousel-thumb{
+  height:80px;flex:0 0 auto;object-fit:cover;border-radius:6px;border:2px solid transparent;background:#000;scroll-snap-align:center
+}
+.modal-carousel img.carousel-thumb.selected{
+  border-color:#58a6ff;box-shadow:0 0 0 2px rgba(88,166,255,.25)
+}
+.modal-carousel img.carousel-thumb.wm{
+  opacity:.55;filter:grayscale(.2)
+}
+@media (max-width:700px){
+  .modal-carousel img.carousel-thumb{height:64px}
+}
+</style>
 
     <!-- PapaParse for reliable CSV parsing -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -256,23 +294,24 @@
 
     <div class="controls">
         <div class="group">
-            <label>Tile size</label>
+            <label for="sizeRange">Tile size</label>
             <input id="sizeRange" type="range" min="140" max="420" value="240">
         </div>
 
         <div class="group">
-            <label>Group by</label>
+            <label for="groupSelect">Group by</label>
             <select id="groupSelect">
                 <option value="none" selected>None (All)</option>
                 <option value="hue">Hue</option>
                 <option value="brightness">Brightness</option>
                 <option value="saturation">Saturation</option>
                 <option value="time">Time</option>
+                <option value="video">Source Video</option>
             </select>
         </div>
 
         <div class="group">
-            <label>Sort by</label>
+            <label for="sortSelect">Sort by</label>
             <select id="sortSelect">
                 <option value="hue" selected>Hue</option>
                 <option value="saturation">Saturation</option>
@@ -285,7 +324,7 @@
         </div>
 
         <div class="group">
-            <label>Thumbs</label>
+            <label for="thumbMode">Thumbs</label>
             <select id="thumbMode">
                 <option value="object" selected>Object</option>
                 <option value="scene">Scene</option>
@@ -293,7 +332,7 @@
         </div>
 
         <div class="group">
-            <label>SVG style</label>
+            <label for="svgStyle">SVG style</label>
             <select id="svgStyle">
                 <option value="default" selected>Default</option>
                 <option value="outline">Outline</option>
@@ -331,7 +370,7 @@
             <div class="inner">
                 <div>
                     <label>
-                        <strong>Motion tier:</strong>
+                        <strong title="Objects grouped by relative motion; Low/Med/High indicates how much the object moved (speed/trajectory) compared to others.">Motion tier:</strong>
                         <select id="motionTier">
                             <option value="any" selected>Any</option>
                             <option value="low">Low</option>
@@ -342,7 +381,7 @@
                 </div>
                 <div id="shapeBox" style="display:flex;gap:12px;flex-wrap:wrap"></div>
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                    <strong>Color:</strong>
+                    <strong title="Filter by major color category of the object (based on hue & saturation).">Color:</strong>
                     <div id="colorChips" class="chips"></div>
                 </div>
             </div>
@@ -355,15 +394,26 @@
     <div id="sentinel" style="height:1px"></div>
 
     <!-- Modal -->
-    <div id="overlay" class="overlay" role="dialog" aria-modal="true">
-        <div class="modal">
-            <button id="closeModal" class="close">✕</button>
-            <img id="modalImg" alt="">
-            <div id="modalMeta" style="margin-top:8px;color:#c9d3e5;font-size:13px"></div>
-        </div>
+    
+<div id="overlay" class="overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button id="closeModal" class="close">✕</button>
+    <img id="modalImg" alt="">
+    <div class="modal-controls">
+      <div class="toggle"><label><input type="checkbox" id="modalSvgToggle"> SVG view</label></div>
+      <div class="spacer"></div>
+      <div class="nav">
+        <button id="modalPrev" title="Previous in sequence">← Prev</button>
+        <button id="modalNext" title="Next in sequence">Next →</button>
+      </div>
     </div>
+    <div id="modalCarousel" class="modal-carousel"></div>
+    <div id="modalMeta" style="margin-top:8px;color:#c9d3e5;font-size:13px"></div>
+  </div>
+</div>
 
-    <!-- Viewer Script -->
+<!-- Viewer Script -->
+
     <script>
         /* ========== STATE & UTILS ========== */
         let DATA = [], CURRENT = [], CURRENT_IDX = [];
@@ -387,6 +437,13 @@
 
         const num = (x, d = null) => { const v = parseFloat(x); return Number.isFinite(v) ? v : d; };
         const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        function updateHueRange() {
+            const minVal = parseInt($("#hmin").value, 10);
+            const maxVal = parseInt($("#hmax").value, 10);
+            const startPct = (minVal / 360) * 100;
+            const endPct = (maxVal / 360) * 100;
+            $("#hmax").style.background = `linear-gradient(to right, var(--border) 0%, var(--border) ${startPct}%, var(--acc) ${startPct}%, var(--acc) ${endPct}%, var(--border) ${endPct}%, var(--border) 100%)`;
+        }
         function hueOf(row) {
             const h = num(row.h_deg_img, null);
             if (h !== null) return (h % 360 + 360) % 360;
@@ -528,22 +585,22 @@
             const src = (thumbMode === "object" && it.thumb_obj) ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
             const h = hueOf(it); const hueLbl = Number.isFinite(h) ? `${h.toFixed(1)}°` : "–";
             return `
-          <div class="card" data-idx="${globalIdx}">
-            <div class="swatch" style="background:${it.hex_img || '#222'}"></div>
-            <div class="thumb-wrap"><img class="thumb" src="${src}" alt=""></div>
-            <div class="actions">
-              <button class="btn-mini" data-action="svg" title="Open SVG (${svgStyle})">SVG</button>
-              <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
-            </div>
-            <div class="meta">
-              <div class="kv"><div>hue</div><code>${hueLbl}</code></div>
-              <div class="kv"><div><strong>${it.json_file || "(no json)"}</strong></div><div>#${it.event_index || ""}</div></div>
-              <div class="kv"><div>${it.video_file || "(video)"} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div><div>${it.shape !== "other" ? it.shape : ""} ${it.motion && it.motion !== "unknown" ? "• " + it.motion : ""}</div></div>
-              <div class="kv"><div>hex</div><code>${it.hex_img || ""}</code></div>
-              <div class="kv"><div>S</div><code>${Number.isFinite(num(it.s_norm)) ? (+it.s_norm).toFixed(2) : ""}</code></div>
-              <div class="kv"><div>V</div><code>${Number.isFinite(num(it.v_norm)) ? (+it.v_norm).toFixed(2) : ""}</code></div>
-            </div>
-          </div>`;
+              <div class="card" data-idx="${globalIdx}">
+                <div class="swatch" style="background:${it.hex_img || '#222'}"></div>
+                <div class="thumb-wrap"><img class="${it.hasWatermark ? 'thumb watermark' : 'thumb'}" src="${src}" alt=""></div>
+                <div class="actions">
+                  <button class="btn-mini" data-action="svg" title="Open SVG (${svgStyle})">SVG</button>
+                  <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
+                </div>
+                <div class="meta">
+                  <div class="kv"><div>hue</div><code>${hueLbl}</code></div>
+                  <div class="kv"><div><strong>${it.json_file || "(no json)"}</strong></div><div>#${it.event_index || ""}</div></div>
+                  <div class="kv"><div>${it.video_file || "(video)"} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div><div>${it.shape !== "other" ? it.shape : ""} ${it.motion && it.motion !== "unknown" ? "• " + it.motion : ""}</div></div>
+                  <div class="kv"><div>hex</div><code>${it.hex_img || ""}</code></div>
+                  <div class="kv"><div>S</div><code>${Number.isFinite(num(it.s_norm)) ? (+it.s_norm).toFixed(2) : ""}</code></div>
+                  <div class="kv"><div>V</div><code>${Number.isFinite(num(it.v_norm)) ? (+it.v_norm).toFixed(2) : ""}</code></div>
+                </div>
+              </div>`;
         }
 
         function wireTileClicks(rangeStart, rangeEnd) {
@@ -557,7 +614,14 @@
                 });
                 const btnSim = card.querySelector('[data-action="sim"]');
                 const btnSvg = card.querySelector('[data-action="svg"]');
-                btnSim.addEventListener("click", e => { e.stopPropagation(); findSimilarByGlobalIndex(idx); });
+                btnSim.addEventListener("click", e => {
+                    e.stopPropagation();
+                    $("#status").textContent = "Finding similar...";
+                    setTimeout(() => {
+                        findSimilarByGlobalIndex(idx);
+                        $("#status").textContent = "";
+                    }, 0);
+                });
                 btnSvg.addEventListener("click", e => { e.stopPropagation(); openSVGByGlobalIndex(idx); });
             });
         }
@@ -634,6 +698,12 @@
                 items.forEach(it => {
                     const t = Math.floor(num(it.start_ts, 0) / 10) * 10; add(`${t}–${t + 10}s`, it);
                 });
+            } else if (groupMode === "video") {
+                items.forEach(it => {
+                    const vid = it.video_file || "Unknown";
+                    const base = vid.replace(/\.[^.]+$/, "");
+                    add(base, it);
+                });
             }
 
             gridEl.innerHTML = "";
@@ -653,45 +723,168 @@
 
             wireTileClicks(0, gridEl.querySelectorAll(".card").length);
             countBadge.textContent = `${total} items`;
-            note.textContent = `View: Grouped • Sort: ${sortMode} ${sortAsc ? "↑" : "↓"}`;
+            note.textContent = `View: Grouped by ${$("#groupSelect").selectedOptions[0].text} • Sort: ${sortMode} ${sortAsc ? "↑" : "↓"}`;
         }
 
         /* ========== MODAL / SIMILAR / SVG ========== */
-        function openModalByGlobalIndex(gi) {
-            const it = DATA[gi];
-            $("#overlay").style.display = "block";
-            const src = (thumbMode === "object" && it.thumb_obj) ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
-            $("#modalImg").src = src;
-            $("#modalMeta").innerHTML = `
-          <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
-          <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
-          <div>hex ${it.hex_img} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm, 0).toFixed(2)} • V ${num(it.v_norm, 0).toFixed(2)}</div>
-          <div>shape ${it.shape} • motion ${it.motion}</div>`;
-        }
-        $("#closeModal").addEventListener("click", () => { $("#overlay").style.display = "none"; });
-        $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") $("#overlay").style.display = "none"; });
+        
+/* ===== Modal sequence helpers ===== */
+let MODAL = { seq: [], pos: 0, svg: false };
 
-        function findSimilarByGlobalIndex(gi) {
-            const tgt = DATA[gi];
-            const TH = hueOf(tgt), TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0), TC = num(tgt.circ, 0), TA = num(tgt.area_norm, 0);
-            const tShape = tgt.shape;
-            const sim = [];
-            DATA.forEach((it, i) => {
-                if (i === gi) return;
-                let d = 0; const H = hueOf(it);
-                if (Number.isFinite(TH) && Number.isFinite(H)) { let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180); } else d += 1;
-                d += Math.abs(num(it.s_norm, 0) - TS); d += Math.abs(num(it.v_norm, 0) - TV); d += Math.abs(num(it.circ, 0) - TC); d += Math.abs(num(it.area_norm, 0) - TA);
-                if (tShape !== "other" && it.shape !== "other" && it.shape !== tShape) d += 2;
-                sim.push({ i, d });
-            });
-            sim.sort((a, b) => a.d - b.d);
-            const top = sim.slice(0, 30).map(s => s.i);
-            CURRENT = [tgt, ...top.map(i => DATA[i])];
-            CURRENT_IDX = [gi, ...top];
-            startStreaming();
-        }
+function seqIndicesForVideo(videoFile){
+  const seq = [];
+  for (let i=0;i<DATA.length;i++){
+    if ((DATA[i].video_file||"") === (videoFile||"")) seq.push(i);
+  }
+  // sort by start_ts numeric, then event_index as tiebreaker
+  seq.sort((a,b)=>{
+    const A = +DATA[a].start_ts||0, B = +DATA[b].start_ts||0;
+    if (A!==B) return A-B;
+    const EA = parseInt(DATA[a].event_index||0), EB = parseInt(DATA[b].event_index||0);
+    return (EA||0)-(EB||0);
+  });
+  return seq;
+}
 
-        function openSVGByGlobalIndex(gi) {
+function rasterUrlFor(it){
+  const useObj = (thumbMode === "object" && it.thumb_obj);
+  const src = useObj ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
+  return src;
+}
+/* Build SVG candidate list (tries) similar to openSVGByGlobalIndex */
+function svgTriesFor(it){
+  const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
+  let base = null;
+  if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
+  else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
+  else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
+  const tries = [];
+  for (const suf of styles){
+    if (suf === ""){
+      if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`);
+    } else if (base){
+      tries.push(`svgs/${encodeURIComponent(base + suf)}.svg`);
+    }
+  }
+  if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`);
+  // ensure simple base.svg at end
+  if (base) tries.push(`svgs/${encodeURIComponent(base)}.svg`);
+  return tries;
+}
+function setImgSrcWithTries(imgEl, tries){
+  imgEl.dataset.tries = JSON.stringify(tries);
+  imgEl.dataset.tryi = "0";
+  imgEl.onerror = () => {
+    try {
+      const list = JSON.parse(imgEl.dataset.tries||"[]");
+      let i = parseInt(imgEl.dataset.tryi||"0",10) + 1;
+      if (i < list.length){
+        imgEl.dataset.tryi = String(i);
+        imgEl.src = list[i];
+      } else {
+        imgEl.onerror = null; // stop loops
+      }
+    } catch(e){ imgEl.onerror = null; }
+  };
+  if (tries && tries.length){
+    imgEl.src = tries[0];
+  }
+}
+function renderModalSequence(){
+  const cont = document.getElementById("modalCarousel");
+  cont.innerHTML = "";
+  const seq = MODAL.seq;
+  const pos = MODAL.pos;
+  for (let k=0;k<seq.length;k++){
+    const gi = seq[k];
+    const it = DATA[gi];
+    const img = new Image();
+    img.className = "carousel-thumb" + (it.hasWatermark ? " wm" : "");
+    img.dataset.gi = String(gi);
+    if (MODAL.svg){
+      setImgSrcWithTries(img, svgTriesFor(it));
+    } else {
+      img.src = rasterUrlFor(it);
+    }
+    if (k === pos) img.classList.add("selected");
+    img.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      selectSequenceIndex(k);
+    });
+    cont.appendChild(img);
+  }
+  // center selected
+  const sel = cont.querySelector(".carousel-thumb.selected");
+  if (sel && sel.scrollIntoView) sel.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+}
+function updateModalMain(){
+  const gi = MODAL.seq[MODAL.pos];
+  const it = DATA[gi];
+  const img = document.getElementById("modalImg");
+  if (MODAL.svg){
+    setImgSrcWithTries(img, svgTriesFor(it));
+  } else {
+    img.onerror = null;
+    img.src = rasterUrlFor(it);
+  }
+  document.getElementById("modalMeta").innerHTML = `
+    <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
+    <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
+    <div>hex ${it.hex_img || ""} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm,0).toFixed(2)} • V ${num(it.v_norm,0).toFixed(2)}</div>
+    <div>shape ${it.shape} • motion ${it.motion}</div>`;
+}
+function selectSequenceIndex(k){
+  MODAL.pos = Math.max(0, Math.min(MODAL.seq.length-1, k));
+  updateModalMain();
+  // update selection highlight only
+  const cont = document.getElementById("modalCarousel");
+  cont.querySelectorAll(".carousel-thumb.selected").forEach(el=>el.classList.remove("selected"));
+  const sel = cont.querySelector(`.carousel-thumb[data-gi="${MODAL.seq[MODAL.pos]}"]`);
+  if (sel) sel.classList.add("selected");
+  if (sel && sel.scrollIntoView) sel.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+}
+function stepSequence(dir){
+  selectSequenceIndex(MODAL.pos + (dir<0?-1:1));
+}
+function setSvgMode(on){
+  MODAL.svg = !!on;
+  document.getElementById("modalSvgToggle").checked = MODAL.svg;
+  renderModalSequence();
+  updateModalMain();
+}
+
+/* ===== Enhanced modal opener ===== */
+
+function openModalByGlobalIndex(gi) {
+  const it = DATA[gi];
+  // Build sequence for this video's frames (ignore current filters; include watermark frames)
+  const seq = seqIndicesForVideo(it.video_file);
+  const pos = Math.max(0, seq.indexOf(gi));
+  MODAL = { seq, pos, svg: false };
+
+  // Show overlay
+  $("#overlay").style.display = "block";
+  // Initial render
+  renderModalSequence();
+  updateModalMain();
+
+  // Wire controls (once per open)
+  const prev = document.getElementById("modalPrev");
+  const next = document.getElementById("modalNext");
+  const tog  = document.getElementById("modalSvgToggle");
+  prev.onclick = (e)=>{ e.stopPropagation(); stepSequence(-1); };
+  next.onclick = (e)=>{ e.stopPropagation(); stepSequence(1);  };
+  tog.onchange = (e)=>{ e.stopPropagation(); setSvgMode(tog.checked); };
+
+  // Keyboard arrows in modal
+  document.onkeydown = (ev)=>{
+    if ($("#overlay").style.display !== "block") return;
+    if (ev.key === "ArrowLeft") { ev.preventDefault(); stepSequence(-1); }
+    else if (ev.key === "ArrowRight") { ev.preventDefault(); stepSequence(1); }
+    else if (ev.key.toLowerCase() === "v") { ev.preventDefault(); setSvgMode(!MODAL.svg); }
+  };
+}
+function openSVGByGlobalIndex(gi) {
             const it = DATA[gi];
             const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
 
@@ -699,7 +892,6 @@
             if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
             else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
             else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
-
             if (!base) { alert("No SVG name to derive from."); return; }
 
             const tries = [];
@@ -727,6 +919,7 @@
             svgStyle = $("#svgStyle").value;
             groupMode = $("#groupSelect").value;
             sortMode = $("#sortSelect").value;
+            document.body.classList.toggle('hideTTActive', $("#hideTT").checked);
 
             const list = applyFilters();
 
@@ -762,14 +955,43 @@
         $("#sizeRange").addEventListener("input", () => {
             document.documentElement.style.setProperty("--thumb", $("#sizeRange").value + "px");
         });
-        $("#groupSelect").addEventListener("change", () => { refresh(); });
+        $("#groupSelect").addEventListener("change", () => {
+            $("#status").textContent = "Grouping...";
+            setTimeout(() => {
+                refresh();
+                $("#status").textContent = "";
+            }, 0);
+        });
         $("#sortSelect").addEventListener("change", () => { refresh(); });
-        $("#sortDirBtn").addEventListener("click", () => { sortAsc = !sortAsc; $("#sortDirBtn").textContent = sortAsc ? "↑" : "↓"; refresh(); });
+        $("#sortDirBtn").addEventListener("click", () => {
+            sortAsc = !sortAsc;
+            $("#sortDirBtn").textContent = sortAsc ? "↑" : "↓";
+            refresh();
+        });
         $("#thumbMode").addEventListener("change", () => { refresh(); });
         $("#svgStyle").addEventListener("change", () => { /* used by openSVG* */ });
 
-        ["imgOnly", "hideDup", "hideTT", "hmin", "hmax", "motionTier"].forEach(id => $("#" + id).addEventListener("input", refresh));
+        ["imgOnly", "hideDup", "hideTT", "motionTier"].forEach(id => $("#" + id).addEventListener("input", refresh));
         $("#search").addEventListener("input", refresh);
+
+        $("#hmin").addEventListener("input", () => {
+            const minVal = parseInt($("#hmin").value, 10);
+            const maxVal = parseInt($("#hmax").value, 10);
+            if (minVal > maxVal) {
+                $("#hmax").value = minVal;
+            }
+            updateHueRange();
+            refresh();
+        });
+        $("#hmax").addEventListener("input", () => {
+            const minVal = parseInt($("#hmin").value, 10);
+            const maxVal = parseInt($("#hmax").value, 10);
+            if (maxVal < minVal) {
+                $("#hmin").value = maxVal;
+            }
+            updateHueRange();
+            refresh();
+        });
 
         $("#resetBtn").addEventListener("click", () => {
             $("#sizeRange").value = 240; document.documentElement.style.setProperty("--thumb", "240px");
@@ -783,6 +1005,7 @@
             document.querySelectorAll('#colorChips .chip').forEach(c => c.classList.remove("sel"));
             $("#motionTier").value = "any";
             refresh();
+            updateHueRange();
         });
 
         /* ========== STARTUP ========== */
@@ -801,6 +1024,7 @@
                     : (mv <= t1 ? "low" : (mv <= t2 ? "med" : "high"));
                 it.shape = it.shape || "other";
                 it.isDuplicate = false;
+                it.hasWatermark = it.video_file && it.video_file.toLowerCase().includes("tiktok");
             });
             dedupeByVideoClusters();
 
@@ -814,11 +1038,12 @@
             buildColorChips();
 
             refresh();
+            updateHueRange();
         })();
 
         /* ========== MODAL CLOSE ========== */
-        $("#closeModal").addEventListener("click", () => { $("#overlay").style.display = "none"; });
-        $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") $("#overlay").style.display = "none"; });
+        $("#closeModal").addEventListener("click", () => { $("#overlay").style.display = "none"; document.onkeydown = null; });
+        $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") { $("#overlay").style.display = "none"; document.onkeydown = null; } });
 
         /* ========== VISITOR BADGE (graceful) ========== */
         (function () {
@@ -847,7 +1072,13 @@
                 const uid = getOrSetUID();
                 const endpoints = ['/api/unique', '/.netlify/functions/unique'];
                 for (const url of endpoints) {
-                    try { const { total } = await postJSON(url, { visitorId: uid }); if (Number.isFinite(total)) { el.textContent = total + ' visitors'; return; } } catch (e) { }
+                    try {
+                        const { total } = await postJSON(url, { visitorId: uid });
+                        if (Number.isFinite(total)) {
+                            el.textContent = total + ' visitors';
+                            return;
+                        }
+                    } catch (e) { }
                 }
                 el.style.display = 'none';
             }
