@@ -1,6 +1,7 @@
 [build]
   publish   = "public"
   functions = "netlify/functions"
+  directory = "public/netlify/functions"
   # command left blank because you’re not building anything—just serving /public
 
 # (optional) speed up file serving for large folders
