@@ -605,17 +605,36 @@
             $("#hmax").style.background = `linear-gradient(to right, var(--border) 0%, var(--border) ${startPct}%, var(--acc) ${startPct}%, var(--acc) ${endPct}%, var(--border) ${endPct}%, var(--border) 100%)`;
         }
         function hueOf(row) {
-            const h = num(row.h_deg_img, null);
-            if (h !== null) return (h % 360 + 360) % 360;
-            const hex = row.hex_img || row.hex; if (!hex || hex[0] !== "#") return 999;
-            const s = hex.slice(1); const n = parseInt(s.length === 3 ? s.split("").map(c => c + c).join("") : s, 16);
-            if (!Number.isFinite(n)) return 999;
-            const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
-            const max = Math.max(r, g, b), min = Math.min(r, g, b); if (max === min) return 999;
-            let hdeg = 0, d = max - min;
-            if (max === r) hdeg = ((g - b) / d) * 60; else if (max === g) hdeg = (2 + (b - r) / d) * 60; else hdeg = (4 + (r - g) / d) * 60;
-            if (hdeg < 0) hdeg += 360; return hdeg;
+            // Prefer numeric hue if present
+            const h = num(row.h_deg_img, num(row.h_deg, NaN));
+            if (Number.isFinite(h)) return (h % 360 + 360) % 360;
+
+            // Try hex (accept '#RRGGBB', 'RRGGBB', or 'RGB')
+            let hex = row.hex_img || row.hex;
+            if (!hex) return NaN;
+            hex = String(hex).trim();
+            if (hex[0] === '#') hex = hex.slice(1);
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            if (!/^[0-9a-fA-F]{6}$/.test(hex)) return NaN;
+
+            const n = parseInt(hex, 16);
+            const r = (n >> 16 & 255) / 255,
+                g = (n >> 8 & 255) / 255,
+                b = (n & 255) / 255;
+
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            const d = max - min;
+            if (d === 0) return NaN; // gray/black/white – no defined hue
+
+            let hdeg;
+            if (max === r) hdeg = ((g - b) / d) * 60;
+            else if (max === g) hdeg = (2 + (b - r) / d) * 60;
+            else hdeg = (4 + (r - g) / d) * 60;
+
+            if (hdeg < 0) hdeg += 360;
+            return hdeg;
         }
+
         function pct(values, p) { if (!values.length) return 0; const a = [...values].sort((x, y) => x - y); const i = Math.floor(p * (a.length - 1)); return a[i]; }
 
         function normalizeRow(r, i) {
@@ -670,8 +689,8 @@
                     if (!hasThumb && !hasObj) continue;
                 }
 
-                const h = hueOf(it);
-                if (Number.isFinite(h)) {
+                const validHue = Number.isFinite(h) && h >= 0 && h <= 360;
+                if (validHue) {
                     const inRange = (hmin <= hmax) ? (h >= hmin && h <= hmax) : (h >= hmin || h <= hmax);
                     if (!inRange) continue;
                 }
