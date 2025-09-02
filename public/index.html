@@ -405,12 +405,12 @@
         <div class="group">
             <label for="groupSelect">Group by</label>
             <select id="groupSelect">
-                <option value="none" selected>None (All)</option>
+                <option value="none">None (All)</option>
                 <option value="hue">Hue</option>
                 <option value="brightness">Brightness</option>
                 <option value="saturation">Saturation</option>
                 <option value="time">Time</option>
-                <option value="video">Source Video</option>
+                <option value="video" selected>Source Video</option>
             </select>
         </div>
 
@@ -835,7 +835,7 @@
             });
             wireTileClicks(0, gridEl.querySelectorAll(".card").length);
             countBadge.textContent = `${total} items`;
-            currentView = "grouped"; updateNote();
+            currentView = "Grouped by Source Video"; updateNote();
             const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
             console.log('[viewer] GROUPED total:', total);
         }
@@ -983,7 +983,7 @@
 
         $("#resetBtn").addEventListener("click", () => {
             $("#sizeRange").value = 240; document.documentElement.style.setProperty("--thumb", "240px");
-            $("#groupSelect").value = "none"; groupMode = "none";
+            $("#groupSelect").value = "video"; groupMode = "video";
             $("#sortSelect").value = "hue"; sortMode = "hue"; sortAsc = true; $("#sortDirBtn").textContent = "↑";
             $("#thumbMode").value = "object"; $("#svgStyle").value = "default";
             $("#imgOnly").checked = true; $("#hideDup").checked = false; $("#hideTT").checked = false;
