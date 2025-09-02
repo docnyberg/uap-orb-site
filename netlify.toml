@@ -1,10 +1,9 @@
 [build]
-  publish   = "public"
-  functions = "netlify/functions"
-  directory = "public/netlify/functions"
-  # command left blank because you’re not building anything—just serving /public
+  publish = "public"
 
-# (optional) speed up file serving for large folders
+[functions]
+  directory = "public/netlify/functions"
+
 [[headers]]
   for = "/*"
   [headers.values]
