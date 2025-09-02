@@ -635,6 +635,7 @@
             return hdeg;
         }
 
+
         function pct(values, p) { if (!values.length) return 0; const a = [...values].sort((x, y) => x - y); const i = Math.floor(p * (a.length - 1)); return a[i]; }
 
         function normalizeRow(r, i) {
@@ -688,7 +689,7 @@
                     const hasObj = (it.thumb_obj && String(it.thumb_obj).trim() !== "");
                     if (!hasThumb && !hasObj) continue;
                 }
-
+                const h = hueOf(it);
                 const validHue = Number.isFinite(h) && h >= 0 && h <= 360;
                 if (validHue) {
                     const inRange = (hmin <= hmax) ? (h >= hmin && h <= hmax) : (h >= hmin || h <= hmax);
@@ -933,6 +934,40 @@
             CURRENT = sortedIdx.map(i => list[i]);
             CURRENT_IDX = sortedIdx.map(i => CURRENT_IDX[i]);
             if (groupMode === "none") { currentView = "all"; startStreaming(); } else { groupAndRender(CURRENT); }
+        }
+        function colorGroup(it) {
+            const h = hueOf(it), s = num(it.s_norm, 0), v = num(it.v_norm, 0);
+            if (!Number.isFinite(h) || s < 0.1) return v > 0.8 ? "White" : (v < 0.2 ? "Black" : "Gray");
+            if (h < 15 || h >= 345) return "Red"; if (h < 45) return "Orange"; if (h < 75) return "Yellow";
+            if (h < 150) return "Green"; if (h < 210) return "Cyan"; if (h < 270) return "Blue";
+            if (h < 300) return "Purple"; if (h < 345) return "Magenta"; return "Other";
+        }
+
+        function buildShapeCheckboxes() {
+            const box = $("#shapeBox"); box.innerHTML = "";
+            const counts = new Map(); DATA.forEach(it => counts.set(it.shape, (counts.get(it.shape) || 0) + 1));
+            const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
+            const shapes = new Set(top.concat(["other"]));
+            shapes.forEach(sh => {
+                const id = "shape-" + sh.replace(/\s+/g, "_");
+                const cb = document.createElement("input");
+                cb.type = "checkbox"; cb.id = id; cb.checked = true; cb.dataset.shape = sh; cb.addEventListener("change", refresh);
+                const lbl = document.createElement("label");
+                lbl.htmlFor = id; lbl.style.marginRight = "10px";
+                lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" " + sh));
+                box.appendChild(lbl);
+            });
+        }
+
+        function buildColorChips() {
+            const colors = new Set(DATA.map(colorGroup));
+            const wrap = $("#colorChips"); wrap.innerHTML = "";
+            colors.forEach(c => {
+                const b = document.createElement("div"); b.className = "chip"; b.title = c; b.dataset.color = c;
+                b.style.background = (c === "White" || c === "Gray" || c === "Black") ? c.toLowerCase() : c;
+                b.addEventListener("click", () => { b.classList.toggle("sel"); refresh(); });
+                wrap.appendChild(b);
+            });
         }
 
         $("#sizeRange").addEventListener("input", () => { document.documentElement.style.setProperty("--thumb", $("#sizeRange").value + "px"); });
