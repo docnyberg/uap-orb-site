@@ -241,7 +241,7 @@
                 right: 8px
             }
 
-        .thumb.watermark { /* flagged; effect under .hideTTActive */
+        .thumb.watermark { /* watermark images flagged; effect active under .hideTTActive */
         }
 
         .hideTTActive .thumb.watermark {
@@ -249,7 +249,7 @@
             transform-origin: center
         }
 
-        /* Modal sequence controls & carousel (from your current file) */
+        /* Modal sequence controls & carousel */
         .modal-controls {
             display: flex;
             align-items: center;
@@ -382,6 +382,9 @@
         }
     </style>
 
+    <!-- PayPal JS SDK (Sandbox) -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AWKc_8sVqOfeg9nU-wxnu25qmouXvoL63V2YlA96prh_stIc0erylu526vatGSmxsqNu-L_IaimV1yA3&currency=USD"></script>
+
     <!-- PapaParse -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
@@ -391,7 +394,6 @@
         <span id="countBadge" class="badge">0 items</span>
         <span id="visitorsBadge" class="badge">— visitors</span>
         <span id="note" class="badge">View: All • Sort: Hue ↑</span>
-        <!-- NEW: monetization buttons -->
         <span style="flex:1"></span>
         <button id="upgradeBtn" class="pill" title="Upgrade to Pro">Upgrade</button>
         <button id="donateBtn" class="pill" title="Donate">Donate</button>
@@ -504,16 +506,18 @@
         <div class="modal">
             <button id="closeModal" class="close">✕</button>
             <img id="modalImg" alt="">
+
             <div class="modal-controls">
                 <div class="toggle"><label><input type="checkbox" id="modalSvgToggle"> SVG view</label></div>
                 <div class="spacer"></div>
-                <!-- NEW: image download button (soft gated) -->
+                <!-- Image download button (counts against image limit) -->
                 <a id="dlImg" class="btn" style="display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--fg)" download>Download image</a>
                 <div class="nav">
                     <button id="modalPrev" title="Previous in sequence">← Prev</button>
                     <button id="modalNext" title="Next in sequence">Next →</button>
                 </div>
             </div>
+
             <div id="modalCarousel" class="modal-carousel"></div>
             <div id="modalMeta" style="margin-top:8px;color:#c9d3e5;font-size:13px"></div>
         </div>
@@ -524,18 +528,20 @@
         <div class="modal-lite">
             <h3>Upgrade to Orb Atlas Pro</h3>
             <div>Unlock advanced sorts, more downloads, and future extended datasets.</div>
+
+            <!-- PayPal Smart Button mounts here -->
+            <div id="paypal-upgrade" style="margin:10px 0;"></div>
+
             <div class="row">
                 <a id="goUpgrade" class="btn primary" target="_blank" rel="noopener">Upgrade $1.99 (PayPal)</a>
                 <a id="goDonate" class="btn" target="_blank" rel="noopener">Donate (Venmo)</a>
                 <button id="iPaid" class="btn">I already upgraded</button>
                 <button id="closePro" class="btn">Later</button>
             </div>
-            <div style="margin-top:10px" class="muted">
-                
-            </div>
         </div>
     </div>
 
+    <!-- Viewer + monetization script -->
     <script>
         /* ===== Monetization config ===== */
         const UPGRADE_URL = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=K338CMZAT6YD6"; // $1.99
@@ -588,25 +594,34 @@
             } catch { }
         })();
 
-        /* ===== Existing viewer code (merged) ===== */
+        /* ===== Viewer state & utils (from your current file) ===== */
         let DATA = [], CURRENT = [], CURRENT_IDX = [];
         let sortAsc = true, groupMode = "none", sortMode = "hue", thumbMode = "object", svgStyle = "default";
-        let hideDup = false;
         let currentView = "all"; // 'all' | 'similar' | 'grouped'
+
         const $ = sel => document.querySelector(sel);
         const gridEl = $("#grid"), note = $("#note"), countBadge = $("#countBadge"), sentinel = $("#sentinel");
 
         const STYLE_ALIASES = {
             default: ["", "_outline", "_smooth", "_bezier", "_skeleton", "_rings", "_hull", "_edges", "_ellipse", "_contour", "_convex"],
-            outline: ["_outline", "_contour"], smooth: ["_smooth"], bezier: ["_bezier"], skeleton: ["_skeleton"], rings: ["_rings"],
-            hull: ["_hull", "_convex"], edges: ["_edges"], ellipse: ["_ellipse"]
+            outline: ["_outline", "_contour"],
+            smooth: ["_smooth"],
+            bezier: ["_bezier"],
+            skeleton: ["_skeleton"],
+            rings: ["_rings"],
+            hull: ["_hull", "_convex"],
+            edges: ["_edges"],
+            ellipse: ["_ellipse"]
         };
 
         const num = (x, d = null) => { const v = parseFloat(x); return Number.isFinite(v) ? v : d; };
         function updateHueRange() {
-            const minVal = parseInt($("#hmin").value, 10), maxVal = parseInt($("#hmax").value, 10);
-            const startPct = (minVal / 360) * 100, endPct = (maxVal / 360) * 100;
-            $("#hmax").style.background = `linear-gradient(to right, var(--border) 0%, var(--border) ${startPct}%, var(--acc) ${startPct}%, var(--acc) ${endPct}%, var(--border) ${endPct}%, var(--border) 100%)`;
+            const minVal = parseInt($("#hmin").value, 10);
+            const maxVal = parseInt($("#hmax").value, 10);
+            const startPct = (minVal / 360) * 100;
+            const endPct = (maxVal / 360) * 100;
+            $("#hmax").style.background =
+                `linear-gradient(to right, var(--border) 0%, var(--border) ${startPct}%, var(--acc) ${startPct}%, var(--acc) ${endPct}%, var(--border) ${endPct}%, var(--border) 100%)`;
         }
         function hueOf(row) {
             const h = num(row.h_deg_img, null);
@@ -688,7 +703,8 @@
                     const hay = `${it.json_file} ${it.video_file} ${it.hex_img}`.toLowerCase();
                     if (!hay.includes(q)) continue;
                 }
-                CURRENT_IDX.push(i); out.push(it);
+                CURRENT_IDX.push(i);
+                out.push(it);
             }
             return out;
         }
@@ -786,17 +802,24 @@
         }
 
         function appendChunk(n) {
-            const start = stream.i, end = Math.min(stream.i + n, CURRENT.length);
+            const start = stream.i;
+            const end = Math.min(stream.i + n, CURRENT.length);
             if (start >= end) return;
+
             const frag = CURRENT.slice(start, end).map((it, localIdx) => {
                 const gi = CURRENT_IDX[start + localIdx];
                 return cardHTML(it, gi);
             }).join("");
             gridEl.insertAdjacentHTML("beforeend", frag);
             wireTileClicks(start, end);
+
             stream.i = end;
             countBadge.textContent = `${CURRENT.length} items`;
-            if (stream.i >= CURRENT.length && stream.observer) { stream.observer.disconnect(); stream.observer = null; }
+
+            if (stream.i >= CURRENT.length && stream.observer) {
+                stream.observer.disconnect();
+                stream.observer = null;
+            }
         }
 
         function updateNote() {
@@ -810,21 +833,25 @@
         }
 
         function startStreaming() {
-            gridEl.innerHTML = ""; stream.i = 0;
+            gridEl.innerHTML = "";
+            stream.i = 0;
             appendChunk(stream.FIRST);
+
             if (stream.observer) stream.observer.disconnect();
             stream.observer = new IntersectionObserver((entries) => {
                 entries.forEach(e => { if (e.isIntersecting) appendChunk(stream.STEP); });
             }, { root: null, rootMargin: "600px 0px 600px 0px", threshold: 0 });
             stream.observer.observe(sentinel);
+
             updateNote();
-            // clear any busy line if still present
-            const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
+            const sEl = document.getElementById("status");
+            if (sEl) sEl.textContent = "";
         }
 
         function groupAndRender(items) {
-            const keys = {}, order = [];
+            const keys = {}; const order = [];
             function add(key, item) { if (!keys[key]) { keys[key] = []; order.push(key); } keys[key].push(item); }
+
             if (groupMode === "hue") {
                 items.forEach(it => { const h = hueOf(it); const bin = Number.isFinite(h) ? Math.floor(h / 15) : 24; add(`Hue ${bin * 15}–${(bin + 1) * 15}°`, it); });
             } else if (groupMode === "brightness") {
@@ -836,40 +863,57 @@
             } else if (groupMode === "video") {
                 items.forEach(it => { const vid = it.video_file || "Unknown"; const base = vid.replace(/\.[^.]+$/, ""); add(base, it); });
             }
+
             gridEl.innerHTML = ""; let total = 0;
             order.sort().forEach(key => {
                 const h = document.createElement("div");
                 h.textContent = `${key} (${keys[key].length})`;
                 h.style.cssText = "grid-column:1 / -1;margin:8px 0;font-weight:700;color:#c9d3e5";
                 gridEl.appendChild(h);
+
                 keys[key].forEach(it => {
                     const gi = DATA.indexOf(it);
                     gridEl.insertAdjacentHTML("beforeend", cardHTML(it, gi));
                     total++;
                 });
             });
+
             wireTileClicks(0, gridEl.querySelectorAll(".card").length);
             countBadge.textContent = `${total} items`;
             currentView = "grouped"; updateNote();
             const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
         }
 
-        /* ===== Modal sequence helpers (from your file) ===== */
+        /* ===== Modal sequence helpers ===== */
         let MODAL = { seq: [], pos: 0, svg: false };
+
         function seqIndicesForVideo(videoFile) {
-            const seq = []; for (let i = 0; i < DATA.length; i++) { if ((DATA[i].video_file || "") === (videoFile || "")) seq.push(i); }
+            const seq = [];
+            for (let i = 0; i < DATA.length; i++) {
+                if ((DATA[i].video_file || "") === (videoFile || "")) seq.push(i);
+            }
             seq.sort((a, b) => {
-                const A = +DATA[a].start_ts || 0, B = +DATA[b].start_ts || 0; if (A !== B) return A - B;
-                const EA = parseInt(DATA[a].event_index || 0), EB = parseInt(DATA[b].event_index || 0); return (EA || 0) - (EB || 0);
+                const A = +DATA[a].start_ts || 0, B = +DATA[b].start_ts || 0;
+                if (A !== B) return A - B;
+                const EA = parseInt(DATA[a].event_index || 0), EB = parseInt(DATA[b].event_index || 0);
+                return (EA || 0) - (EB || 0);
             });
             return seq;
         }
-        function rasterUrlFor(it) { const useObj = (thumbMode === "object" && it.thumb_obj); return useObj ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`; }
+
+        function rasterUrlFor(it) {
+            const useObj = (thumbMode === "object" && it.thumb_obj);
+            return useObj ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
+        }
+
         function svgTriesFor(it) {
-            const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default; let base = null;
+            const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
+            let base = null;
             if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
-            else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, ""); else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
-            const tries = []; for (const suf of styles) {
+            else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
+            else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
+            const tries = [];
+            for (const suf of styles) {
                 if (suf === "") { if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`); }
                 else if (base) { tries.push(`svgs/${encodeURIComponent(base + suf)}.svg`); }
             }
@@ -877,44 +921,59 @@
             if (base) tries.push(`svgs/${encodeURIComponent(base)}.svg`);
             return tries;
         }
+
         function setImgSrcWithTries(imgEl, tries) {
-            imgEl.dataset.tries = JSON.stringify(tries); imgEl.dataset.tryi = "0";
+            imgEl.dataset.tries = JSON.stringify(tries);
+            imgEl.dataset.tryi = "0";
             imgEl.onerror = () => {
                 try {
-                    const list = JSON.parse(imgEl.dataset.tries || "[]"); let i = parseInt(imgEl.dataset.tryi || "0", 10) + 1;
-                    if (i < list.length) { imgEl.dataset.tryi = String(i); imgEl.src = list[i]; } else { imgEl.onerror = null; }
+                    const list = JSON.parse(imgEl.dataset.tries || "[]");
+                    let i = parseInt(imgEl.dataset.tryi || "0", 10) + 1;
+                    if (i < list.length) { imgEl.dataset.tryi = String(i); imgEl.src = list[i]; }
+                    else { imgEl.onerror = null; }
                 } catch (e) { imgEl.onerror = null; }
             };
-            if (tries && tries.length) { imgEl.src = tries[0]; }
+            if (tries && tries.length) imgEl.src = tries[0];
         }
+
         function renderModalSequence() {
-            const cont = document.getElementById("modalCarousel"); cont.innerHTML = "";
+            const cont = document.getElementById("modalCarousel");
+            cont.innerHTML = "";
             const seq = MODAL.seq, pos = MODAL.pos;
             for (let k = 0; k < seq.length; k++) {
-                const gi = seq[k], it = DATA[gi]; const img = new Image();
-                img.className = "carousel-thumb" + (it.hasWatermark ? " wm" : ""); img.dataset.gi = String(gi);
-                if (MODAL.svg) { setImgSrcWithTries(img, svgTriesFor(it)); } else { img.src = rasterUrlFor(it); }
+                const gi = seq[k], it = DATA[gi];
+                const img = new Image();
+                img.className = "carousel-thumb" + (it.hasWatermark ? " wm" : "");
+                img.dataset.gi = String(gi);
+                if (MODAL.svg) setImgSrcWithTries(img, svgTriesFor(it));
+                else img.src = rasterUrlFor(it);
                 if (k === pos) img.classList.add("selected");
                 img.addEventListener("click", (e) => { e.stopPropagation(); selectSequenceIndex(k); });
                 cont.appendChild(img);
             }
-            const sel = cont.querySelector(".carousel-thumb.selected"); if (sel && sel.scrollIntoView) sel.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+            const sel = cont.querySelector(".carousel-thumb.selected");
+            if (sel && sel.scrollIntoView) sel.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
         }
+
         function updateModalMain() {
-            const gi = MODAL.seq[MODAL.pos], it = DATA[gi], img = document.getElementById("modalImg");
-            if (MODAL.svg) { setImgSrcWithTries(img, svgTriesFor(it)); } else { img.onerror = null; img.src = rasterUrlFor(it); }
-            // set download href (gated)
+            const gi = MODAL.seq[MODAL.pos], it = DATA[gi];
+            const img = document.getElementById("modalImg");
+            if (MODAL.svg) setImgSrcWithTries(img, svgTriesFor(it));
+            else { img.onerror = null; img.src = rasterUrlFor(it); }
+
             const dl = document.getElementById("dlImg");
             if (dl) {
                 dl.href = rasterUrlFor(it);
-                dl.onclick = (e) => { if (!allowDownload("image")) { e.preventDefault(); } };
+                dl.onclick = (e) => { if (!allowDownload("image")) e.preventDefault(); };
             }
+
             document.getElementById("modalMeta").innerHTML = `
             <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
             <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
             <div>hex ${it.hex_img || ""} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm, 0).toFixed(2)} • V ${num(it.v_norm, 0).toFixed(2)}</div>
             <div>shape ${it.shape} • motion ${it.motion}</div>`;
         }
+
         function selectSequenceIndex(k) {
             MODAL.pos = Math.max(0, Math.min(MODAL.seq.length - 1, k));
             updateModalMain();
@@ -924,8 +983,14 @@
             if (sel) sel.classList.add("selected");
             if (sel && sel.scrollIntoView) sel.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
         }
+
         function stepSequence(dir) { selectSequenceIndex(MODAL.pos + (dir < 0 ? -1 : 1)); }
-        function setSvgMode(on) { MODAL.svg = !!on; document.getElementById("modalSvgToggle").checked = MODAL.svg; renderModalSequence(); updateModalMain(); }
+
+        function setSvgMode(on) {
+            MODAL.svg = !!on;
+            document.getElementById("modalSvgToggle").checked = MODAL.svg;
+            renderModalSequence(); updateModalMain();
+        }
 
         function openModalByGlobalIndex(gi) {
             const it = DATA[gi];
@@ -934,12 +999,14 @@
             MODAL = { seq, pos, svg: false };
             $("#overlay").style.display = "block";
             renderModalSequence(); updateModalMain();
+
             const prev = document.getElementById("modalPrev");
             const next = document.getElementById("modalNext");
             const tog = document.getElementById("modalSvgToggle");
             prev.onclick = (e) => { e.stopPropagation(); stepSequence(-1); };
             next.onclick = (e) => { e.stopPropagation(); stepSequence(1); };
             tog.onchange = (e) => { e.stopPropagation(); setSvgMode(tog.checked); };
+
             document.onkeydown = (ev) => {
                 if ($("#overlay").style.display !== "block") return;
                 if (ev.key === "ArrowLeft") { ev.preventDefault(); stepSequence(-1); }
@@ -965,14 +1032,15 @@
             if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`);
             (async () => {
                 for (const url of tries) {
-                    try { const r = await fetch(url, { method: "HEAD" }); if (r.ok) { window.open(url, "_blank"); return; } } catch { }
+                    try { const r = await fetch(url, { method: "HEAD" }); if (r.ok) { window.open(url, "_blank"); return; } }
+                    catch { }
                 }
                 alert("No matching SVG file found for this item.");
             })();
         }
 
-        // Pro-visible sort gating and key
         function isProSort(v) { return v === "hueRange_pro" || v === "sharpArea_pro"; }
+
         function orderKeyFor(it) {
             switch (sortMode) {
                 case "hue": return hueOf(it);
@@ -990,36 +1058,53 @@
         function refresh() {
             const sz = parseInt($("#sizeRange")?.value || "240", 10);
             document.documentElement.style.setProperty("--thumb", (isFinite(sz) ? sz : 240) + "px");
-            thumbMode = $("#thumbMode").value; svgStyle = $("#svgStyle").value; groupMode = $("#groupSelect").value; sortMode = $("#sortSelect").value;
+
+            thumbMode = $("#thumbMode").value;
+            svgStyle = $("#svgStyle").value;
+            groupMode = $("#groupSelect").value;
+            sortMode = $("#sortSelect").value;
             document.body.classList.toggle('hideTTActive', $("#hideTT").checked);
+
             const list = applyFilters();
-            // sort
+
             const sortedIdx = [...list.keys()].sort((a, b) => {
                 const A = orderKeyFor(list[a]), B = orderKeyFor(list[b]);
                 return ((Number.isFinite(A) ? A : -999) - (Number.isFinite(B) ? B : -999)) * (sortAsc ? 1 : -1);
             });
+
             CURRENT = sortedIdx.map(i => list[i]);
             CURRENT_IDX = sortedIdx.map(i => CURRENT_IDX[i]);
-            if (groupMode === "none") { currentView = "all"; startStreaming(); } else { groupAndRender(CURRENT); }
+
+            if (groupMode === "none") { currentView = "all"; startStreaming(); }
+            else { groupAndRender(CURRENT); }
         }
 
-        // Controls
-        $("#sizeRange").addEventListener("input", () => { document.documentElement.style.setProperty("--thumb", $("#sizeRange").value + "px"); });
+        /* Controls */
+        $("#sizeRange").addEventListener("input", () => {
+            document.documentElement.style.setProperty("--thumb", $("#sizeRange").value + "px");
+        });
+
         $("#groupSelect").addEventListener("change", () => {
             $("#status").textContent = "Grouping...";
-            setTimeout(() => { refresh(); /* status cleared in render */ }, 0);
+            setTimeout(() => { refresh(); }, 0);
         });
+
         $("#sortSelect").addEventListener("change", () => {
             const v = $("#sortSelect").value;
             if (isProSort(v) && !isPro()) {
                 showProModal();
-                // revert to previous allowed sort
-                $("#sortSelect").value = sortMode;
+                $("#sortSelect").value = sortMode; // revert selection
                 return;
             }
             refresh();
         });
-        $("#sortDirBtn").addEventListener("click", () => { sortAsc = !sortAsc; $("#sortDirBtn").textContent = sortAsc ? "↑" : "↓"; refresh(); });
+
+        $("#sortDirBtn").addEventListener("click", () => {
+            sortAsc = !sortAsc;
+            $("#sortDirBtn").textContent = sortAsc ? "↑" : "↓";
+            refresh();
+        });
+
         $("#thumbMode").addEventListener("change", () => { refresh(); });
         $("#svgStyle").addEventListener("change", () => { });
 
@@ -1027,63 +1112,90 @@
         $("#search").addEventListener("input", refresh);
 
         $("#hmin").addEventListener("input", () => {
-            const minVal = parseInt($("#hmin").value, 10), maxVal = parseInt($("#hmax").value, 10);
-            if (minVal > maxVal) { $("#hmax").value = minVal; }
+            const minVal = parseInt($("#hmin").value, 10);
+            const maxVal = parseInt($("#hmax").value, 10);
+            if (minVal > maxVal) $("#hmax").value = minVal;
             updateHueRange(); refresh();
         });
+
         $("#hmax").addEventListener("input", () => {
-            const minVal = parseInt($("#hmin").value, 10), maxVal = parseInt($("#hmax").value, 10);
-            if (maxVal < minVal) { $("#hmin").value = maxVal; }
+            const minVal = parseInt($("#hmin").value, 10);
+            const maxVal = parseInt($("#hmax").value, 10);
+            if (maxVal < minVal) $("#hmin").value = maxVal;
             updateHueRange(); refresh();
         });
 
         $("#resetBtn").addEventListener("click", () => {
-            $("#sizeRange").value = 240; document.documentElement.style.setProperty("--thumb", "240px");
+            $("#sizeRange").value = 240;
+            document.documentElement.style.setProperty("--thumb", "240px");
+
             $("#groupSelect").value = "none"; groupMode = "none";
-            $("#sortSelect").value = "hue"; sortMode = "hue"; sortAsc = true; $("#sortDirBtn").textContent = "↑";
-            $("#thumbMode").value = "object"; $("#svgStyle").value = "default";
-            $("#imgOnly").checked = true; $("#hideDup").checked = false; $("#hideTT").checked = false;
-            $("#hmin").value = 3; $("#hmax").value = 360; $("#hbadge").textContent = "3°–360°";
+            $("#sortSelect").value = "hue"; sortMode = "hue"; sortAsc = true;
+            $("#sortDirBtn").textContent = "↑";
+
+            $("#thumbMode").value = "object";
+            $("#svgStyle").value = "default";
+
+            $("#imgOnly").checked = true;
+            $("#hideDup").checked = false;
+            $("#hideTT").checked = false;
+
+            $("#hmin").value = 3;
+            $("#hmax").value = 360;
+            $("#hbadge").textContent = "3°–360°";
+
             $("#search").value = "";
+
             document.querySelectorAll('#shapeBox input[type=checkbox]').forEach(cb => cb.checked = true);
             document.querySelectorAll('#colorChips .chip').forEach(c => c.classList.remove("sel"));
+
             $("#motionTier").value = "any";
-            refresh(); updateHueRange();
-            currentView = "all"; updateNote(); const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
+
+            refresh();
+            updateHueRange();
+            currentView = "all";
+            updateNote();
+
+            const sEl = document.getElementById("status");
+            if (sEl) sEl.textContent = "";
         });
 
-        // Init
+        /* Startup */
         (async function init() {
             const text = await fetch("atlas.csv").then(r => r.text());
             const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
             DATA = parsed.data.map(normalizeRow);
-            // motion tiers & flags
+
             const mvals = DATA.map(it => num(it.motion, null)).filter(v => v !== null);
             const t1 = pct(mvals, 0.33), t2 = pct(mvals, 0.66);
             DATA.forEach(it => {
                 const mv = num(it.motion, null);
-                it.motionTier = (mv === null) ? ((it.motion || "").toLowerCase().includes("fast") ? "high" : ((it.motion || "").toLowerCase().includes("drift") ? "med" : "low"))
+                it.motionTier = (mv === null)
+                    ? ((it.motion || "").toLowerCase().includes("fast") ? "high"
+                        : ((it.motion || "").toLowerCase().includes("drift") ? "med" : "low"))
                     : (mv <= t1 ? "low" : (mv <= t2 ? "med" : "high"));
                 it.shape = it.shape || "other";
                 it.isDuplicate = false;
                 it.hasWatermark = it.video_file && it.video_file.toLowerCase().includes("tiktok");
             });
-            // optional dedupe
+
             dedupeByVideoClusters();
 
-            // Defaults
             $("#groupSelect").value = "none";
             $("#sortSelect").value = "hue";
             $("#hmin").value = 3; $("#hbadge").textContent = `3°–${$("#hmax").value}°`;
 
-            buildShapeCheckboxes(); buildColorChips();
-            refresh(); updateHueRange();
+            buildShapeCheckboxes();
+            buildColorChips();
+
+            refresh();
+            updateHueRange();
         })();
 
         $("#closeModal").addEventListener("click", () => { $("#overlay").style.display = "none"; document.onkeydown = null; });
         $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay") { $("#overlay").style.display = "none"; document.onkeydown = null; } });
 
-        // Visitors (as in your current file)
+        /* Visitors (counter) */
         (function () {
             function getOrSetUID() {
                 try {
@@ -1120,11 +1232,9 @@
             updateVisitorsBadge();
         })();
 
-        /* ===== Similar view implementation (bugfix) ===== */
+        /* ===== Similar view (bugfix) ===== */
         function findSimilarByGlobalIndex(gi) {
-            const status = document.getElementById("status");
             const tgt = DATA[gi];
-            // simple similarity metric (hue, s, v, circ, area + shape boost)
             const TH = hueOf(tgt), TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0), TC = num(tgt.circ, 0), TA = num(tgt.area_norm, 0);
             const tShape = tgt.shape;
             const sim = [];
@@ -1132,8 +1242,10 @@
                 if (i === gi) return;
                 let d = 0; const H = hueOf(it);
                 if (Number.isFinite(TH) && Number.isFinite(H)) { let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180); } else d += 1;
-                d += Math.abs(num(it.s_norm, 0) - TS); d += Math.abs(num(it.v_norm, 0) - TV);
-                d += Math.abs(num(it.circ, 0) - TC); d += Math.abs(num(it.area_norm, 0) - TA);
+                d += Math.abs(num(it.s_norm, 0) - TS);
+                d += Math.abs(num(it.v_norm, 0) - TV);
+                d += Math.abs(num(it.circ, 0) - TC);
+                d += Math.abs(num(it.area_norm, 0) - TA);
                 if (tShape !== "other" && it.shape !== "other" && it.shape !== tShape) d += 2;
                 sim.push({ i, d });
             });
@@ -1142,9 +1254,86 @@
             CURRENT = [tgt, ...top.map(i => DATA[i])];
             CURRENT_IDX = [gi, ...top];
             currentView = "similar";
-            startStreaming(); // sets note + clears status
-            if (status) status.textContent = "";
+            startStreaming();
         }
+
+        /* ===== PayPal Smart Buttons: render when Upgrade modal opens ===== */
+        function renderPayPalUpgradeButton() {
+            if (!window.paypal || !document.getElementById('paypal-upgrade')) return;
+            if (document.getElementById('paypal-upgrade').dataset.rendered === '1') return;
+
+            const PRICE = 1.99; // must match env
+
+            paypal.Buttons({
+                style: { layout: 'horizontal', color: 'gold', shape: 'pill', label: 'pay' },
+
+                createOrder: function (data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{ amount: { value: PRICE.toFixed(2), currency_code: 'USD' } }]
+                    });
+                },
+
+                onApprove: async function (data, actions) {
+                    try {
+                        const orderID = data.orderID;
+                        const res = await fetch('/.netlify/functions/verify-paypal', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderID })
+                        });
+
+                        if (!res.ok) {
+                            const txt = await res.text().catch(() => '');
+                            alert('Payment verification failed. If you were charged, please contact support.\n' + txt);
+                            return;
+                        }
+
+                        const json = await res.json();
+                        if (!json || !json.token) {
+                            alert('No token returned from server. Please contact support.');
+                            return;
+                        }
+
+                        localStorage.setItem('atlas_pro_token', json.token);
+                        localStorage.setItem('atlas_pro', '1');
+
+                        alert('Thanks! Pro is now unlocked on this browser.');
+                        hideProModal && hideProModal();
+                        if (typeof refresh === 'function') refresh();
+                    } catch (e) {
+                        console.error(e);
+                        alert('Unexpected error verifying payment.');
+                    }
+                },
+
+                onError: function (err) {
+                    console.error('PayPal error:', err);
+                    alert('PayPal error. Please try again.');
+                }
+            }).render('#paypal-upgrade');
+
+            document.getElementById('paypal-upgrade').dataset.rendered = '1';
+        }
+
+        (function patchShowProModal() {
+            if (typeof showProModal === 'function') {
+                const _orig = showProModal;
+                window.showProModal = function () {
+                    _orig();
+                    setTimeout(renderPayPalUpgradeButton, 0);
+                };
+            } else {
+                window.addEventListener('load', () => {
+                    if (typeof showProModal === 'function') {
+                        const _orig = showProModal;
+                        window.showProModal = function () {
+                            _orig();
+                            setTimeout(renderPayPalUpgradeButton, 0);
+                        };
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>
