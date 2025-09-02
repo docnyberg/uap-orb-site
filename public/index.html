@@ -382,11 +382,12 @@
         }
     </style>
 
-    <!-- PayPal JS SDK (Sandbox) -->
-    <script src="https://www.paypal.com/sdk/js?client-id=AWKc_8sVqOfeg9nU-wxnu25qmouXvoL63V2YlA96prh_stIc0erylu526vatGSmxsqNu-L_IaimV1yA3&currency=USD"></script>
+    <!-- PayPal JS SDK (Live) -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AUeQNQgtDgxxjykslFawvlZT1V7mBlI2FpRxhcLzXl7YOEJPlbOQRoQjbCxUz3P1yCGK4_cm8Tlhow58&currency=USD"></script>
 
     <!-- PapaParse -->
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <!---->script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></!script>
+
 </head>
 <body>
     <header style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -533,7 +534,9 @@
             <div id="paypal-upgrade" style="margin:10px 0;"></div>
 
             <div class="row">
-                <a id="goUpgrade" class="btn primary" target="_blank" rel="noopener">Upgrade $1.99 (PayPal)</a>
+                <!-- <a id="goUpgrade" class="btn primary" target="_blank" rel="noopener">
+                  Upgrade $1.99 (PayPal)
+                </a> -->
                 <a id="goDonate" class="btn" target="_blank" rel="noopener">Donate (Venmo)</a>
                 <button id="iPaid" class="btn">I already upgraded</button>
                 <button id="closePro" class="btn">Later</button>
@@ -760,22 +763,22 @@
             const src = (thumbMode === "object" && it.thumb_obj) ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
             const h = hueOf(it); const hueLbl = Number.isFinite(h) ? `${h.toFixed(1)}°` : "–";
             return `
-            <div class="card" data-idx="${globalIdx}">
-              <div class="swatch" style="background:${it.hex_img || '#222'}"></div>
-              <div class="thumb-wrap"><img class="${it.hasWatermark ? 'thumb watermark' : 'thumb'}" src="${src}" alt=""></div>
-              <div class="actions">
-                <button class="btn-mini" data-action="svg" title="Open SVG (${svgStyle})">SVG</button>
-                <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
-              </div>
-              <div class="meta">
-                <div class="kv"><div>hue</div><code>${hueLbl}</code></div>
-                <div class="kv"><div><strong>${it.json_file || "(no json)"}</strong></div><div>#${it.event_index || ""}</div></div>
-                <div class="kv"><div>${it.video_file || "(video)"} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div><div>${it.shape !== "other" ? it.shape : ""} ${it.motion && it.motion !== "unknown" ? "• " + it.motion : ""}</div></div>
-                <div class="kv"><div>hex</div><code>${it.hex_img || ""}</code></div>
-                <div class="kv"><div>S</div><code>${Number.isFinite(num(it.s_norm)) ? (+it.s_norm).toFixed(2) : ""}</code></div>
-                <div class="kv"><div>V</div><code>${Number.isFinite(num(it.v_norm)) ? (+it.v_norm).toFixed(2) : ""}</code></div>
-              </div>
-            </div>`;
+                <div class="card" data-idx="${globalIdx}">
+                  <div class="swatch" style="background:${it.hex_img || '#222'}"></div>
+                  <div class="thumb-wrap"><img class="${it.hasWatermark ? 'thumb watermark' : 'thumb'}" src="${src}" alt=""></div>
+                  <div class="actions">
+                    <button class="btn-mini" data-action="svg" title="Open SVG (${svgStyle})">SVG</button>
+                    <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
+                  </div>
+                  <div class="meta">
+                    <div class="kv"><div>hue</div><code>${hueLbl}</code></div>
+                    <div class="kv"><div><strong>${it.json_file || "(no json)"}</strong></div><div>#${it.event_index || ""}</div></div>
+                    <div class="kv"><div>${it.video_file || "(video)"} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div><div>${it.shape !== "other" ? it.shape : ""} ${it.motion && it.motion !== "unknown" ? "• " + it.motion : ""}</div></div>
+                    <div class="kv"><div>hex</div><code>${it.hex_img || ""}</code></div>
+                    <div class="kv"><div>S</div><code>${Number.isFinite(num(it.s_norm)) ? (+it.s_norm).toFixed(2) : ""}</code></div>
+                    <div class="kv"><div>V</div><code>${Number.isFinite(num(it.v_norm)) ? (+it.v_norm).toFixed(2) : ""}</code></div>
+                  </div>
+                </div>`;
         }
 
         function wireTileClicks(rangeStart, rangeEnd) {
@@ -968,10 +971,10 @@
             }
 
             document.getElementById("modalMeta").innerHTML = `
-            <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
-            <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
-            <div>hex ${it.hex_img || ""} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm, 0).toFixed(2)} • V ${num(it.v_norm, 0).toFixed(2)}</div>
-            <div>shape ${it.shape} • motion ${it.motion}</div>`;
+                <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
+                <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
+                <div>hex ${it.hex_img || ""} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm, 0).toFixed(2)} • V ${num(it.v_norm, 0).toFixed(2)}</div>
+                <div>shape ${it.shape} • motion ${it.motion}</div>`;
         }
 
         function selectSequenceIndex(k) {
