@@ -823,9 +823,8 @@
             else if (groupMode === "video") { items.forEach(it => { const vid = it.video_file || "Unknown"; const base = vid.replace(/\.[^.]+$/, ""); add(base, it); }); }
             gridEl.innerHTML = ""; let total = 0;
 
-            // Order groups
+            // Newest video groups first when groupMode === "video"
             if (groupMode === "video") {
-                // newest group first by max start_ts
                 order.sort((a, b) => {
                     const aMax = Math.max(...keys[a].map(x => num(x.start_ts, 0)));
                     const bMax = Math.max(...keys[b].map(x => num(x.start_ts, 0)));
@@ -850,10 +849,8 @@
 
             wireTileClicks(0, gridEl.querySelectorAll(".card").length);
             countBadge.textContent = `${total} items`;
-            currentView = "grouped"; // <-- fix badge state
+            currentView = "grouped";               // <-- fix: token that updateNote() expects
             updateNote();
-            const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
-            console.log('[viewer] GROUPED total:', total);
             const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
             console.log('[viewer] GROUPED total:', total);
         }
@@ -1003,18 +1000,21 @@
         $("#resetBtn").addEventListener("click", () => {
             $("#sizeRange").value = 240; document.documentElement.style.setProperty("--thumb", "240px");
             $("#groupSelect").value = "video"; groupMode = "video";
+
+            // ensure 'Time' (start_ts) exists in Sort by, then select it
             if (!document.querySelector('#sortSelect option[value="start_ts"]')) {
                 $("#sortSelect").insertAdjacentHTML('beforeend', '<option value="start_ts">Time</option>');
             }
-            $("#sortSelect").value = "start_ts"; sortMode = "start_ts"; sortAsc = false; $("#sortDirBtn").textContent = "↓";
-            $("#thumbMode").value = "object"; $("#svgStyle").value = "default";
-            $("#imgOnly").checked = true; $("#hideDup").checked = false; $("#hideTT").checked = false;
-            $("#hmin").value = 3; $("#hmax").value = 360; $("#hbadge").textContent = "3°–360°";
-            $("#search").value = "";
-            document.querySelectorAll('#shapeBox input[type=checkbox]').forEach(cb => cb.checked = true);
-            document.querySelectorAll('#colorChips .chip').forEach(c => c.classList.remove("sel"));
-            $("#motionTier").value = "any";
-            refresh(); updateHueRange(); currentView = "all"; updateNote(); const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
+            $("#sortSelect").value = "start_ts"; sortMode = "start_ts";
+            sortAsc = false; $("#sortDirBtn").textContent = "↓";
+
+            $("#hmin").value = 3; $("#hbadge").textContent = `3°–${$("#hmax").value}°`;
+
+            buildShapeCheckboxes();
+            buildColorChips();
+
+            refresh();
+            updateHueRange(); currentView = "all"; updateNote(); const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
         });
 
         /* ================================
@@ -1052,7 +1052,6 @@
                 dedupeByVideoClusters();
 
                 $("#groupSelect").value = "video"; groupMode = "video";
-                // ensure 'Time' exists then select it
                 if (!document.querySelector('#sortSelect option[value="start_ts"]')) {
                     $("#sortSelect").insertAdjacentHTML('beforeend', '<option value="start_ts">Time</option>');
                 }
