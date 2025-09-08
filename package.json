@@ -6,14 +6,18 @@
   "main": "index.js",
   "scripts": {
     "deploy": "netlify deploy --prod --dir public --functions public/netlify/functions",
-    "serve": "netlify dev"
+    "serve": "netlify dev",
+    "test": "playwright test -c playwright.config.ts",
+    "test:local": "npx serve public -p 5173 & playwright test -c playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
   },
   "dependencies": {
     "@netlify/blobs": "^6.4.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.12"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/docnyberg/uap-orb-site.git"

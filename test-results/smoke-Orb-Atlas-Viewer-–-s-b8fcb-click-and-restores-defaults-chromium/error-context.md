@@ -1,0 +1,82 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - heading "UAP / Orb Atlas Viewer" [level=1] [ref=e3]
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - text: "View:"
+      - generic [ref=e6]: All
+    - generic [ref=e7]:
+      - text: "Items:"
+      - generic [ref=e8]: "0"
+    - generic [ref=e9]:
+      - text: "Downloads:"
+      - generic [ref=e10]: img 0 / svg 0
+    - generic [ref=e12]: Free
+    - generic [ref=e13]: — visitors
+  - generic [ref=e14]:
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - text: Group by
+        - combobox "Group by" [ref=e17]:
+          - option "Source video" [selected]
+          - option "None"
+          - option "Hue"
+          - option "Brightness"
+          - option "Saturation"
+          - option "Time"
+      - generic [ref=e18]:
+        - text: Sort by
+        - combobox "Sort by ↓" [ref=e19]:
+          - option "Start time" [selected]
+          - option "Hue"
+          - option "Saturation"
+          - option "Brightness"
+          - option "Sharpness"
+          - option "Area"
+          - option "ΔHue"
+          - option "ΔHue (Pro)"
+          - option "Sharpness × Area (Pro)"
+        - button "↓" [ref=e20] [cursor=pointer]
+      - generic [ref=e21]:
+        - text: Tile size
+        - slider "Tile size" [ref=e22]: "240"
+      - generic [ref=e23]:
+        - text: Thumbs
+        - combobox "Thumbs" [ref=e24]:
+          - option "Object" [selected]
+          - option "Scene"
+      - generic [ref=e25]:
+        - text: SVG style
+        - combobox "SVG style" [ref=e26]:
+          - option "Default" [selected]
+          - option "Outline"
+          - option "Smooth"
+          - option "Bézier"
+          - option "Skeleton"
+          - option "Rings"
+          - option "Hull"
+          - option "Edges"
+          - option "Ellipse"
+      - generic [ref=e27]:
+        - checkbox "Images only" [checked] [ref=e28]
+        - text: Images only
+      - generic [ref=e29]:
+        - checkbox "Hide duplicates" [ref=e30]
+        - text: Hide duplicates
+      - generic [ref=e31]:
+        - checkbox "Collapse dead space" [ref=e32]
+        - text: Collapse dead space
+    - generic [ref=e33]:
+      - textbox "Search (filename or hex) …" [ref=e34]
+      - button "Reset" [ref=e35] [cursor=pointer]
+      - button "Upgrade" [ref=e36] [cursor=pointer]
+      - generic [ref=e37]: Donate
+    - group [ref=e39]:
+      - option "Any" [selected]
+      - option "Low"
+      - option "Medium"
+      - option "High"
+  - generic [ref=e41]: Loading…
+```
