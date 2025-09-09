@@ -1341,16 +1341,19 @@
             await ffmpeg.run('-framerate', '30', '-i', 'f%05d.png', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out);
             const data = ffmpeg.FS('readFile', out);
 
-            // Clean up
+            // Clean up - but do it safely
             try {
-                ffmpeg.FS('readdir', '/')
-                    .filter(n => /^f\d{5}\.png$/i.test(n))
-                    .forEach(n => { try { ffmpeg.FS('unlink', n); } catch { } });
+                const files = ffmpeg.FS('readdir', '/');
+                for (const file of files) {
+                    if (/^f\d{5}\.png$/i.test(file)) {
+                        try { ffmpeg.FS('unlink', file); } catch { }
+                    }
+                }
                 ffmpeg.FS('unlink', out);
             } catch { }
 
-            const bytes = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-            return new Blob([bytes], { type: 'video/mp4' });
+            // Return the blob directly from the Uint8Array
+            return new Blob([data], { type: 'video/mp4' });
         }
 
         async function onDownloadVideoClick() {
