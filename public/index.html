@@ -209,9 +209,7 @@
             border: 1px solid #7688a3;
             color: #fff;
             font-size: 11px;
-            min-height: 32px;
-            min-width: 44px;
-            padding: 6px 10px;
+            padding: 2px 6px;
             border-radius: 6px
         }
 
@@ -365,81 +363,30 @@
             cursor: pointer
         }
 
-        /* Skeleton shimmer for lazy thumbs */
-        .card[data-loading="1"] .imgwrap {
-            position: relative;
-            background: #1b1e25;
-            overflow: hidden;
-        }
-
-            .card[data-loading="1"] .imgwrap::after {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(90deg, #1b1e25 0%, #2b2f38 50%, #1b1e25 100%);
-                background-size: 200% 100%;
-                animation: shimmer 1.1s linear infinite;
-                border-radius: 6px;
-                pointer-events: none;
-                will-change: background-position;
+            .chip.sel {
+                outline: 2px solid #fff5
             }
-
-        @keyframes shimmer {
-            0% {
-                background-position-x: 0%;
-            }
-
-            100% {
-                background-position-x: 200%;
-            }
-        }
 
         /* Utility */
         .hide {
-            display: none !important;
+            display: none !important
         }
 
         .muted {
-            color: var(--muted);
+            color: var(--muted)
         }
 
         .note {
             margin: 6px 0 0 0;
-            color: var(--muted);
+            color: var(--muted)
         }
 
         .status {
             min-height: 18px;
-            color: var(--muted);
+            color: var(--muted)
         }
-
-        /* P2: Larger tap targets + focus styles for action chips */
-        .btn-mini {
-            min-height: 32px;
-            min-width: 44px;
-            padding: 6px 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-            .btn-mini:focus-visible {
-                outline: 2px solid #66ccff;
-                outline-offset: 2px;
-            }
-
-            .btn-mini:focus {
-                outline: 2px solid #66ccff;
-                outline-offset: 2px;
-            }
-
-        /* Selected color chips (visual reinforce for "sel") */
-        .chip.sel {
-            box-shadow: 0 0 0 3px rgba(102,204,255,0.12) inset;
-            transform: scale(0.98);
-        }
-
     </style>
+
     <!-- PayPal JS SDK -->
     <script src="https://www.paypal.com/sdk/js?client-id=AWKc_8sVqOfeg9nU-wxnu25qmouXvoL63V2YlA96prh_stIc0erylu526vatGSmxsqNu-L_IaimV1yA3&currency=USD"></script>
     <!-- PapaParse -->
@@ -563,8 +510,6 @@
         </div>
 
         <div class="note" id="note">Loading…</div>
-        <div id="activeChips" class="chips" style="margin:8px 0 6px 0"></div>
-
         <div class="hr"></div>
 
         <!-- Grid -->
@@ -592,13 +537,13 @@
                         <div class="spacer"></div>
                         <a id="dlImg" class="btn" download>Download image</a>
                         <button id="dlVideo" class="btn" title="Download current carousel as MP4">Download MP4</button>
-                        <div id="dlVideoNote" class="muted" aria-live="polite" style="margin-top:6px;font-size:0.95rem;"></div>
                         <div class="nav">
                             <button id="modalPrev" title="Previous in sequence">← Prev</button>
                             <button id="modalNext" title="Next in sequence">Next →</button>
                         </div>
                     </div>
                 </div>
+
                 <div class="modal-carousel" id="carousel"></div>
             </div>
         </div>
@@ -619,292 +564,275 @@
     </div>
 
     <script>
-                /* =========================
-                   Tiny DOM helpers & state
-                   ========================= */
-                const $ = sel => document.querySelector(sel);
-                const $$ = sel => Array.from(document.querySelectorAll(sel));
-                const num = (x, d = 0) => { const v = +x; return Number.isFinite(v) ? v : d };
+        /* =========================
+           Tiny DOM helpers & state
+           ========================= */
+        const $ = sel => document.querySelector(sel);
+        const $$ = sel => Array.from(document.querySelectorAll(sel));
+        const num = (x, d = 0) => { const v = +x; return Number.isFinite(v) ? v : d };
 
-                let DATA = [];           // full dataset
-                let CURRENT = [];        // filtered/sorted items (objects)
-                let CURRENT_IDX = [];    // indices back into DATA
-                let groupMode = "video"; // default
-                let sortMode = "start_ts";
-                let sortAsc = false;   // newest first when sorting by time
-                let thumbMode = "object";
-                let svgStyle = "default";
-                let currentView = "all";
-                let MODAL = null;
-
-                /* =========================
-                   Pro gating & counters
-                   ========================= */
-                function isPro() { return localStorage.getItem('atlas_pro') === '1' || !!localStorage.getItem('atlas_pro_token'); }
-                function setPro() { localStorage.setItem('atlas_pro', '1'); updateBadges(); }
-                function getDL(kind) { return +(localStorage.getItem('dl_' + kind) || 0); }
-                function setDL(kind, val) { localStorage.setItem('dl_' + kind, String(Math.max(0, val | 0))); updateBadges(); }
-                // Allow 3 free image and 3 free svg downloads by default
-                const FREE_LIMIT = 3;
-                function allowDownload(kind) {
-                    if (isPro()) return true;
-                    const used = getDL(kind);
-                    if (used >= FREE_LIMIT) {
-                        showProModal();
-                        alert(`Free ${kind.toUpperCase()} downloads exhausted. Please upgrade to Pro.`);
-                        return false;
-                    }
-                    return true;
-                }
-                function recordDownload(kind) { if (!isPro()) setDL(kind, getDL(kind) + 1); }
-                function recordVideoDownload(kind) { if (!isPro()) setDL(kind, getDL(kind) + 2); }
-                function updateBadges() {
-                    $('#dlBadge').textContent = `img ${getDL('image')} / svg ${getDL('svg')}`;
-                    $('#proBadge').textContent = isPro() ? 'Pro' : 'Free';
-                }
-
-                /* =========================
-                   Monetization wiring
-                   ========================= */
-                function showProModal() { $('#proModal').style.display = 'block'; renderPayPalUpgradeButton(); }
-                function hideProModal() { $('#proModal').style.display = 'none'; }
-
-                (function initDonationLinks() {
-                    const venmo = "https://venmo.com/code?user_id=3930194146494448567&created=1756688818.684348&printed=1";
-                    $('#donateBtn').href = venmo;
-                    const goD = $('#goDonate'); if (goD) goD.href = venmo;
-                })();
-
-                function renderPayPalUpgradeButton() {
-                    if (!window.paypal || !document.getElementById('paypal-upgrade')) return;
-                    if (document.getElementById('paypal-upgrade').dataset.rendered === '1') return;
-                    const PRICE = 1.99;
-                    paypal.Buttons({
-                        style: { layout: 'horizontal', color: 'gold', shape: 'pill', label: 'pay' },
-                        createOrder: (data, actions) => actions.order.create({
-                            purchase_units: [{ amount: { value: PRICE.toFixed(2), currency_code: 'USD' } }]
-                        }),
-                        onApprove: async (data, actions) => {
-                            try {
-                                const orderID = data.orderID;
-                                const res = await fetch('/.netlify/functions/verify-paypal', {
-                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ orderID })
-                                });
-                                if (!res.ok) { const t = await res.text().catch(() => ''); alert('Payment verification failed.\\n' + t); return; }
-                                const json = await res.json();
-                                if (!json || !json.token) { alert('No token returned from server.'); return; }
-                                localStorage.setItem('atlas_pro_token', json.token);
-                                localStorage.setItem('atlas_pro', '1');
-                                alert('Thanks! Pro is now unlocked on this browser.');
-                                hideProModal(); updateBadges();
-                            } catch (e) { console.error(e); alert('Unexpected error verifying payment.'); }
-                        },
-                        onError: (err) => { console.error('PayPal error:', err); alert('PayPal error. Please try again.'); }
-                    }).render('#paypal-upgrade');
-                    document.getElementById('paypal-upgrade').dataset.rendered = '1';
-                }
-
-                /* =========================
-                   CSV loading & normalize
-                   ========================= */
-                function loadCSV() {
-                    return new Promise((resolve, reject) => {
-                        Papa.parse('atlas.csv', {
-                            download: true, header: true, dynamicTyping: false, skipEmptyLines: true,
-                            complete: (res) => {
-                                try {
-                                    const rows = res.data || [];
-                                    DATA = rows.map((r, i) => normalizeRow(r, i));
-                                    resolve(DATA);
-                                } catch (e) { reject(e); }
-                            },
-                            error: reject
-                        });
-                    });
-                }
-
-                function normalizeRow(r, i) {
-                    // Expected fields (best-effort; tolerate missing)
-                    const thumb = (r.thumb || '').trim();
-                    const thumbObj = (r.thumb_obj || r.thumb_obj_file || '').trim();
-                    const svg = (r.svg || r.svg_file || '').trim();
-                    const vf = (r.video_file || r.source || r.video || '').trim();
-
-                    const start = num(r.start_ts, num(r.ts_start, NaN));
-                    const end = num(r.end_ts, num(r.ts_end, NaN));
-
-                    const h = num(r.h_norm, num(r.h, NaN));
-                    const s = num(r.s_norm, num(r.s, NaN));
-                    const v = num(r.v_norm, num(r.v, NaN));
-                    const hex = (r.hex || r.color || '').replace('#', '').toLowerCase();
-
-                    const sharp = num(r.sharpness, NaN);
-                    const area = num(r.area_norm, NaN);
-                    const circ = num(r.circ, NaN);
-                    const hRange = num(r.h_range_deg, NaN);
-                    const shape = (r.shape || r.shape_class || 'other') || 'other';
-                    const motion = (r.motion || r.motion_class || 'unknown') || 'unknown';
-
-                    const id = (r.id || `${i}`).toString();
-
-                    return {
-                        _i: i, id, video_file: vf,
-                        thumb: thumb, thumb_obj: thumbObj, svg: svg,
-                        start_ts: start, end_ts: end,
-                        h_norm: h, s_norm: s, v_norm: v,
-                        hex,
-                        sharpness: sharp, area_norm: area, circ, h_range_deg: hRange,
-                        shape, motion,
-                        isDuplicate: false,
-                        hasWatermark: vf && vf.toLowerCase().includes('tiktok')
-                    };
-                }
-
-                /* =========================
-                   Hue & color helpers
-                   ========================= */
-                function hueOf(row) {
-                    const h = num(row.h_norm, NaN);
-                    if (Number.isFinite(h)) return ((h % 360) + 360) % 360;
-                    // Try hex fallback
-                    let hex = row.hex;
-                    if (!hex) return NaN;
-                    hex = String(hex).trim();
-                    if (hex[0] === '#') hex = hex.slice(1);
-                    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-                    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return NaN;
-                    const n = parseInt(hex, 16);
-                    const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
-                    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-                    if (d === 0) return NaN;
-                    let hdeg;
-                    if (max === r) hdeg = ((g - b) / d) * 60;
-                    else if (max === g) hdeg = (2 + (b - r) / d) * 60;
-                    else hdeg = (4 + (r - g) / d) * 60;
-                    if (hdeg < 0) hdeg += 360;
-                    return hdeg;
-                }
-
-                function colorGroup(it) {
-                    const h = hueOf(it), s = num(it.s_norm, 0), v = num(it.v_norm, 0);
-                    if (!Number.isFinite(h) || s < 0.1) return v > 0.8 ? "White" : (v < 0.2 ? "Black" : "Gray");
-                    if (h < 15 || h >= 345) return "Red"; if (h < 45) return "Orange"; if (h < 75) return "Yellow";
-                    if (h < 150) return "Green"; if (h < 210) return "Cyan"; if (h < 270) return "Blue";
-                    if (h < 300) return "Purple"; if (h < 345) return "Magenta"; return "Other";
-                }
-
-                /* =========================
-                   Dead space (black) detect
-                   ========================= */
-                function isBlackTile(it) {
-                    const s = num(it.s_norm, 0);
-                    const v = num(it.v_norm, 0);
-                    const h = it.h_norm;
-                    if ((!Number.isFinite(h) || s < 0.10) && v < 0.20) return true;
-                    if (it.hex === '000000') return true;
-                    return false;
-                }
-
-                /* =========================
-                   Dedupe by video clusters
-                   ========================= */
-                function dedupeByVideoClusters() {
-                    const byVid = {}; DATA.forEach((it, i) => { const v = it.video_file || "_"; (byVid[v] || (byVid[v] = [])).push(i); });
-                    for (const vid in byVid) {
-                        const idxs = byVid[vid].sort((a, b) => num(DATA[a].start_ts, 0) - num(DATA[b].start_ts, 0));
-                        let i = 0;
-                        while (i < idxs.length) {
-                            let rep = idxs[i], repSharp = num(DATA[rep].sharpness, 0), j = i + 1;
-                            while (j < idxs.length) {
-                                const A = idxs[i], B = idxs[j];
-                                if (Math.abs(num(DATA[B].start_ts, 0) - num(DATA[A].start_ts, 0)) <= 1.0) {
-                                    let dh = Math.abs(hueOf(DATA[B]) - hueOf(DATA[A])); dh = Math.min(dh, 360 - dh);
-                                    const same = (DATA[B].shape === DATA[A].shape);
-                                    if (dh < 15 && same) { const sB = num(DATA[B].sharpness, 0); if (sB > repSharp) { rep = idxs[j]; repSharp = sB; } j++; continue; }
-                                }
-                                break;
-                            }
-                            for (let k = i; k < j; k++) { const x = idxs[k]; DATA[x].isDuplicate = (x !== rep); }
-                            i = j;
-                        }
-                    }
-                }
-                function restoreCollapsedEnds() {
-                    if (!Array.isArray(DATA)) return;
-                    for (const it of DATA) {
-                        if (it && it._orig_end_ts != null) {
-                            it.end_ts = it._orig_end_ts;
-                            delete it._orig_end_ts;
-                        }
-                    }
-                }
+        let DATA = [];           // full dataset
+        let CURRENT = [];        // filtered/sorted items (objects)
+        let CURRENT_IDX = [];    // indices back into DATA
+        let groupMode = "video"; // default
+        let sortMode = "start_ts";
+        let sortAsc = false;     // newest first when sorting by time
+        let thumbMode = "object";
+        let svgStyle = "default";
+        let currentView = "all";
+        let MODAL = null;
 
         /* =========================
-Filtering & sorting
-========================= */
-        function applyFilters() {
-            // reset any stretched end_ts from a previous collapsed run
-            restoreCollapsedEnds();
+           Pro gating & counters
+           ========================= */
+        function isPro() { return localStorage.getItem('atlas_pro') === '1' || !!localStorage.getItem('atlas_pro_token'); }
+        function setPro() { localStorage.setItem('atlas_pro', '1'); updateBadges(); }
+        function getDL(kind) { return +(localStorage.getItem('dl_' + kind) || 0); }
+        function setDL(kind, val) { localStorage.setItem('dl_' + kind, String(Math.max(0, val | 0))); updateBadges(); }
+        // Allow 3 free image and 3 free svg downloads by default
+        const FREE_LIMIT = 3;
+        function allowDownload(kind) {
+            if (isPro()) return true;
+            const used = getDL(kind);
+            if (used >= FREE_LIMIT) {
+                showProModal();
+                alert(`Free ${kind.toUpperCase()} downloads exhausted. Please upgrade to Pro.`);
+                return false;
+            }
+            return true;
+        }
+        function recordDownload(kind) { if (!isPro()) setDL(kind, getDL(kind) + 1); }
+        function recordVideoDownload(kind) { if (!isPro()) setDL(kind, getDL(kind) + 2); }
+        function updateBadges() {
+            $('#dlBadge').textContent = `img ${getDL('image')} / svg ${getDL('svg')}`;
+            $('#proBadge').textContent = isPro() ? 'Pro' : 'Free';
+        }
 
-            // 1) start from full list
+        /* =========================
+           Monetization wiring
+           ========================= */
+        function showProModal() { $('#proModal').style.display = 'block'; renderPayPalUpgradeButton(); }
+        function hideProModal() { $('#proModal').style.display = 'none'; }
+
+        (function initDonationLinks() {
+            const venmo = "https://venmo.com/code?user_id=3930194146494448567&created=1756688818.684348&printed=1";
+            $('#donateBtn').href = venmo;
+            const goD = $('#goDonate'); if (goD) goD.href = venmo;
+        })();
+
+        function renderPayPalUpgradeButton() {
+            if (!window.paypal || !document.getElementById('paypal-upgrade')) return;
+            if (document.getElementById('paypal-upgrade').dataset.rendered === '1') return;
+            const PRICE = 1.99;
+            paypal.Buttons({
+                style: { layout: 'horizontal', color: 'gold', shape: 'pill', label: 'pay' },
+                createOrder: (data, actions) => actions.order.create({
+                    purchase_units: [{ amount: { value: PRICE.toFixed(2), currency_code: 'USD' } }]
+                }),
+                onApprove: async (data, actions) => {
+                    try {
+                        const orderID = data.orderID;
+                        const res = await fetch('/.netlify/functions/verify-paypal', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderID })
+                        });
+                        if (!res.ok) { const t = await res.text().catch(() => ''); alert('Payment verification failed.\\n' + t); return; }
+                        const json = await res.json();
+                        if (!json || !json.token) { alert('No token returned from server.'); return; }
+                        localStorage.setItem('atlas_pro_token', json.token);
+                        localStorage.setItem('atlas_pro', '1');
+                        alert('Thanks! Pro is now unlocked on this browser.');
+                        hideProModal(); updateBadges();
+                    } catch (e) { console.error(e); alert('Unexpected error verifying payment.'); }
+                },
+                onError: (err) => { console.error('PayPal error:', err); alert('PayPal error. Please try again.'); }
+            }).render('#paypal-upgrade');
+            document.getElementById('paypal-upgrade').dataset.rendered = '1';
+        }
+
+        /* =========================
+           CSV loading & normalize
+           ========================= */
+        function loadCSV() {
+            return new Promise((resolve, reject) => {
+                Papa.parse('atlas.csv', {
+                    download: true, header: true, dynamicTyping: false, skipEmptyLines: true,
+                    complete: (res) => {
+                        try {
+                            const rows = res.data || [];
+                            DATA = rows.map((r, i) => normalizeRow(r, i));
+                            resolve(DATA);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            });
+        }
+
+        function normalizeRow(r, i) {
+            // Expected fields (best-effort; tolerate missing)
+            const thumb = (r.thumb || '').trim();
+            const thumbObj = (r.thumb_obj || r.thumb_obj_file || '').trim();
+            const svg = (r.svg || r.svg_file || '').trim();
+            const vf = (r.video_file || r.source || r.video || '').trim();
+
+            const start = num(r.start_ts, num(r.ts_start, NaN));
+            const end = num(r.end_ts, num(r.ts_end, NaN));
+
+            const h = num(r.h_norm, num(r.h, NaN));
+            const s = num(r.s_norm, num(r.s, NaN));
+            const v = num(r.v_norm, num(r.v, NaN));
+            const hex = (r.hex || r.color || '').replace('#', '').toLowerCase();
+
+            const sharp = num(r.sharpness, NaN);
+            const area = num(r.area_norm, NaN);
+            const circ = num(r.circ, NaN);
+            const hRange = num(r.h_range_deg, NaN);
+            const shape = (r.shape || r.shape_class || 'other') || 'other';
+            const motion = (r.motion || r.motion_class || 'unknown') || 'unknown';
+
+            const id = (r.id || `${i}`).toString();
+
+            return {
+                _i: i, id, video_file: vf,
+                thumb: thumb, thumb_obj: thumbObj, svg: svg,
+                start_ts: start, end_ts: end,
+                h_norm: h, s_norm: s, v_norm: v,
+                hex,
+                sharpness: sharp, area_norm: area, circ, h_range_deg: hRange,
+                shape, motion,
+                isDuplicate: false,
+                hasWatermark: vf && vf.toLowerCase().includes('tiktok')
+            };
+        }
+
+        /* =========================
+           Hue & color helpers
+           ========================= */
+        function hueOf(row) {
+            const h = num(row.h_norm, NaN);
+            if (Number.isFinite(h)) return ((h % 360) + 360) % 360;
+            // Try hex fallback
+            let hex = row.hex;
+            if (!hex) return NaN;
+            hex = String(hex).trim();
+            if (hex[0] === '#') hex = hex.slice(1);
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            if (!/^[0-9a-fA-F]{6}$/.test(hex)) return NaN;
+            const n = parseInt(hex, 16);
+            const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+            if (d === 0) return NaN;
+            let hdeg;
+            if (max === r) hdeg = ((g - b) / d) * 60;
+            else if (max === g) hdeg = (2 + (b - r) / d) * 60;
+            else hdeg = (4 + (r - g) / d) * 60;
+            if (hdeg < 0) hdeg += 360;
+            return hdeg;
+        }
+
+        function colorGroup(it) {
+            const h = hueOf(it), s = num(it.s_norm, 0), v = num(it.v_norm, 0);
+            if (!Number.isFinite(h) || s < 0.1) return v > 0.8 ? "White" : (v < 0.2 ? "Black" : "Gray");
+            if (h < 15 || h >= 345) return "Red"; if (h < 45) return "Orange"; if (h < 75) return "Yellow";
+            if (h < 150) return "Green"; if (h < 210) return "Cyan"; if (h < 270) return "Blue";
+            if (h < 300) return "Purple"; if (h < 345) return "Magenta"; return "Other";
+        }
+
+        /* =========================
+           Dead space (black) detect
+           ========================= */
+        function isBlackTile(it) {
+            const s = num(it.s_norm, 0);
+            const v = num(it.v_norm, 0);
+            const h = it.h_norm;
+            if ((!Number.isFinite(h) || s < 0.10) && v < 0.20) return true;
+            if (it.hex === '000000') return true;
+            return false;
+        }
+
+        /* =========================
+           Dedupe by video clusters
+           ========================= */
+        function dedupeByVideoClusters() {
+            const byVid = {}; DATA.forEach((it, i) => { const v = it.video_file || "_"; (byVid[v] || (byVid[v] = [])).push(i); });
+            for (const vid in byVid) {
+                const idxs = byVid[vid].sort((a, b) => num(DATA[a].start_ts, 0) - num(DATA[b].start_ts, 0));
+                let i = 0;
+                while (i < idxs.length) {
+                    let rep = idxs[i], repSharp = num(DATA[rep].sharpness, 0), j = i + 1;
+                    while (j < idxs.length) {
+                        const A = idxs[i], B = idxs[j];
+                        if (Math.abs(num(DATA[B].start_ts, 0) - num(DATA[A].start_ts, 0)) <= 1.0) {
+                            let dh = Math.abs(hueOf(DATA[B]) - hueOf(DATA[A])); dh = Math.min(dh, 360 - dh);
+                            const same = (DATA[B].shape === DATA[A].shape);
+                            if (dh < 15 && same) { const sB = num(DATA[B].sharpness, 0); if (sB > repSharp) { rep = idxs[j]; repSharp = sB; } j++; continue; }
+                        }
+                        break;
+                    }
+                    for (let k = i; k < j; k++) { const x = idxs[k]; DATA[x].isDuplicate = (x !== rep); }
+                    i = j;
+                }
+            }
+        }
+
+        /* =========================
+           Filtering & sorting
+           ========================= */
+        function applyFilters() {
             let list = DATA.map((it, gi) => ({ it, gi }));
 
-            // 2) basic filters
             const imagesOnly = $('#imgOnly').checked;
             if (imagesOnly) {
-                list = list.filter(x =>
-                    (x.it.thumb_obj && String(x.it.thumb_obj).trim() !== "") ||
-                    (x.it.thumb && String(x.it.thumb).trim() !== "")
-                );
+                list = list.filter(x => (x.it.thumb_obj && String(x.it.thumb_obj).trim() !== "") || (x.it.thumb && String(x.it.thumb).trim() !== ""));
             }
 
             const q = $('#search').value.trim().toLowerCase();
             if (q) {
-                list = list.filter(({ it }) =>
-                    (it.video_file || '').toLowerCase().includes(q) ||
-                    (it.thumb || '').toLowerCase().includes(q) ||
-                    (it.thumb_obj || '').toLowerCase().includes(q) ||
-                    (it.svg || '').toLowerCase().includes(q) ||
-                    (it.hex || '').toLowerCase().includes(q)
-                );
+                list = list.filter(({ it }) => {
+                    return (it.video_file || '').toLowerCase().includes(q) ||
+                        (it.thumb || '').toLowerCase().includes(q) ||
+                        (it.thumb_obj || '').toLowerCase().includes(q) ||
+                        (it.svg || '').toLowerCase().includes(q) ||
+                        (it.hex || '').toLowerCase().includes(q);
+                });
             }
 
             if ($('#hideDup').checked) {
                 list = list.filter(({ it }) => !it.isDuplicate);
             }
 
-            // 3) advanced: hue range (supports inversion)
+            // Advanced: hue range
             const hmin = parseInt($("#hmin").value || "0", 10);
             const hmax = parseInt($("#hmax").value || "360", 10);
             $('#hbadge').textContent = `${hmin}°–${hmax}°`;
             list = list.filter(({ it }) => {
                 const h = hueOf(it);
-                if (!Number.isFinite(h)) return true; // keep undefined/gray/black
+                if (!Number.isFinite(h)) return true; // keep gray/black
                 return (hmin <= hmax) ? (h >= hmin && h <= hmax) : (h >= hmin || h <= hmax);
             });
 
-            // 4) advanced: motion tier
+            // Advanced: motion tier
             const tier = $("#motionTier").value;
             if (tier !== "any") {
                 list = list.filter(({ it }) => (it.motionTier || 'low') === tier);
             }
 
-            // 5) advanced: shapes
+            // Advanced: shapes
             const scb = [...document.querySelectorAll('#shapeBox input[type=checkbox]')];
             const enabledShapes = new Set(scb.filter(cb => cb.checked).map(cb => cb.dataset.shape));
             if (enabledShapes.size) {
                 list = list.filter(({ it }) => enabledShapes.has(it.shape || 'other'));
             }
 
-            // 6) advanced: color groups
+            // Advanced: color chips (optional)
             const chips = [...document.querySelectorAll('#colorChips .chip.sel')];
             const colorSel = new Set(chips.map(c => c.dataset.color));
             if (colorSel.size) {
                 list = list.filter(({ it }) => colorSel.has(colorGroup(it)));
             }
 
-            // 7) sort
+            // Sort
             const mode = sortMode;
             const asc = sortAsc ? 1 : -1;
             function orderKeyFor(it) {
@@ -939,1048 +867,716 @@ Filtering & sorting
             CURRENT = list.map(x => x.it);
             CURRENT_IDX = list.map(x => x.gi);
 
-            // 8) collapse dead space (merge contiguous black tiles per video)
             if ($('#collapseDS').checked) {
                 const outIt = [], outGi = [];
                 for (let i = 0; i < CURRENT.length; i++) {
                     const it = CURRENT[i];
                     const gi = CURRENT_IDX[i];
                     if (!isBlackTile(it)) { outIt.push(it); outGi.push(gi); continue; }
-
-                    let j = i, last = it;
+                    let j = i;
+                    let last = it;
                     while (j + 1 < CURRENT.length) {
                         const nextIt = CURRENT[j + 1];
                         if (!isBlackTile(nextIt)) break;
-                        if ((nextIt.video_file || '') !== (it.video_file || '')) break;
-                        j++; last = nextIt;
+                        if (nextIt.video_file !== it.video_file) break;
+                        j++;
+                        last = nextIt;
                     }
                     if (j > i) {
                         const origEnd = it._orig_end_ts ?? it.end_ts;
                         const lastEnd = last.end_ts;
                         if (it._orig_end_ts === undefined) it._orig_end_ts = origEnd;
-                        it.end_ts = lastEnd; // stretch the representative tile
+                        it.end_ts = lastEnd;
                     }
                     outIt.push(it); outGi.push(gi);
                     i = j;
                 }
-                CURRENT = outIt;
-                CURRENT_IDX = outGi;
+                CURRENT = outIt; CURRENT_IDX = outGi;
             }
         }
 
-    function updateNote() {
-    const view = (groupMode === 'video') ? 'Grouped by Source video' : (groupMode === 'none' ? 'All' : `Grouped by ${$('#groupSelect').selectedOptions[0].text}`);
-    $('#viewBadge').textContent = view;
-    $('#countBadge').textContent = String(CURRENT.length);
-    }
-
-    function renderActiveChips() {
-    const wrap = $('#activeChips'); if (!wrap) return;
-    const chips = [];
-
-    // Hue range
-    const hmin = parseInt($("#hmin").value || "0", 10);
-    const hmax = parseInt($("#hmax").value || "360", 10);
-    if (!(hmin === 3 && hmax === 360)) {
-    chips.push({ label: `Hue ${hmin}–${hmax}°`, action: 'clearHue' });
-    }
-
-    // Motion tier
-    const tier = ($("#motionTier") && $("#motionTier").value) || "any";
-    if (tier !== "any") {
-    chips.push({ label: `Motion: ${tier}`, action: 'clearMotion' });
-    }
-
-    // Colors (OR)
-    const selColors = [...document.querySelectorAll('#colorChips .chip.sel')].map(c => c.dataset.color);
-    if (selColors.length) {
-    chips.push({ label: `Colors: ${selColors.join(' ∨ ')}`, action: 'clearColors' });
-    }
-
-    // Shapes (partial selection)
-    const shapeCbs = [...document.querySelectorAll('#shapeBox input[type=checkbox]')];
-    const totalShapes = shapeCbs.length;
-    const enabledShapes = shapeCbs.filter(cb => cb.checked).length;
-    if (totalShapes > 0 && enabledShapes > 0 && enabledShapes < totalShapes) {
-    chips.push({ label: `Shapes: ${enabledShapes}/${totalShapes}`, action: 'selectAllShapes' });
-    }
-
-    // Search
-    const q = ($('#search') && $('#search').value || '').trim();
-    if (q) {
-    chips.push({ label: `Search: ${q}`, action: 'clearSearch' });
-    }
-
-    // Render
-    wrap.innerHTML = chips.map(x => `<span class="badge" data-action="${x.action}" title="Click to clear">${x.label} ✕</span>`).join(' ');
-    wrap.onclick = (e) => {
-    const b = e.target.closest('.badge'); if (!b) return;
-    const action = b.dataset.action;
-    switch (action) {
-    case 'clearHue':
-    $('#hmin').value = 3; $('#hmax').value = 360; updateHueRange(); break;
-    case 'clearMotion':
-    $('#motionTier').value = 'any'; break;
-    case 'clearColors':
-    $$('#colorChips .chip.sel').forEach(el => el.classList.remove('sel')); break;
-    case 'selectAllShapes':
-    document.querySelectorAll('#shapeBox input[type=checkbox]').forEach(cb => cb.checked = true); break;
-    case 'clearSearch':
-    $('#search').value = ''; break;
-    }
-    refresh();
-    };
-    }
-    function updateVideoButtonUI() {
-    const dlBtn = document.getElementById('dlVideo');
-    const noteEl = document.getElementById('dlVideoNote');
-    if (!dlBtn || !noteEl) return;
-
-    const seqLen = (window.MODAL && Array.isArray(MODAL.seq)) ? MODAL.seq.length : 0;
-    const collapseChecked = (document.getElementById('collapseDS')?.checked) ?? false;
-
-    // 1) Not enough frames → disable
-    if (seqLen < 2) {
-    dlBtn.disabled = true;
-    dlBtn.title = 'Need at least 2 frames to export a video';
-    noteEl.textContent = 'At least 2 frames required to export video.';
-    return;
-    }
-
-    // 2) Collapse dead space on → disable (video must reflect full timeline)
-    if (collapseChecked) {
-    dlBtn.disabled = true;
-    dlBtn.title = 'Uncheck "Collapse dead space" to export full timeline (includes black frames).';
-    noteEl.innerHTML = 'Uncheck <em>Collapse dead space</em> to export the full timeline (includes black frames).';
-    return;
-    }
-
-    // 3) Enabled with tooltip and notes
-    dlBtn.disabled = false;
-    dlBtn.title = 'Download current carousel as MP4 — exports full timeline (includes black frames).';
-
-    let html = 'Exports full timeline (includes black frames). Uses <strong>2</strong> downloads from your allowance.';
-
-    // Fidelity note: if user is in scene mode but object thumbs exist, mention the preference
-    const thumbMode = document.getElementById('thumbMode')?.value || 'object';
-    if (thumbMode === 'scene') {
-    const preferObj = (window.MODAL && Array.isArray(MODAL.seq))
-    ? MODAL.seq.some(idx => !!window.DATA?.[idx]?.thumb_obj)
-    : false;
-    if (preferObj) {
-    html += ' Export uses object thumbs when available for full fidelity.';
-    }
-    }
-
-    noteEl.innerHTML = html;
-    }
-
-
-    /* =========================
-    Streaming grid (infinite)
-    ========================= */
-
-    /* =========================
-    Thumb loading observer
-    ========================= */
-    let thumbIO = null;
-    function ensureThumbObserver() {
-    if (thumbIO) return thumbIO;
-    thumbIO = new IntersectionObserver((entries) => {
-    entries.forEach(async (entry) => {
-    if (!entry.isIntersecting) return;
-    const wrap = entry.target;
-    const card = wrap.closest('.card');
-    if (!card) { thumbIO.unobserve(wrap); return; }
-    const img = card.querySelector('img.thumb');
-    if (!img) { thumbIO.unobserve(wrap); return; }
-    card.dataset.loading = "1";
-    try {
-    // Prefer decode() if supported; otherwise resolve after load event fires
-    if (img.decode) {
-    await img.decode();
-    } else {
-    await new Promise((res) => img.complete ? res() : img.addEventListener('load', res, { once: true }));
-    }
-    } catch (e) {
-    // ignore decode failures; hide skeleton anyway
-    } finally {
-    delete card.dataset.loading;
-    thumbIO.unobserve(wrap);
-    }
-    });
-    }, { root: null, rootMargin: '200px 0px 200px 0px', threshold: 0 });
-    return thumbIO;
-    }
-    function observeNewCards(start = 0, end = null) {
-    const io = ensureThumbObserver();
-    const wraps = $('#grid').querySelectorAll('.card .imgwrap');
-    const list = Array.from(wraps).slice(start, end || wraps.length);
-    list.forEach(w => { try { io.observe(w); } catch (e) { } });
-    }
-    let STREAM = { i: 0, FIRST: 400, STEP: 600, observer: null };
-
-    function thumbUrlFor(it) {
-    if (thumbMode === 'object' && it.thumb_obj) return `thumbs_obj/${it.thumb_obj}`;
-    if (thumbMode === 'scene' && it.thumb) return `thumbs/${it.thumb}`;
-    return it.thumb_obj ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
-    }
-
-    function cardHTML(it, gi) {
-    const src = thumbUrlFor(it);
-    const st = num(it.start_ts, 0).toFixed(2), en = num(it.end_ts, st + 1 / 30).toFixed(2);
-    const hueLbl = Number.isFinite(hueOf(it)) ? `${hueOf(it).toFixed(1)}°` : '–';
-    const vf = it.video_file || '–';
-    return `
-    <div class="card" data-idx="${gi}" tabindex="0">
-        <div class="imgwrap"><img loading="lazy" decoding="async" class="thumb" src="${src}" alt=""></div>
-        <div class="actions">
-            <button class="btn-mini" data-action="open" title="Open">Open</button>
-            <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
-            ${thumbMode === 'object'
-            ? `<button class="btn-mini" data-action="svg" title="View SVG">SVG</button>`
-            : ``}
-        </div>
-        <div class="meta">
-            <div class="row">
-                <span class="pill mono">${vf}</span>
-                <span class="pill mono">${st}–${en}s</span>
-                <span class="pill mono">h=${hueLbl}</span>
-            </div>
-        </div>
-    </div>`;
-    }
-
-    function wireTileClicks(start, end) {
-    const cards = $('#grid').querySelectorAll('.card');
-    const slice = [...cards].slice(start, end);
-    slice.forEach(card => {
-    const idx = +card.dataset.idx;
-    card.addEventListener('click', e => {
-    const a = e.target && e.target.dataset && e.target.dataset.action;
-    if (a === 'sim' || a === 'svg' || a === 'open') return; // use buttons
-    openModalAtGlobalIndex(idx, false);
-    });
-    const btnOpen = card.querySelector('[data-action="open"]');
-    const btnSim = card.querySelector('[data-action="sim"]');
-    const btnSvg = card.querySelector('[data-action="svg"]');
-    btnOpen.addEventListener('click', (e) => { e.stopPropagation(); openModalAtGlobalIndex(idx, false); });
-    btnSim.addEventListener('click', (e) => { e.stopPropagation(); findSimilarByGlobalIndex(idx); });
-    btnSvg.addEventListener('click', (e) => { e.stopPropagation(); openModalAtGlobalIndex(idx, true); });
-    });
-    }
-
-    function appendChunk(n) {
-    const start = STREAM.i, end = Math.min(STREAM.i + n, CURRENT.length);
-    if (start >= end) return;
-
-    const frag = CURRENT.slice(start, end).map((it, localIdx) => {
-    const gi = CURRENT_IDX[start + localIdx];
-    return cardHTML(it, gi);
-    }).join('');
-
-    $('#grid').insertAdjacentHTML('beforeend', frag);
-    wireTileClicks(start, end);
-    observeNewCards(start, end);
-    STREAM.i = end;
-
-    $('#countBadge').textContent = String(CURRENT.length);
-    if (STREAM.i >= CURRENT.length && STREAM.observer) {
-    STREAM.observer.disconnect(); STREAM.observer = null;
-    }
-    }
-
-    function startStreaming() {
-    const g = $('#grid'); g.innerHTML = '';
-    STREAM.i = 0;
-    appendChunk(STREAM.FIRST);
-    if (STREAM.observer) STREAM.observer.disconnect();
-    STREAM.observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) appendChunk(STREAM.STEP); });
-    }, { root: null, rootMargin: '800px 0px 800px 0px', threshold: 0 });
-    STREAM.observer.observe($('#sentinel'));
-    updateNote();
-    const sEl = $('#status'); if (sEl) sEl.textContent = '';
-
-    renderActiveChips();
-    }
-
-    /* =========================
-    Grouped render
-    ========================= */
-    function groupAndRender(items) {
-    const keys = {}, order = [];
-    function add(key, item) { if (!keys[key]) { keys[key] = []; order.push(key); } keys[key].push(item); }
-
-    if (groupMode === "hue") {
-    items.forEach(it => { const h = hueOf(it); const bin = Number.isFinite(h) ? Math.floor(h / 15) : 24; add(`Hue ${bin * 15}–${(bin + 1) * 15}°`, it); });
-    } else if (groupMode === "brightness") {
-    items.forEach(it => { const v = num(it.v_norm, null); add((v === null) ? "Unknown" : (v < 0.33 ? "Dark" : (v < 0.66 ? "Medium" : "Bright")), it); });
-    } else if (groupMode === "saturation") {
-    items.forEach(it => { const s = num(it.s_norm, null); add((s === null) ? "Unknown" : (s < 0.3 ? "Low" : (s < 0.7 ? "Medium" : "High")), it); });
-    } else if (groupMode === "time") {
-    items.forEach(it => { const t = Math.floor(num(it.start_ts, 0) / 10) * 10; add(`${t}–${t + 10}s`, it); });
-    } else if (groupMode === "video") {
-    items.forEach(it => { const vid = it.video_file || "Unknown"; const base = vid.replace(/\.[^.]+$/, ""); add(base, it); });
-    }
-
-    const g = $('#grid'); g.innerHTML = ''; let total = 0;
-
-    if (groupMode === "video") {
-    order.sort((a, b) => {
-    const aMax = Math.max(...keys[a].map(x => num(x.start_ts, 0)));
-    const bMax = Math.max(...keys[b].map(x => num(x.start_ts, 0)));
-    return bMax - aMax; // newest video first
-    });
-    } else {
-    order.sort();
-    }
-
-    order.forEach(key => {
-    const h = document.createElement('div');
-    h.textContent = `${key} (${keys[key].length})`;
-    h.style.cssText = "grid-column:1 / -1;margin:8px 0;font-weight:700;color:#c9d3e5";
-    g.appendChild(h);
-    keys[key].forEach(it => {
-    const gi = DATA.indexOf(it);
-    g.insertAdjacentHTML('beforeend', cardHTML(it, gi));
-    total++;
-    });
-    });
-    observeNewCards(0, g.querySelectorAll('.card').length);
-    $('#countBadge').textContent = String(total);
-    currentView = "grouped";
-    updateNote();
-    const sEl = $('#status'); if (sEl) sEl.textContent = '';
-
-    renderActiveChips();
-    }
-
-    /* =========================
-    Similar
-    ========================= */
-    function findSimilarByGlobalIndex(gi) {
-    const tgt = DATA[gi];
-    const TH = hueOf(tgt);
-    const TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0);
-    const tShape = (tgt.shape || 'other');
-    const TA = num(tgt.area_norm, 0), TC = num(tgt.circ, 0);
-
-    const sims = [];
-    for (let i = 0; i < DATA.length; i++) {
-    if (i === gi) continue;
-    const it = DATA[i];
-    let d = 0;
-
-    const H = hueOf(it);
-    if (Number.isFinite(TH) && Number.isFinite(H)) {
-    let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180);
-    } else d += 1;
-
-    d += Math.abs(num(it.s_norm, 0) - TS);
-    d += Math.abs(num(it.v_norm, 0) - TV);
-    d += Math.abs(num(it.area_norm, 0) - TA);
-    d += Math.abs(num(it.circ, 0) - TC);
-    if (tShape !== 'other' && (it.shape || 'other') !== 'other' && it.shape !== tShape) d += 2;
-
-    sims.push({ i, d });
-    }
-    sims.sort((a, b) => a.d - b.d);
-    const top = sims.slice(0, 30).map(s => s.i);
-
-    CURRENT = [tgt, ...top.map(i => DATA[i])];
-    CURRENT_IDX = [gi, ...top];
-    currentView = "similar";
-    startStreaming();
-    }
-
-    /* =========================
-    Modal viewer & carousel
-    ========================= */
-    function seqIndicesForVideo(vf) {
-    const arr = [];
-    for (let i = 0; i < DATA.length; i++) {
-    const it = DATA[i];
-    if (it.video_file === vf) arr.push(i);
-    }
-    arr.sort((a, b) => num(DATA[a].start_ts, 0) - num(DATA[b].start_ts, 0));
-    return arr;
-    }
-
-    function openModalAtGlobalIndex(gi, svg = false) {
-    const it = DATA[gi];
-    const seq = seqIndicesForVideo(it.video_file);
-
-    // Respect collapse in modal sequence for browsing
-    let seqCollapsed = [];
-    if ($('#collapseDS').checked) {
-    for (let i = 0; i < seq.length; i++) {
-    const a = DATA[seq[i]];
-    if (!isBlackTile(a)) { seqCollapsed.push(seq[i]); continue; }
-    let j = i;
-    while (j + 1 < seq.length) {
-    const b = DATA[seq[j + 1]];
-    if (!isBlackTile(b) || b.video_file !== a.video_file) break;
-    j++;
-    }
-    seqCollapsed.push(seq[i]); i = j;
-    }
-    } else {
-    seqCollapsed = seq;
-    }
-
-    let pos = seqCollapsed.indexOf(gi);
-    if (pos < 0) pos = 0;
-
-    MODAL = { seq: seqCollapsed, pos, svg: !!svg };
-    $('#modal').style.display = 'block';
-    renderModal();
-    renderModalSequence();
-    }
-
-    function closeModal() {
-    $('#modal').style.display = 'none';
-    MODAL = null;
-    $('#viewer').innerHTML = '';
-    $('#carousel').innerHTML = '';
-    }
-
-    $('#modalClose').addEventListener('click', closeModal);
-    $('#modalPrev').addEventListener('click', () => { if (!MODAL) return; MODAL.pos = Math.max(0, MODAL.pos - 1); renderModal(); highlightCarousel(); });
-    $('#modalNext').addEventListener('click', () => { if (!MODAL) return; MODAL.pos = Math.min(MODAL.seq.length - 1, MODAL.pos + 1); renderModal(); highlightCarousel(); });
-    $('#modalSvgToggle').addEventListener('input', (e) => {
-    if (!MODAL) return;
-    MODAL.svg = !!e.target.checked;
-    renderModal();
-    renderModalSequence();
-    updateVideoButtonUI();   // <-- add this
-    });
-    const STYLE_ALIASES={
-    default: ["", "_outline" , "_smooth" , "_bezier" , "_skeleton" , "_rings" , "_hull" , "_edges" , "_ellipse" , "_contour" , "_convex" ],
-    outline: ["_outline", "_contour" ],
-    smooth: ["_smooth"],
-    bezier: ["_bezier"],
-    skeleton: ["_skeleton"],
-    rings: ["_rings"],
-    hull: ["_hull", "_convex" ],
-    edges: ["_edges"],
-    ellipse: ["_ellipse"]
-    };
-    function svgTriesFor(it) {
-    const paths=[];
-    const styles=STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
-    let base=null;
-    if (it.svg) base=it.svg.replace(/\.[^.]+$/, "" );
-    else if (it.thumb_obj) base=it.thumb_obj.replace(/_obj\.jpg$/i, "" );
-    else if (it.thumb) base=it.thumb.replace(/\.jpg$/i, "" );
-    for (const suf of styles) {
-    if (suf= = ="" ) { if (it.svg) paths.push(`svgs /${encodeURIComponent(it.svg)}`); }
-    else if (base) paths.push(`svgs /${encodeURIComponent(base + suf)}.svg`);
-    }
-    if (it.svg) paths.push(`svgs /${encodeURIComponent(it.svg)}`);
-    if (base) paths.push(`svgs /${encodeURIComponent(base)}.svg`);
-    return paths;
-    }
-    async function renderModal() {
-    if (!MODAL) return;
-    const gi=MODAL.seq[MODAL.pos]; const it=DATA[gi];
-    $('#modalSeries').textContent=it.video_file || '–' ;
-    $('#modalPos').textContent=String(MODAL.pos + 1);
-    $('#modalLen').textContent=String(MODAL.seq.length);
-    const st=num(it.start_ts, 0).toFixed(2), en=num(it.end_ts, st + 1 / 30).toFixed(2);
-    $('#modalTime').textContent=`${st}–${en}s`;
-    const viewer=$('#viewer'); viewer.innerHTML='' ;
-    if (MODAL.svg) {
-    const tries=svgTriesFor(it);
-    let ok=false;
-    for (const url of tries) {
-    try {
-    const txt=await fetch(url).then(r=>
-    r.ok ? r.text() : Promise.reject());
-    const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(txt);
-    const img = new Image(); img.src = dataUrl; await img.decode();
-    viewer.appendChild(img); ok = true;
-    $('#dlImg').href = dataUrl;
-    $('#dlImg').download = (it.svg || 'image.svg');
-    $('#dlImg').onclick = (e) => { if (!allowDownload('svg')) e.preventDefault(); else recordDownload('svg'); };
-    break;
-    } catch (e) { }
-    }
-    if (!ok) {
-    const p = document.createElement('div'); p.className = 'small'; p.textContent = 'SVG missing for this frame.'; viewer.appendChild(p);
-    $('#dlImg').removeAttribute('href');
-    $('#dlImg').onclick = null;
-    }
-    $('#modalSvgToggle').checked = true;
-    } else {
-    const url = thumbUrlFor(it);
-    const img = new Image(); img.src = url;
-    viewer.appendChild(img);
-    const fname = (thumbMode === 'object' ? it.thumb_obj : it.thumb) || 'image.png';
-    $('#dlImg').href = url;
-    $('#dlImg').download = fname;
-    $('#dlImg').onclick = (e) => { if (!allowDownload('image')) e.preventDefault(); else recordDownload('image'); };
-    $('#modalSvgToggle').checked = false;
-    }
-
-    $('#modalMeta').innerHTML =
-    `<div><strong>${it.video_file || ''}</strong></div>` +
-    `<div>t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>` +
-    `<div>HSV: h=${Number.isFinite(num(it.h_norm, NaN)) ? num(it.h_norm).toFixed(2) : '–'} s=${num(it.s_norm, 0).toFixed(2)} v=${num(it.v_norm, 0).toFixed(2)}</div>`;
-    updateVideoButtonUI();
-    }
-
-    function renderModalSequence() {
-    if (!MODAL) return;
-    const car = $('#carousel'); car.innerHTML = '';
-    const frag = document.createDocumentFragment();
-    for (let i = 0; i < MODAL.seq.length; i++) {
-    const gi = MODAL.seq[i]; const it = DATA[gi];
-    const url = thumbUrlFor(it);
-    const img = document.createElement('img');
-    img.className = 'carousel-thumb';
-    img.src = url;
-    img.title = `${num(it.start_ts, 0).toFixed(2)}–${num(it.end_ts).toFixed(2)}s`;
-    img.addEventListener('click', () => { MODAL.pos = i; renderModal(); highlightCarousel(); });
-    frag.appendChild(img);
-    }
-    car.appendChild(frag);
-    highlightCarousel();
-    }
-
-    function highlightCarousel() {
-    if (!MODAL) return;
-    const thumbs = $$('#carousel img.carousel-thumb');
-    thumbs.forEach((el, i) => el.classList.toggle('selected', i === MODAL.pos));
-    }
-
-    /* =========================
-    Video download (MP4)
-    ========================= */
-    let _ffmpeg = null, _ffmpegLoading = null;
-    async function loadFFmpeg() {
-    if (_ffmpeg) return _ffmpeg;
-    if (_ffmpegLoading) return _ffmpegLoading;
-    _ffmpegLoading = new Promise((resolve, reject) => {
-    if (window.FFmpeg) {
-    const ff = window.FFmpeg.createFFmpeg({ log: false });
-    ff.load().then(() => { _ffmpeg = ff; resolve(ff) }).catch(reject);
-    } else {
-    const s = document.createElement('script');
-    s.src = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js";
-    s.onload = () => { try { const ff = window.FFmpeg.createFFmpeg({ log: false }); ff.load().then(() => { _ffmpeg = ff; resolve(ff) }).catch(reject); } catch (e) { reject(e) } };
-    s.onerror = reject;
-    document.head.appendChild(s);
-    }
-    });
-    return _ffmpegLoading;
-    }
-
-    function tileDurationMs(row) {
-    const st = num(row.start_ts, null), et = num(row.end_ts, null);
-    if (st !== null && et !== null && et > st) return Math.round((et - st) * 1000);
-    return 33; // ~30fps
-    }
-
-    function loadImageOnce(url) {
-    return new Promise((res, rej) => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
-    img.onload = () => res(img); img.onerror = rej; img.src = url;
-    });
-    }
-    async function rasterizeSvgToImage(it) {
-    const tries = svgTriesFor(it);
-    for (const url of tries) {
-    try {
-    const text = await fetch(url).then(r => r.ok ? r.text() : Promise.reject());
-    const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(text);
-    const img = await loadImageOnce(data);
-    return img;
-    } catch (e) { }
-    }
-    throw new Error('Missing SVG for one or more frames.');
-    }
-
-    async function buildFramesForCurrentSequence() {
-    if (!MODAL || !Array.isArray(MODAL.seq) || MODAL.seq.length === 0) {
-    throw new Error('No sequence frames.');
-    }
-
-    const useSvg    = !!MODAL.svg;
-    const preferObj = !useSvg; // when not in SVG view, prefer object thumbs for fidelity
-    const seq       = MODAL.seq.map(gi => DATA[gi]);
-
-    const frames = [];
-    for (let i = 0; i < seq.length; i++) {
-    const it = seq[i];
-    let img;
-
-    if (useSvg) {
-    // SVG mode → rasterize best matching style
-    img = await rasterizeSvgToImage(it);
-    } else {
-    // Prefer object → scene → (fallback) object again → synthetic black
-    let src = null;
-    if (preferObj && it.thumb_obj) src = `thumbs_obj/${it.thumb_obj}`;
-    else if (it.thumb)             src = `thumbs/${it.thumb}`;
-    else if (it.thumb_obj)         src = `thumbs_obj/${it.thumb_obj}`;
-
-    if (!src) {
-    // Very rare: neither object nor scene exists — synthesize a black tile
-    const c = document.createElement('canvas'); c.width = c.height = 512;
-    const ctx = c.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 512, 512);
-    img = await loadImageOnce(c.toDataURL('image/png'));
-    } else {
-    img = await loadImageOnce(src);
-    }
-    }
-
-    // Duration: next start − current start; final frame falls back to end_ts or 1/30s
-    const curStart  = num(it.start_ts, 0);
-    const nextStart = (i < seq.length - 1) ? num(seq[i + 1].start_ts, NaN) : NaN;
-    let dt = Number.isFinite(nextStart)
-    ? (nextStart - curStart)
-    : (num(it.end_ts, curStart + 1 / 30) - curStart);
-
-    if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 30;
-    const repeats = Math.max(1, Math.round(dt * 30)); // 30 fps
-
-    frames.push({ img, repeats });
-    }
-    return frames;
-    }
-
-    async function encodeMp4FromFrames(frames) {
-    const ffmpeg = await loadFFmpeg();
-
-    // Draw frames into a square canvas and write PNGs into the FFmpeg FS
-    const canvas = document.createElement('canvas');
-    const VIDEO_SIDE = 512;
-    canvas.width = VIDEO_SIDE; canvas.height = VIDEO_SIDE;
-    const ctx = canvas.getContext('2d');
-
-    let idx = 0;
-    for (const { img, repeats } of frames) {
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIDEO_SIDE, VIDEO_SIDE);
-    const scale = Math.min(VIDEO_SIDE / img.width, VIDEO_SIDE / img.height);
-    const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-    const x = Math.floor((VIDEO_SIDE - w) / 2), y = Math.floor((VIDEO_SIDE - h) / 2);
-    ctx.drawImage(img, x, y, w, h);
-
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-    const buf  = new Uint8Array(await blob.arrayBuffer());
-
-    for (let r = 0; r < repeats; r++) {
-    const name = `f${String(++idx).padStart(5, '0')}.png`;
-    ffmpeg.FS('writeFile', name, buf);
-    }
-    }
-
-    // Encode to H.264 MP4 @30fps, web‑compatible pixel format
-    const out = 'out.mp4';
-    await ffmpeg.run(
-    '-framerate', '30',
-    '-i', 'f%05d.png',
-    '-c:v', 'libx264',
-    '-pix_fmt', 'yuv420p',
-    '-movflags', '+faststart',
-    out
-    );
-
-    const outData = ffmpeg.FS('readFile', out);
-
-    // Clean up input PNGs (keeps memory use down)
-    try {
-    ffmpeg.FS('readdir', '/')
-    .filter(n => /^f\d{5}\.png$/i.test(n))
-    .forEach(n => { try { ffmpeg.FS('unlink', n); } catch {} });
-    } catch {}
-
-    // Remove the output handle from FS
-    try { ffmpeg.FS('unlink', out); } catch {}
-
-    // Important: slice to the exact view over the underlying buffer
-    const bytes = outData.buffer.slice(outData.byteOffset, outData.byteOffset + outData.byteLength);
-    return new Blob([bytes], { type: 'video/mp4' });
-    }
-
-    // Encode to H.264 MP4 @30fps, web‑compatible pixel format
-    const out = 'out.mp4';
-    await ffmpeg.run(
-    '-framerate', '30',
-    '-i', 'f%05d.png',
-    '-c:v', 'libx264',
-    '-pix_fmt', 'yuv420p',
-    '-movflags', '+faststart',
-    out
-    );
-
-    const data = ffmpeg.FS('readFile', out);
-
-    // NEW: clean up input PNGs
-    try {
-    ffmpeg.FS('readdir', '/')
-    .filter(n => /^f\d{5}\.png$/i.test(n))
-    .forEach(n => { try { ffmpeg.FS('unlink', n); } catch {} });
-    } catch {}
-
-    // Clean up output handle
-    try { ffmpeg.FS('unlink', out); } catch {}
-
-    return new Blob([data.buffer], { type: 'video/mp4' });
-    }
-
-
-    async function onDownloadVideoClick() {
-    try {
-    if (!MODAL) return;
-    if ($('#collapseDS').checked) {
-    alert('Video export requires full timeline. Please uncheck "Collapse dead space" and try again.');
-    return;
-    }
-    const useSvg = !!MODAL.svg;
-    const bucket = useSvg ? 'svg' : 'image';
-
-    // local note near the controls
-    const note = document.getElementById('dlVideoNote');
-
-    if (!isPro()) {
-    const used = getDL(bucket);
-    if ((used + 2) > FREE_LIMIT) {
-    showProModal();
-    alert(`That download exceeds your free ${bucket.toUpperCase()} allowance. Please upgrade to Pro.`);
-    return;
-    }
-    const ok = confirm(`This video will use 2 of your free ${bucket.toUpperCase()} downloads.\nYou have ${FREE_LIMIT - used} remaining.\nContinue?`);
-    if (!ok) return;
-    }
-
-    $('#status').textContent = 'Preparing video…';
-    if (note) note.textContent = 'Preparing video…';
-
-    const frames = await buildFramesForCurrentSequence();
-
-    $('#status').textContent = 'Encoding MP4… (this may take a bit)';
-    if (note) note.textContent = 'Encoding MP4… (this may take a bit)';
-
-    const blob = await encodeMp4FromFrames(frames);
-
-    const a = document.createElement('a');
-    a.download = 'carousel.mp4';
-    a.href = URL.createObjectURL(blob);
-    a.click();
-    URL.revokeObjectURL(a.href);
-
-    recordVideoDownload(bucket);
-
-    if (note) note.textContent = 'Saved as carousel.mp4';
-    if (!isPro()) {
-    if (confirm("Upgrade to Pro for unlimited downloads?")) {
-    showProModal();
-    } else if (confirm("Would you like to make a donation instead?")) {
-    const d = $('#donateBtn'); if (d) d.click();
-    }
-    }
-    } catch (e) {
-    console.error(e);
-    alert('Could not generate video. If this was SVG view, ensure all SVGs exist.');
-    } finally {
-    $('#status').textContent = '';
-    const note = document.getElementById('dlVideoNote');
-    if (note) setTimeout(() => { note.textContent = ''; }, 3000);
-    }
-    }
-
-    $('#dlVideo').addEventListener('click', onDownloadVideoClick);
-
-    // Keyboard: open focused/hovered card with Enter/Space
-    document.addEventListener('keydown', (e) => {
-    const tag = (e.target && e.target.tagName || '').toLowerCase();
-    if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-    const active = (document.activeElement && document.activeElement.closest && document.activeElement.closest('.card')) || document.querySelector('.card:hover');
-    if (active) {
-    e.preventDefault();
-    const idx = +active.dataset.idx;
-    if (Number.isFinite(idx)) openModalAtGlobalIndex(idx, false);
-    }
-    }
-    }, { capture: true });
-
-    /* =========================
-    Wire UI
-    ========================= */
-    $('#sizeRange').addEventListener('input', (e) => {
-    document.documentElement.style.setProperty('--thumb', e.target.value + 'px');
-    });
-    $('#groupSelect').addEventListener('input', (e) => { groupMode = e.target.value; refresh(); });
-    $('#thumbMode').addEventListener('input', (e) => {
-    thumbMode = e.target.value;
-    updateCollapseDSToggleState();
-    refresh();
-    updateVideoButtonUI();
-    });
-    $('#sortSelect').addEventListener('input', (e) => {
-    const v = e.target.value;
-    if ((v === 'hueRange_pro' || v === 'sharpArea_pro') && !isPro()) {
-    showProModal();
-    $('#sortSelect').value = sortMode;
-    return;
-    }
-    sortMode = v; refresh();
-    });
-    $('#sortDirBtn').addEventListener('click', () => {
-    sortAsc = !sortAsc; $('#sortDirBtn').textContent = sortAsc ? '↑' : '↓'; refresh();
-    });
-    ['imgOnly', 'hideDup', 'collapseDS'].forEach(id => {
-    document.getElementById('collapseDS')?.addEventListener('input', updateVideoButtonUI);
-    const el = $('#' + id); if (el) el.addEventListener('input', refresh);
-    });
-    $('#search').addEventListener('input', () => { refresh(); });
-    $('#svgStyle').addEventListener('input', () => { /* No immediate refresh needed */ });
-
-    const collapseCb = document.getElementById('collapseDS');
-    if (collapseCb) {
-    collapseCb.addEventListener('input', () => {
-    updateVideoButtonUI(); // keep button state/message correct
-    // If modal is open, rebuild its sequence according to the new collapse state
-    if (MODAL && Array.isArray(MODAL.seq) && MODAL.seq.length) {
-    const gi = MODAL.seq[MODAL.pos];  // current global index
-    openModalAtGlobalIndex(gi, !!MODAL.svg);
-    }
-    });
-    }
-
-    // Advanced filter events
-    function updateHueRange() {
-    const minVal = parseInt($("#hmin").value, 10), maxVal = parseInt($("#hmax").value, 10);
-    $('#hbadge').textContent = `${minVal}°–${maxVal}°`;
-    }
-    $('#hmin').addEventListener('input', () => {
-    const minVal = parseInt($('#hmin').value, 10), maxVal = parseInt($('#hmax').value, 10);
-    if (minVal > maxVal) $('#hmax').value = String(minVal);
-    updateHueRange(); refresh();
-    });
-    $('#hmax').addEventListener('input', () => {
-    const minVal = parseInt($('#hmin').value, 10), maxVal = parseInt($('#hmax').value, 10);
-    if (maxVal < minVal) $('#hmin').value = String(maxVal);
-    updateHueRange(); refresh();
-    });
-    $('#motionTier').addEventListener('input', refresh);
-
-    $('#resetBtn').addEventListener('click', () => {
-    $('#sizeRange').value = 240; document.documentElement.style.setProperty('--thumb', '240px');
-    $('#groupSelect').value = 'video'; groupMode = 'video';
-    if (!document.querySelector('#sortSelect option[value="start_ts"]')) {
-    $("#sortSelect").insertAdjacentHTML('beforeend', '<option value="start_ts">Start time</option>');
-    }
-    $('#sortSelect').value = 'start_ts'; sortMode = 'start_ts'; sortAsc = false; $('#sortDirBtn').textContent = '↓';
-    $('#thumbMode').value = 'object';
-    thumbMode = 'object';
-    updateCollapseDSToggleState();
-    $('#imgOnly').checked = true; $('#hideDup').checked = false;
-    $('#collapseDS').checked = false;
-    $('#search').value = '';
-    $('#hmin').value = 3; $('#hmax').value = 360; updateHueRange();
-
-    buildShapeCheckboxes();
-    buildColorChips();
-
-    refresh();
-    });
-
-    $('#upgradeBtn').addEventListener('click', () => showProModal());
-    $('#closePro').addEventListener('click', () => hideProModal());
-    $('#iPaid').addEventListener('click', () => { setPro(); hideProModal(); });
-
-    /* =========================
-    Visitors badge (optional)
-    ========================= */
-    (function visitors() {
-    function getOrSetUID() {
-    try { let id = localStorage.getItem('uap_uid'); if (!id) { id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2); localStorage.setItem('uap_uid', id); document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730); } return id; }
-    catch (e) { const m = document.cookie.match(/(?:^|;\s*)uap_uid=([^;]+)/); if (m) return m[1]; const id = Math.random().toString(36).slice(2); document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730); return id; }
-    }
-    async function postJSON(url, payload) { const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' }); if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); }
-    async function updateVisitorsBadge() {
-    const el = document.getElementById('visitorsBadge'); if (!el) return;
-    const uid = getOrSetUID(); const endpoints = ['/api/unique', '/.netlify/functions/unique'];
-    for (const url of endpoints) { try { const { total } = await postJSON(url, { visitorId: uid }); if (Number.isFinite(total)) { el.textContent = total + ' visitors'; return; } } catch (e) { } }
-    el.style.display = 'none';
-    }
-    updateVisitorsBadge();
-    })();
-
-    /* =========================
-    Shape checkboxes & color chips
-    ========================= */
-    function buildShapeCheckboxes() {
-    const box = $("#shapeBox"); if (!box) return; box.innerHTML = "";
-    const counts = new Map(); DATA.forEach(it => counts.set(it.shape, (counts.get(it.shape) || 0) + 1));
-    const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
-    const shapes = new Set(top.concat(["other"]));
-    shapes.forEach(sh => {
-    const id = "shape-" + sh.replace(/\s+/g, "_");
-    const cb = document.createElement("input");
-    cb.type = "checkbox"; cb.id = id; cb.checked = true; cb.dataset.shape = sh; cb.addEventListener("change", refresh);
-    const lbl = document.createElement("label");
-    lbl.htmlFor = id; lbl.style.marginRight = "10px";
-    lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" " + sh));
-    box.appendChild(lbl);
-    });
-    }
-    function buildColorChips() {
-    const wrap = $("#colorChips"); if (!wrap) return;
-    // preserve selections if any
-    const prev = new Set([...wrap.querySelectorAll('.chip.sel')].map(c => c.dataset.color));
-
-    wrap.innerHTML = "";
-    const colors = Array.from(new Set(DATA.map(colorGroup))).sort();
-
-    colors.forEach(c => {
-    const b = document.createElement("div");
-    b.className = "chip";
-    b.title = c;
-    b.dataset.color = c;
-    // visible fill for common names; for non-names this may be a color code
-    let bg = (c === "White" || c === "Gray" || c === "Black") ? c.toLowerCase() : c;
-    b.style.background = bg;
-    // ensure light chips show border
-    if (c === "White" || c === "Gray") {
-    b.style.border = "1px solid rgba(0,0,0,0.25)";
-    }
-
-    // accessibility
-    b.setAttribute("role", "button");
-    b.setAttribute("tabindex", "0");
-    b.setAttribute("aria-pressed", prev.has(c) ? "true" : "false");
-    if (prev.has(c)) b.classList.add("sel");
-
-    const toggle = () => {
-    b.classList.toggle("sel");
-    b.setAttribute("aria-pressed", b.classList.contains("sel") ? "true" : "false");
-    refresh();
-    };
-
-    b.addEventListener("click", toggle);
-    b.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" || ev.key === " ") {
-    ev.preventDefault();
-    toggle();
-    }
-    });
-
-    wrap.appendChild(b);
-    });
-    }
-
-    /* Collapse Dead Space: available in all modes (Object, Scene, SVG).
-    Visual-only: merges consecutive black tiles in grid & carousel.
-    Note: MP4 export requires this OFF to preserve full timeline. */
-    function updateCollapseDSToggleState() {
-    const cb = document.getElementById('collapseDS');
-    if (!cb) return;
-
-    const label = cb.closest('label') || cb.parentElement;
-
-    // Always available
-    cb.disabled = false;
-
-    // Clear any “dimmed” styling from prior versions
-    if (label) label.style.opacity = '';
-
-    // Unified helper text
-    const msg =
-    'Collapse consecutive black tiles into one visual placeholder (grid & carousel only). ' +
-    'Turn OFF to export video (includes black frames).';
-
-    cb.title = msg;
-    if (label) label.title = msg;
-    }
-
-
-    /* =========================
-    Refresh pipeline
-    ========================= */
-    function refresh() {
-    const sz = parseInt($("#sizeRange")?.value || "240", 10);
-    document.documentElement.style.setProperty("--thumb", (isFinite(sz) ? sz : 240) + "px");
-
-    thumbMode = $("#thumbMode").value;
-    svgStyle = $("#svgStyle").value;
-    groupMode = $("#groupSelect").value;
-
-    // P3: gate Collapse Dead Space based on current mode
-    updateCollapseDSToggleState();
-
-    // sortMode handled in change listener
-    applyFilters();
-    updateNote();
-    if (groupMode === "none") {
-    currentView = "all";
-    startStreaming();
-    } else {
-    groupAndRender(CURRENT);
-    }
-    }
-
-
-    /* =========================
-    Boot
-    ========================= */
-    (async function boot() {
-    try {
-    updateBadges();
-    // defaults
-    groupMode = 'video';
-    sortMode = 'start_ts';
-    sortAsc = false;
-    thumbMode = 'object';
-    $('#groupSelect').value = 'video';
-    if (!document.querySelector('#sortSelect option[value="start_ts"]')) {
-    $("#sortSelect").insertAdjacentHTML('beforeend', '<option value="start_ts">Start time</option>');
-    }
-    $('#sortSelect').value = 'start_ts';
-    $('#sortDirBtn').textContent = '↓';
-    $('#thumbMode').value = 'object';
-    thumbMode = 'object';
-
-    // Ensure collapse DS toggle reflects the initial mode
-    updateCollapseDSToggleState();
-
-    $('#hmin').value = 3; $('#hmax').value = 360; updateHueRange();
-
-    $('#status').textContent = 'Loading atlas…';
-    await loadCSV();
-
-    // annotate motion tiers roughly based on numeric motion or keywords
-    const mvals = DATA.map(it => num(it.motion, null)).filter(v => v !== null);
-    const pct = (values, p) => {
-    if (!values.length) return 0;
-    const a = [...values].sort((x, y) => x - y);
-    const i = Math.floor(p * (a.length - 1));
-    return a[i];
-    };
-    const t1 = pct(mvals, 0.33), t2 = pct(mvals, 0.66);
-    DATA.forEach(it => {
-    const mv = num(it.motion, null);
-    it.motionTier = (mv === null)
-    ? ((String(it.motion || '').toLowerCase().includes('fast')) ? 'high' : (String(it.motion || '').toLowerCase().includes('drift') ? 'med' : 'low'))
-    : (mv <= t1 ? 'low' : (mv <= t2 ? 'med' : 'high'));
-    });
-
-    dedupeByVideoClusters();
-    buildShapeCheckboxes();
-    buildColorChips();
-
-    $('#status').textContent = '';
-    refresh();
-
-    } catch (e) {
-    console.error(e);
-    $('#note').textContent = 'Failed to load atlas.csv';
-    }
-    })();
+        function updateNote() {
+            const view = (groupMode === 'video') ? 'Grouped by Source video' : (groupMode === 'none' ? 'All' : `Grouped by ${$('#groupSelect').selectedOptions[0].text}`);
+            $('#viewBadge').textContent = view;
+            $('#countBadge').textContent = String(CURRENT.length);
+        }
+
+        /* =========================
+           Streaming grid (infinite)
+           ========================= */
+        let STREAM = { i: 0, FIRST: 400, STEP: 600, observer: null };
+
+        function thumbUrlFor(it) {
+            if (thumbMode === 'object' && it.thumb_obj) return `thumbs_obj/${it.thumb_obj}`;
+            if (thumbMode === 'scene' && it.thumb) return `thumbs/${it.thumb}`;
+            return it.thumb_obj ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
+        }
+
+        function cardHTML(it, gi) {
+            const src = thumbUrlFor(it);
+            const st = num(it.start_ts, 0).toFixed(2), en = num(it.end_ts, st + 1 / 30).toFixed(2);
+            const hueLbl = Number.isFinite(hueOf(it)) ? `${hueOf(it).toFixed(1)}°` : '–';
+            const vf = it.video_file || '–';
+            return `
+              <div class="card" data-idx="${gi}">
+                <div class="imgwrap"><img loading="lazy" decoding="async" class="thumb" src="${src}" alt=""></div>
+                <div class="actions">
+                  <button class="btn-mini" data-action="open" title="Open">Open</button>
+                  <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
+                  ${thumbMode === 'object'
+                    ? `<button class="btn-mini" data-action="svg" title="View SVG">SVG</button>`
+                    : ``}
+                </div>
+                <div class="meta">
+                  <div class="row">
+                    <span class="pill mono">${vf}</span>
+                    <span class="pill mono">${st}–${en}s</span>
+                    <span class="pill mono">h=${hueLbl}</span>
+                  </div>
+                </div>
+              </div>`;
+        }
+
+        function wireTileClicks(start, end) {
+            const cards = $('#grid').querySelectorAll('.card');
+            const slice = [...cards].slice(start, end);
+            slice.forEach(card => {
+                const idx = +card.dataset.idx;
+                card.addEventListener('click', e => {
+                    const a = e.target && e.target.dataset && e.target.dataset.action;
+                    if (a === 'sim' || a === 'svg' || a === 'open') return; // use buttons
+                    openModalAtGlobalIndex(idx, false);
+                });
+                const btnOpen = card.querySelector('[data-action="open"]');
+                const btnSim = card.querySelector('[data-action="sim"]');
+                const btnSvg = card.querySelector('[data-action="svg"]');
+                if (btnOpen) btnOpen.addEventListener('click', (e) => { e.stopPropagation(); openModalAtGlobalIndex(idx, false); });
+                if (btnSim) btnSim.addEventListener('click', (e) => { e.stopPropagation(); findSimilarByGlobalIndex(idx); });
+                if (btnSvg) btnSvg.addEventListener('click', (e) => { e.stopPropagation(); openModalAtGlobalIndex(idx, true); });
+            });
+        }
+
+        function appendChunk(n) {
+            const start = STREAM.i, end = Math.min(STREAM.i + n, CURRENT.length);
+            if (start >= end) return;
+
+            const frag = CURRENT.slice(start, end).map((it, localIdx) => {
+                const gi = CURRENT_IDX[start + localIdx];
+                return cardHTML(it, gi);
+            }).join('');
+
+            $('#grid').insertAdjacentHTML('beforeend', frag);
+            wireTileClicks(start, end);
+            STREAM.i = end;
+
+            $('#countBadge').textContent = String(CURRENT.length);
+            if (STREAM.i >= CURRENT.length && STREAM.observer) {
+                STREAM.observer.disconnect(); STREAM.observer = null;
+            }
+        }
+
+        function startStreaming() {
+            const g = $('#grid'); g.innerHTML = '';
+            STREAM.i = 0;
+            appendChunk(STREAM.FIRST);
+            if (STREAM.observer) STREAM.observer.disconnect();
+            STREAM.observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => { if (e.isIntersecting) appendChunk(STREAM.STEP); });
+            }, { root: null, rootMargin: '800px 0px 800px 0px', threshold: 0 });
+            STREAM.observer.observe($('#sentinel'));
+            updateNote();
+            const sEl = $('#status'); if (sEl) sEl.textContent = '';
+        }
+
+        /* =========================
+           Grouped render
+           ========================= */
+        function groupAndRender(items) {
+            const keys = {}, order = [];
+            function add(key, item) { if (!keys[key]) { keys[key] = []; order.push(key); } keys[key].push(item); }
+
+            if (groupMode === "hue") {
+                items.forEach(it => { const h = hueOf(it); const bin = Number.isFinite(h) ? Math.floor(h / 15) : 24; add(`Hue ${bin * 15}–${(bin + 1) * 15}°`, it); });
+            } else if (groupMode === "brightness") {
+                items.forEach(it => { const v = num(it.v_norm, null); add((v === null) ? "Unknown" : (v < 0.33 ? "Dark" : (v < 0.66 ? "Medium" : "Bright")), it); });
+            } else if (groupMode === "saturation") {
+                items.forEach(it => { const s = num(it.s_norm, null); add((s === null) ? "Unknown" : (s < 0.3 ? "Low" : (s < 0.7 ? "Medium" : "High")), it); });
+            } else if (groupMode === "time") {
+                items.forEach(it => { const t = Math.floor(num(it.start_ts, 0) / 10) * 10; add(`${t}–${t + 10}s`, it); });
+            } else if (groupMode === "video") {
+                items.forEach(it => { const vid = it.video_file || "Unknown"; const base = vid.replace(/\.[^.]+$/, ""); add(base, it); });
+            }
+
+            const g = $('#grid'); g.innerHTML = ''; let total = 0;
+
+            if (groupMode === "video") {
+                order.sort((a, b) => {
+                    const aMax = Math.max(...keys[a].map(x => num(x.start_ts, 0)));
+                    const bMax = Math.max(...keys[b].map(x => num(x.start_ts, 0)));
+                    return bMax - aMax; // newest video first
+                });
+            } else {
+                order.sort();
+            }
+
+            order.forEach(key => {
+                const h = document.createElement('div');
+                h.textContent = `${key} (${keys[key].length})`;
+                h.style.cssText = "grid-column:1 / -1;margin:8px 0;font-weight:700;color:#c9d3e5";
+                g.appendChild(h);
+                keys[key].forEach(it => {
+                    const gi = DATA.indexOf(it);
+                    g.insertAdjacentHTML('beforeend', cardHTML(it, gi));
+                    total++;
+                });
+            });
+            wireTileClicks(0, g.querySelectorAll('.card').length);
+            $('#countBadge').textContent = String(total);
+            currentView = "grouped";
+            updateNote();
+            const sEl = $('#status'); if (sEl) sEl.textContent = '';
+        }
+
+        /* =========================
+           Similar
+           ========================= */
+        function findSimilarByGlobalIndex(gi) {
+            const tgt = DATA[gi];
+            const TH = hueOf(tgt);
+            const TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0);
+            const tShape = (tgt.shape || 'other');
+            const TA = num(tgt.area_norm, 0), TC = num(tgt.circ, 0);
+
+            const sims = [];
+            for (let i = 0; i < DATA.length; i++) {
+                if (i === gi) continue;
+                const it = DATA[i];
+                let d = 0;
+
+                const H = hueOf(it);
+                if (Number.isFinite(TH) && Number.isFinite(H)) {
+                    let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180);
+                } else d += 1;
+
+                d += Math.abs(num(it.s_norm, 0) - TS);
+                d += Math.abs(num(it.v_norm, 0) - TV);
+                d += Math.abs(num(it.area_norm, 0) - TA);
+                d += Math.abs(num(it.circ, 0) - TC);
+                if (tShape !== 'other' && (it.shape || 'other') !== 'other' && it.shape !== tShape) d += 2;
+
+                sims.push({ i, d });
+            }
+            sims.sort((a, b) => a.d - b.d);
+            const top = sims.slice(0, 30).map(s => s.i);
+
+            CURRENT = [tgt, ...top.map(i => DATA[i])];
+            CURRENT_IDX = [gi, ...top];
+            currentView = "similar";
+            startStreaming();
+        }
+
+        /* =========================
+           Modal viewer & carousel
+           ========================= */
+        function seqIndicesForVideo(vf) {
+            const arr = [];
+            for (let i = 0; i < DATA.length; i++) {
+                const it = DATA[i];
+                if (it.video_file === vf) arr.push(i);
+            }
+            arr.sort((a, b) => num(DATA[a].start_ts, 0) - num(DATA[b].start_ts, 0));
+            return arr;
+        }
+
+        function openModalAtGlobalIndex(gi, svg = false) {
+            const it = DATA[gi];
+            const seq = seqIndicesForVideo(it.video_file);
+
+            // Respect collapse in modal sequence for browsing
+            let seqCollapsed = [];
+            if ($('#collapseDS').checked) {
+                for (let i = 0; i < seq.length; i++) {
+                    const a = DATA[seq[i]];
+                    if (!isBlackTile(a)) { seqCollapsed.push(seq[i]); continue; }
+                    let j = i;
+                    while (j + 1 < seq.length) {
+                        const b = DATA[seq[j + 1]];
+                        if (!isBlackTile(b) || b.video_file !== a.video_file) break;
+                        j++;
+                    }
+                    seqCollapsed.push(seq[i]); i = j;
+                }
+            } else {
+                seqCollapsed = seq;
+            }
+
+            let pos = seqCollapsed.indexOf(gi);
+            if (pos < 0) pos = 0;
+
+            MODAL = { seq: seqCollapsed, pos, svg: !!svg };
+            $('#modal').style.display = 'block';
+            renderModal();
+            renderModalSequence();
+        }
+
+        function closeModal() {
+            $('#modal').style.display = 'none';
+            MODAL = null;
+            $('#viewer').innerHTML = '';
+            $('#carousel').innerHTML = '';
+        }
+
+        $('#modalClose').addEventListener('click', closeModal);
+        $('#modalPrev').addEventListener('click', () => { if (!MODAL) return; MODAL.pos = Math.max(0, MODAL.pos - 1); renderModal(); highlightCarousel(); });
+        $('#modalNext').addEventListener('click', () => { if (!MODAL) return; MODAL.pos = Math.min(MODAL.seq.length - 1, MODAL.pos + 1); renderModal(); highlightCarousel(); });
+        $('#modalSvgToggle').addEventListener('input', (e) => { if (!MODAL) return; MODAL.svg = !!e.target.checked; renderModal(); renderModalSequence(); });
+
+        const STYLE_ALIASES = {
+            default: ["", "_outline", "_smooth", "_bezier", "_skeleton", "_rings", "_hull", "_edges", "_ellipse", "_contour", "_convex"],
+            outline: ["_outline", "_contour"],
+            smooth: ["_smooth"],
+            bezier: ["_bezier"],
+            skeleton: ["_skeleton"],
+            rings: ["_rings"],
+            hull: ["_hull", "_convex"],
+            edges: ["_edges"],
+            ellipse: ["_ellipse"]
+        };
+
+        function svgTriesFor(it) {
+            const paths = [];
+            const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
+            let base = null;
+            if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
+            else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
+            else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
+            for (const suf of styles) {
+                if (suf === "") { if (it.svg) paths.push(`svgs/${encodeURIComponent(it.svg)}`); }
+                else if (base) paths.push(`svgs/${encodeURIComponent(base + suf)}.svg`);
+            }
+            if (it.svg) paths.push(`svgs/${encodeURIComponent(it.svg)}`);
+            if (base) paths.push(`svgs/${encodeURIComponent(base)}.svg`);
+            return paths;
+        }
+
+        async function renderModal() {
+            if (!MODAL) return;
+            const gi = MODAL.seq[MODAL.pos]; const it = DATA[gi];
+            $('#modalSeries').textContent = it.video_file || '–';
+            $('#modalPos').textContent = String(MODAL.pos + 1);
+            $('#modalLen').textContent = String(MODAL.seq.length);
+            const st = num(it.start_ts, 0).toFixed(2), en = num(it.end_ts, st + 1 / 30).toFixed(2);
+            $('#modalTime').textContent = `${st}–${en}s`;
+
+            const viewer = $('#viewer'); viewer.innerHTML = '';
+
+            if (MODAL.svg) {
+                const tries = svgTriesFor(it);
+                let ok = false;
+                for (const url of tries) {
+                    try {
+                        const txt = await fetch(url).then(r => r.ok ? r.text() : Promise.reject());
+                        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(txt);
+                        const img = new Image(); img.src = dataUrl; await img.decode();
+                        viewer.appendChild(img); ok = true;
+                        $('#dlImg').href = dataUrl;
+                        $('#dlImg').download = (it.svg || 'image.svg');
+                        $('#dlImg').onclick = (e) => { if (!allowDownload('svg')) e.preventDefault(); else recordDownload('svg'); };
+                        break;
+                    } catch (e) { }
+                }
+                if (!ok) {
+                    const p = document.createElement('div'); p.className = 'small'; p.textContent = 'SVG missing for this frame.'; viewer.appendChild(p);
+                    $('#dlImg').removeAttribute('href');
+                    $('#dlImg').onclick = null;
+                }
+                $('#modalSvgToggle').checked = true;
+            } else {
+                const url = thumbUrlFor(it);
+                const img = new Image(); img.src = url;
+                viewer.appendChild(img);
+                const fname = (thumbMode === 'object' ? it.thumb_obj : it.thumb) || 'image.png';
+                $('#dlImg').href = url;
+                $('#dlImg').download = fname;
+                $('#dlImg').onclick = (e) => { if (!allowDownload('image')) e.preventDefault(); else recordDownload('image'); };
+                $('#modalSvgToggle').checked = false;
+            }
+
+            $('#modalMeta').innerHTML =
+                `<div><strong>${it.video_file || ''}</strong></div>` +
+                `<div>t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>` +
+                `<div>HSV: h=${Number.isFinite(num(it.h_norm, NaN)) ? num(it.h_norm).toFixed(2) : '–'} s=${num(it.s_norm, 0).toFixed(2)} v=${num(it.v_norm, 0).toFixed(2)}</div>`;
+        }
+
+        function renderModalSequence() {
+            if (!MODAL) return;
+            const car = $('#carousel'); car.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < MODAL.seq.length; i++) {
+                const gi = MODAL.seq[i]; const it = DATA[gi];
+                const url = thumbUrlFor(it);
+                const img = document.createElement('img');
+                img.className = 'carousel-thumb';
+                img.src = url;
+                img.title = `${num(it.start_ts, 0).toFixed(2)}–${num(it.end_ts).toFixed(2)}s`;
+                img.addEventListener('click', () => { MODAL.pos = i; renderModal(); highlightCarousel(); });
+                frag.appendChild(img);
+            }
+            car.appendChild(frag);
+            highlightCarousel();
+        }
+
+        function highlightCarousel() {
+            if (!MODAL) return;
+            const thumbs = $$('#carousel img.carousel-thumb');
+            thumbs.forEach((el, i) => el.classList.toggle('selected', i === MODAL.pos));
+        }
+
+        /* =========================
+           Video download (MP4)
+           ========================= */
+        let _ffmpeg = null, _ffmpegLoading = null;
+        async function loadFFmpeg() {
+            if (_ffmpeg) return _ffmpeg;
+            if (_ffmpegLoading) return _ffmpegLoading;
+            _ffmpegLoading = new Promise((resolve, reject) => {
+                if (window.FFmpeg) {
+                    const ff = window.FFmpeg.createFFmpeg({ log: false });
+                    ff.load().then(() => { _ffmpeg = ff; resolve(ff) }).catch(reject);
+                } else {
+                    const s = document.createElement('script');
+                    s.src = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js";
+                    s.onload = () => { try { const ff = window.FFmpeg.createFFmpeg({ log: false }); ff.load().then(() => { _ffmpeg = ff; resolve(ff) }).catch(reject); } catch (e) { reject(e) } };
+                    s.onerror = reject;
+                    document.head.appendChild(s);
+                }
+            });
+            return _ffmpegLoading;
+        }
+
+        function tileDurationMs(row) {
+            const st = num(row.start_ts, null), et = num(row.end_ts, null);
+            if (st !== null && et !== null && et > st) return Math.round((et - st) * 1000);
+            return 33; // ~30fps
+        }
+
+        function loadImageOnce(url) {
+            return new Promise((res, rej) => {
+                const img = new Image(); img.crossOrigin = 'anonymous';
+                img.onload = () => res(img); img.onerror = rej; img.src = url;
+            });
+        }
+        async function rasterizeSvgToImage(it) {
+            const tries = svgTriesFor(it);
+            for (const url of tries) {
+                try {
+                    const text = await fetch(url).then(r => r.ok ? r.text() : Promise.reject());
+                    const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(text);
+                    const img = await loadImageOnce(data);
+                    return img;
+                } catch (e) { }
+            }
+            throw new Error('Missing SVG for one or more frames.');
+        }
+
+        async function buildFramesForCurrentSequence() {
+            if (!MODAL || !Array.isArray(MODAL.seq) || MODAL.seq.length === 0) throw new Error('No sequence frames.');
+            const useSvg = !!MODAL.svg;
+            const preferObj = !useSvg && thumbMode === 'object';
+            const seq = MODAL.seq.map(gi => DATA[gi]);
+
+            const frames = [];
+            for (let i = 0; i < seq.length; i++) {
+                const it = seq[i];
+                let img;
+                if (useSvg) {
+                    img = await rasterizeSvgToImage(it);
+                } else {
+                    let src = null;
+                    if (preferObj && it.thumb_obj) src = `thumbs_obj/${it.thumb_obj}`;
+                    else if (it.thumb) src = `thumbs/${it.thumb}`;
+                    else if (it.thumb_obj) src = `thumbs_obj/${it.thumb_obj}`;
+
+                    if (!src) {
+                        // Synthesize black frame
+                        const c = document.createElement('canvas'); c.width = c.height = 512;
+                        const ctx = c.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 512, 512);
+                        img = await loadImageOnce(c.toDataURL('image/png'));
+                    } else {
+                        img = await loadImageOnce(src);
+                    }
+                }
+                const curStart = num(it.start_ts, 0);
+                const nextStart = (i < seq.length - 1) ? num(seq[i + 1].start_ts, NaN) : NaN;
+                let dt = Number.isFinite(nextStart) ? (nextStart - curStart) : (num(it.end_ts, curStart + 1 / 30) - curStart);
+                if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 30;
+                const repeats = Math.max(1, Math.round(dt * 30));
+                frames.push({ img, repeats });
+            }
+            return frames;
+        }
+
+        async function encodeMp4FromFrames(frames) {
+            const ffmpeg = await loadFFmpeg();
+            const canvas = document.createElement('canvas');
+            const VIDEO_SIDE = 512;
+            canvas.width = VIDEO_SIDE; canvas.height = VIDEO_SIDE;
+            const ctx = canvas.getContext('2d');
+
+            let idx = 0;
+            for (const { img, repeats } of frames) {
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIDEO_SIDE, VIDEO_SIDE);
+                const scale = Math.min(VIDEO_SIDE / img.width, VIDEO_SIDE / img.height);
+                const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+                const x = Math.floor((VIDEO_SIDE - w) / 2), y = Math.floor((VIDEO_SIDE - h) / 2);
+                ctx.drawImage(img, x, y, w, h);
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                const buf = new Uint8Array(await blob.arrayBuffer());
+                for (let r = 0; r < repeats; r++) {
+                    const name = `f${String(++idx).padStart(5, '0')}.png`;
+                    ffmpeg.FS('writeFile', name, buf);
+                }
+            }
+            const out = 'out.mp4';
+            await ffmpeg.run('-framerate', '30', '-i', 'f%05d.png', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out);
+            const data = ffmpeg.FS('readFile', out);
+
+            // Clean up
+            try {
+                ffmpeg.FS('readdir', '/')
+                    .filter(n => /^f\d{5}\.png$/i.test(n))
+                    .forEach(n => { try { ffmpeg.FS('unlink', n); } catch { } });
+                ffmpeg.FS('unlink', out);
+            } catch { }
+
+            const bytes = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+            return new Blob([bytes], { type: 'video/mp4' });
+        }
+
+        async function onDownloadVideoClick() {
+            try {
+                if (!MODAL) return;
+                if ($('#collapseDS').checked) {
+                    alert('Video export requires full timeline. Please uncheck "Collapse dead space" and try again.');
+                    return;
+                }
+                const useSvg = !!MODAL.svg;
+                const bucket = useSvg ? 'svg' : 'image';
+                if (!isPro()) {
+                    const used = getDL(bucket);
+                    if ((used + 2) > FREE_LIMIT) {
+                        showProModal();
+                        alert(`That download exceeds your free ${bucket.toUpperCase()} allowance. Please upgrade to Pro.`);
+                        return;
+                    }
+                    const ok = confirm(`This video will use 2 of your free ${bucket.toUpperCase()} downloads.\nYou have ${FREE_LIMIT - used} remaining.\nContinue?`);
+                    if (!ok) return;
+                }
+                $('#status').textContent = 'Preparing video…';
+                const frames = await buildFramesForCurrentSequence();
+                $('#status').textContent = 'Encoding MP4… (this may take a bit)';
+                const blob = await encodeMp4FromFrames(frames);
+
+                const a = document.createElement('a');
+                a.download = 'carousel.mp4';
+                a.href = URL.createObjectURL(blob);
+                a.click();
+                URL.revokeObjectURL(a.href);
+
+                recordVideoDownload(bucket);
+
+                if (!isPro()) {
+                    if (confirm("Upgrade to Pro for unlimited downloads?")) {
+                        showProModal();
+                    } else if (confirm("Would you like to make a donation instead?")) {
+                        const d = $('#donateBtn'); if (d) d.click();
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Could not generate video. If this was SVG view, ensure all SVGs exist.');
+            } finally {
+                $('#status').textContent = '';
+            }
+        }
+        $('#dlVideo').addEventListener('click', onDownloadVideoClick);
+
+        /* =========================
+           Wire UI
+           ========================= */
+        $('#sizeRange').addEventListener('input', (e) => {
+            document.documentElement.style.setProperty('--thumb', e.target.value + 'px');
+        });
+        $('#groupSelect').addEventListener('input', (e) => { groupMode = e.target.value; refresh(); });
+        $('#thumbMode').addEventListener('input', (e) => { thumbMode = e.target.value; refresh(); });
+        $('#sortSelect').addEventListener('input', (e) => {
+            const v = e.target.value;
+            if ((v === 'hueRange_pro' || v === 'sharpArea_pro') && !isPro()) {
+                showProModal();
+                $('#sortSelect').value = sortMode;
+                return;
+            }
+            sortMode = v; refresh();
+        });
+        $('#sortDirBtn').addEventListener('click', () => {
+            sortAsc = !sortAsc; $('#sortDirBtn').textContent = sortAsc ? '↑' : '↓'; refresh();
+        });
+        ['imgOnly', 'hideDup', 'collapseDS'].forEach(id => {
+            const el = $('#' + id); if (el) el.addEventListener('input', refresh);
+        });
+        $('#search').addEventListener('input', () => { refresh(); });
+        $('#svgStyle').addEventListener('input', () => { svgStyle = $('#svgStyle').value; });
+
+        // Advanced filter events
+        function updateHueRange() {
+            const minVal = parseInt($("#hmin").value, 10), maxVal = parseInt($("#hmax").value, 10);
+            $('#hbadge').textContent = `${minVal}°–${maxVal}°`;
+        }
+        $('#hmin').addEventListener('input', () => {
+            const minVal = parseInt($('#hmin').value, 10), maxVal = parseInt($('#hmax').value, 10);
+            if (minVal > maxVal) $('#hmax').value = String(minVal);
+            updateHueRange(); refresh();
+        });
+        $('#hmax').addEventListener('input', () => {
+            const minVal = parseInt($('#hmin').value, 10), maxVal = parseInt($('#hmax').value, 10);
+            if (maxVal < minVal) $('#hmin').value = String(maxVal);
+            updateHueRange(); refresh();
+        });
+        $('#motionTier').addEventListener('input', refresh);
+
+        $('#resetBtn').addEventListener('click', () => {
+            $('#sizeRange').value = 240; document.documentElement.style.setProperty('--thumb', '240px');
+            $('#groupSelect').value = 'video'; groupMode = 'video';
+            if (!document.querySelector('#sortSelect option[value="start_ts"]')) {
+                $("#sortSelect").insertAdjacentHTML('beforeend', '<option value="start_ts">Start time</option>');
+            }
+            $('#sortSelect').value = 'start_ts'; sortMode = 'start_ts'; sortAsc = false; $('#sortDirBtn').textContent = '↓';
+            $('#thumbMode').value = 'object'; thumbMode = 'object';
+            $('#imgOnly').checked = true; $('#hideDup').checked = false;
+            $('#collapseDS').checked = false;
+            $('#search').value = '';
+            $('#hmin').value = 3; $('#hmax').value = 360; updateHueRange();
+
+            buildShapeCheckboxes();
+            buildColorChips();
+
+            refresh();
+        });
+
+        $('#upgradeBtn').addEventListener('click', () => showProModal());
+        $('#closePro').addEventListener('click', () => hideProModal());
+        $('#iPaid').addEventListener('click', () => { setPro(); hideProModal(); });
+
+        /* =========================
+           Visitors badge (optional)
+           ========================= */
+        (function visitors() {
+            function getOrSetUID() {
+                try { let id = localStorage.getItem('uap_uid'); if (!id) { id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2); localStorage.setItem('uap_uid', id); document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730); } return id; }
+                catch (e) { const m = document.cookie.match(/(?:^|;\s*)uap_uid=([^;]+)/); if (m) return m[1]; const id = Math.random().toString(36).slice(2); document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730); return id; }
+            }
+            async function postJSON(url, payload) { const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' }); if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); }
+            async function updateVisitorsBadge() {
+                const el = document.getElementById('visitorsBadge'); if (!el) return;
+                const uid = getOrSetUID(); const endpoints = ['/api/unique', '/.netlify/functions/unique'];
+                for (const url of endpoints) { try { const { total } = await postJSON(url, { visitorId: uid }); if (Number.isFinite(total)) { el.textContent = total + ' visitors'; return; } } catch (e) { } }
+                el.style.display = 'none';
+            }
+            updateVisitorsBadge();
+        })();
+
+        /* =========================
+           Shape checkboxes & color chips
+           ========================= */
+        function buildShapeCheckboxes() {
+            const box = $("#shapeBox"); if (!box) return; box.innerHTML = "";
+            const counts = new Map(); DATA.forEach(it => counts.set(it.shape, (counts.get(it.shape) || 0) + 1));
+            const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
+            const shapes = new Set(top.concat(["other"]));
+            shapes.forEach(sh => {
+                const id = "shape-" + sh.replace(/\s+/g, "_");
+                const cb = document.createElement("input");
+                cb.type = "checkbox"; cb.id = id; cb.checked = true; cb.dataset.shape = sh; cb.addEventListener("change", refresh);
+                const lbl = document.createElement("label");
+                lbl.htmlFor = id; lbl.style.marginRight = "10px";
+                lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" " + sh));
+                box.appendChild(lbl);
+            });
+        }
+
+        function buildColorChips() {
+            const wrap = $("#colorChips"); if (!wrap) return; wrap.innerHTML = "";
+            const colors = new Set(DATA.map(colorGroup));
+            colors.forEach(c => {
+                const b = document.createElement("div");
+                b.className = "chip"; b.title = c; b.dataset.color = c;
+                b.style.background = (c === "White" || c === "Gray" || c === "Black") ? c.toLowerCase() : c;
+                b.addEventListener("click", () => { b.classList.toggle("sel"); refresh(); });
+                wrap.appendChild(b);
+            });
+        }
+
+        /* =========================
+           Refresh pipeline
+           ========================= */
+        function refresh() {
+            const sz = parseInt($("#sizeRange")?.value || "240", 10);
+            document.documentElement.style.setProperty("--thumb", (isFinite(sz) ? sz : 240) + "px");
+            applyFilters();
+            updateNote();
+            if (groupMode === "none") { currentView = "all"; startStreaming(); } else { groupAndRender(CURRENT); }
+        }
+
+        /* =========================
+           Boot
+           ========================= */
+        (async function boot() {
+            try {
+                updateBadges();
+                // defaults
+                groupMode = 'video';
+                sortMode = 'start_ts';
+                sortAsc = false;
+                thumbMode = 'object';
+                $('#groupSelect').value = 'video';
+                if (!document.querySelector('#sortSelect option[value="start_ts"]')) {
+                    $("#sortSelect").insertAdjacentHTML('beforeend', '<option value="start_ts">Start time</option>');
+                }
+                $('#sortSelect').value = 'start_ts';
+                $('#sortDirBtn').textContent = '↓';
+                $('#thumbMode').value = 'object';
+                $('#hmin').value = 3; $('#hmax').value = 360; updateHueRange();
+
+                $('#status').textContent = 'Loading atlas…';
+                await loadCSV();
+
+                // annotate motion tiers roughly based on numeric motion or keywords
+                const mvals = DATA.map(it => num(it.motion, null)).filter(v => v !== null);
+                const pct = (values, p) => {
+                    if (!values.length) return 0;
+                    const a = [...values].sort((x, y) => x - y);
+                    const i = Math.floor(p * (a.length - 1));
+                    return a[i];
+                };
+                const t1 = pct(mvals, 0.33), t2 = pct(mvals, 0.66);
+                DATA.forEach(it => {
+                    const mv = num(it.motion, null);
+                    it.motionTier = (mv === null)
+                        ? ((String(it.motion || '').toLowerCase().includes('fast')) ? 'high' : (String(it.motion || '').toLowerCase().includes('drift') ? 'med' : 'low'))
+                        : (mv <= t1 ? 'low' : (mv <= t2 ? 'med' : 'high'));
+                });
+
+                dedupeByVideoClusters();
+                buildShapeCheckboxes();
+                buildColorChips();
+
+                $('#status').textContent = '';
+                refresh();
+            } catch (e) {
+                console.error(e);
+                $('#note').textContent = 'Failed to load atlas.csv';
+            }
+        })();
     </script>
 </body>
 </html>
