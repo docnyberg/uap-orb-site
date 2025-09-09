@@ -1325,46 +1325,64 @@
 
             let idx = 0;
             for (const { img, repeats } of frames) {
-                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIDEO_SIDE, VIDEO_SIDE);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, VIDEO_SIDE, VIDEO_SIDE);
                 const scale = Math.min(VIDEO_SIDE / img.width, VIDEO_SIDE / img.height);
-                const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-                const x = Math.floor((VIDEO_SIDE - w) / 2), y = Math.floor((VIDEO_SIDE - h) / 2);
+                const w = Math.round(img.width * scale);
+                const h = Math.round(img.height * scale);
+                const x = Math.floor((VIDEO_SIDE - w) / 2);
+                const y = Math.floor((VIDEO_SIDE - h) / 2);
                 ctx.drawImage(img, x, y, w, h);
+
                 const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
                 const buf = new Uint8Array(await blob.arrayBuffer());
+
                 for (let r = 0; r < repeats; r++) {
                     const name = `f${String(++idx).padStart(5, '0')}.png`;
                     ffmpeg.FS('writeFile', name, buf);
                 }
             }
+
             const out = 'out.mp4';
-            await ffmpeg.run('-framerate', '30', '-i', 'f%05d.png', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out);
+            await ffmpeg.run(
+                '-framerate', '30',
+                '-i', 'f%05d.png',
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',
+                out
+            );
+
             const data = ffmpeg.FS('readFile', out);
 
-            // Clean up - but do it safely
+            // Clean up
             try {
-                const files = ffmpeg.FS('readdir', '/');
-                for (const file of files) {
-                    if (/^f\d{5}\.png$/i.test(file)) {
-                        try { ffmpeg.FS('unlink', file); } catch { }
-                    }
+                for (let i = 1; i <= idx; i++) {
+                    const name = `f${String(i).padStart(5, '0')}.png`;
+                    try { ffmpeg.FS('unlink', name); } catch { }
                 }
                 ffmpeg.FS('unlink', out);
             } catch { }
 
-            // Return the blob directly from the Uint8Array
+            // Create blob from the Uint8Array directly
             return new Blob([data], { type: 'video/mp4' });
         }
 
         async function onDownloadVideoClick() {
             try {
-                if (!MODAL) return;
+                if (!MODAL) {
+                    alert('No video sequence loaded.');
+                    return;
+                }
+
                 if ($('#collapseDS').checked) {
                     alert('Video export requires full timeline. Please uncheck "Collapse dead space" and try again.');
                     return;
                 }
+
                 const useSvg = !!MODAL.svg;
                 const bucket = useSvg ? 'svg' : 'image';
+
                 if (!isPro()) {
                     const used = getDL(bucket);
                     if ((used + 2) > FREE_LIMIT) {
@@ -1375,9 +1393,20 @@
                     const ok = confirm(`This video will use 2 of your free ${bucket.toUpperCase()} downloads.\nYou have ${FREE_LIMIT - used} remaining.\nContinue?`);
                     if (!ok) return;
                 }
-                $('#status').textContent = 'Preparing video…';
+
+                $('#status').textContent = 'Loading video encoder…';
+
+                // Make sure FFmpeg loads
+                await loadFFmpeg();
+
+                $('#status').textContent = 'Preparing video frames…';
                 const frames = await buildFramesForCurrentSequence();
-                $('#status').textContent = 'Encoding MP4… (this may take a bit)';
+
+                if (!frames || frames.length === 0) {
+                    throw new Error('No frames to encode');
+                }
+
+                $('#status').textContent = `Encoding ${frames.reduce((sum, f) => sum + f.repeats, 0)} frames to MP4…`;
                 const blob = await encodeMp4FromFrames(frames);
 
                 const a = document.createElement('a');
@@ -1392,16 +1421,21 @@
                     if (confirm("Upgrade to Pro for unlimited downloads?")) {
                         showProModal();
                     } else if (confirm("Would you like to make a donation instead?")) {
-                        const d = $('#donateBtn'); if (d) d.click();
+                        const d = $('#donateBtn');
+                        if (d) d.click();
                     }
                 }
+
+                $('#status').textContent = 'Video saved!';
+                setTimeout(() => { $('#status').textContent = ''; }, 3000);
+
             } catch (e) {
-                console.error(e);
-                alert('Could not generate video. If this was SVG view, ensure all SVGs exist.');
-            } finally {
+                console.error('Video generation error:', e);
+                alert('Could not generate video: ' + e.message);
                 $('#status').textContent = '';
             }
         }
+
         $('#dlVideo').addEventListener('click', onDownloadVideoClick);
 
         /* =========================
@@ -1471,21 +1505,79 @@
         $('#iPaid').addEventListener('click', () => { setPro(); hideProModal(); });
 
         /* =========================
-           Visitors badge (optional)
-           ========================= */
+   Visitors badge (optional)
+   ========================= */
         (function visitors() {
             function getOrSetUID() {
-                try { let id = localStorage.getItem('uap_uid'); if (!id) { id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2); localStorage.setItem('uap_uid', id); document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730); } return id; }
-                catch (e) { const m = document.cookie.match(/(?:^|;\s*)uap_uid=([^;]+)/); if (m) return m[1]; const id = Math.random().toString(36).slice(2); document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730); return id; }
+                try {
+                    let id = localStorage.getItem('uap_uid');
+                    if (!id) {
+                        id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+                        localStorage.setItem('uap_uid', id);
+                        document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730);
+                    }
+                    return id;
+                }
+                catch (e) {
+                    const m = document.cookie.match(/(?:^|;\s*)uap_uid=([^;]+)/);
+                    if (m) return m[1];
+                    const id = Math.random().toString(36).slice(2);
+                    document.cookie = 'uap_uid=' + id + '; Path=/; Max-Age=' + (60 * 60 * 24 * 730);
+                    return id;
+                }
             }
-            async function postJSON(url, payload) { const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' }); if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); }
+
+            async function postJSON(url, payload) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                } catch (e) {
+                    // Silently fail for 404s
+                    return null;
+                }
+            }
+
             async function updateVisitorsBadge() {
-                const el = document.getElementById('visitorsBadge'); if (!el) return;
-                const uid = getOrSetUID(); const endpoints = ['/api/unique', '/.netlify/functions/unique'];
-                for (const url of endpoints) { try { const { total } = await postJSON(url, { visitorId: uid }); if (Number.isFinite(total)) { el.textContent = total + ' visitors'; return; } } catch (e) { } }
-                el.style.display = 'none';
+                const el = document.getElementById('visitorsBadge');
+                if (!el) return;
+
+                try {
+                    const uid = getOrSetUID();
+                    const endpoints = ['/api/unique', '/.netlify/functions/unique'];
+
+                    for (const url of endpoints) {
+                        try {
+                            const result = await postJSON(url, { visitorId: uid });
+                            if (result && Number.isFinite(result.total)) {
+                                el.textContent = result.total + ' visitors';
+                                return;
+                            }
+                        } catch (e) {
+                            // Continue to next endpoint
+                        }
+                    }
+
+                    // If all endpoints fail, just hide the badge
+                    el.style.display = 'none';
+                } catch (e) {
+                    // If anything fails, hide the badge
+                    el.style.display = 'none';
+                }
             }
-            updateVisitorsBadge();
+
+            // Don't let visitor tracking errors affect the rest of the app
+            setTimeout(() => {
+                updateVisitorsBadge().catch(() => {
+                    const el = document.getElementById('visitorsBadge');
+                    if (el) el.style.display = 'none';
+                });
+            }, 100);
         })();
 
         /* =========================
