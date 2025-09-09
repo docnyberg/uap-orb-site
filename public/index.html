@@ -840,14 +840,17 @@
                     }
                 }
 
-                /* =========================
-                    Filtering & sorting
-                    ========================= */
-                <script>
-function applyFilters() {
-            // restore any previously stretched end_ts from a prior collapsed run
+        /* =========================
+Filtering & sorting
+========================= */
+        function applyFilters() {
+            // reset any stretched end_ts from a previous collapsed run
             restoreCollapsedEnds();
-          
+
+            // 1) start from full list
+            let list = DATA.map((it, gi) => ({ it, gi }));
+
+            // 2) basic filters
             const imagesOnly = $('#imgOnly').checked;
             if (imagesOnly) {
                 list = list.filter(x =>
@@ -871,37 +874,37 @@ function applyFilters() {
                 list = list.filter(({ it }) => !it.isDuplicate);
             }
 
-            // 3) Advanced: hue range
+            // 3) advanced: hue range (supports inversion)
             const hmin = parseInt($("#hmin").value || "0", 10);
             const hmax = parseInt($("#hmax").value || "360", 10);
             $('#hbadge').textContent = `${hmin}°–${hmax}°`;
             list = list.filter(({ it }) => {
                 const h = hueOf(it);
-                if (!Number.isFinite(h)) return true; // keep gray/black
+                if (!Number.isFinite(h)) return true; // keep undefined/gray/black
                 return (hmin <= hmax) ? (h >= hmin && h <= hmax) : (h >= hmin || h <= hmax);
             });
 
-            // 4) Advanced: motion tier
+            // 4) advanced: motion tier
             const tier = $("#motionTier").value;
             if (tier !== "any") {
                 list = list.filter(({ it }) => (it.motionTier || 'low') === tier);
             }
 
-            // 5) Advanced: shapes
+            // 5) advanced: shapes
             const scb = [...document.querySelectorAll('#shapeBox input[type=checkbox]')];
             const enabledShapes = new Set(scb.filter(cb => cb.checked).map(cb => cb.dataset.shape));
             if (enabledShapes.size) {
                 list = list.filter(({ it }) => enabledShapes.has(it.shape || 'other'));
             }
 
-            // 6) Advanced: color groups
+            // 6) advanced: color groups
             const chips = [...document.querySelectorAll('#colorChips .chip.sel')];
             const colorSel = new Set(chips.map(c => c.dataset.color));
             if (colorSel.size) {
                 list = list.filter(({ it }) => colorSel.has(colorGroup(it)));
             }
 
-            // 7) Sort
+            // 7) sort
             const mode = sortMode;
             const asc = sortAsc ? 1 : -1;
             function orderKeyFor(it) {
@@ -936,7 +939,7 @@ function applyFilters() {
             CURRENT = list.map(x => x.it);
             CURRENT_IDX = list.map(x => x.gi);
 
-            // 8) Collapse dead space: merge contiguous black tiles per video and stretch 1st end_ts
+            // 8) collapse dead space (merge contiguous black tiles per video)
             if ($('#collapseDS').checked) {
                 const outIt = [], outGi = [];
                 for (let i = 0; i < CURRENT.length; i++) {
@@ -948,22 +951,22 @@ function applyFilters() {
                     while (j + 1 < CURRENT.length) {
                         const nextIt = CURRENT[j + 1];
                         if (!isBlackTile(nextIt)) break;
-                        if (nextIt.video_file !== it.video_file) break;
+                        if ((nextIt.video_file || '') !== (it.video_file || '')) break;
                         j++; last = nextIt;
                     }
                     if (j > i) {
                         const origEnd = it._orig_end_ts ?? it.end_ts;
                         const lastEnd = last.end_ts;
                         if (it._orig_end_ts === undefined) it._orig_end_ts = origEnd;
-                        it.end_ts = lastEnd;
+                        it.end_ts = lastEnd; // stretch the representative tile
                     }
                     outIt.push(it); outGi.push(gi);
                     i = j;
                 }
-                CURRENT = outIt; CURRENT_IDX = outGi;
+                CURRENT = outIt;
+                CURRENT_IDX = outGi;
             }
-}
-    </script>
+        }
 
     function updateNote() {
     const view = (groupMode === 'video') ? 'Grouped by Source video' : (groupMode === 'none' ? 'All' : `Grouped by ${$('#groupSelect').selectedOptions[0].text}`);
