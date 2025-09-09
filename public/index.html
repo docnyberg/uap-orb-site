@@ -1504,7 +1504,7 @@
    Pro modal events
    ================= */
         $('#upgradeBtn').addEventListener('click', () => showProModal());
-        $('#closeProModal').addEventListener('click', () => hideProModal());
+        $('#closePro').addEventListener('click', () => hideProModal());
         $('#upgradeToPro').addEventListener('click', async () => {
             const res = await fetch('/.netlify/functions/pro-checkout', { method: 'POST' });
             const { url } = await res.json();
