@@ -1370,10 +1370,13 @@
 
         async function onDownloadVideoClick() {
             try {
+                console.log('Video download clicked');
+
                 if (!MODAL) {
                     alert('No video sequence loaded.');
                     return;
                 }
+                console.log('Modal exists:', MODAL);
 
                 if ($('#collapseDS').checked) {
                     alert('Video export requires full timeline. Please uncheck "Collapse dead space" and try again.');
@@ -1382,6 +1385,7 @@
 
                 const useSvg = !!MODAL.svg;
                 const bucket = useSvg ? 'svg' : 'image';
+                console.log('Using SVG:', useSvg, 'Bucket:', bucket);
 
                 if (!isPro()) {
                     const used = getDL(bucket);
@@ -1395,12 +1399,17 @@
                 }
 
                 $('#status').textContent = 'Loading video encoder…';
+                console.log('About to load FFmpeg...');
 
                 // Make sure FFmpeg loads
                 await loadFFmpeg();
+                console.log('FFmpeg loaded successfully');
 
                 $('#status').textContent = 'Preparing video frames…';
+                console.log('Building frames...');
+
                 const frames = await buildFramesForCurrentSequence();
+                console.log('Frames built:', frames.length);
 
                 if (!frames || frames.length === 0) {
                     throw new Error('No frames to encode');
@@ -1431,7 +1440,9 @@
 
             } catch (e) {
                 console.error('Video generation error:', e);
-                alert('Could not generate video: ' + e.message);
+                console.error('Error stack:', e.stack);
+                console.error('Error message:', e.message);
+                alert('Could not generate video: ' + (e.message || e.toString()));
                 $('#status').textContent = '';
             }
         }
