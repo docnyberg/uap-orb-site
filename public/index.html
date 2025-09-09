@@ -1240,15 +1240,43 @@
             if (_ffmpeg) return _ffmpeg;
             if (_ffmpegLoading) return _ffmpegLoading;
             _ffmpegLoading = new Promise((resolve, reject) => {
-                if (window.FFmpeg) {
-                    const ff = window.FFmpeg.createFFmpeg({ log: false });
-                    ff.load().then(() => { _ffmpeg = ff; resolve(ff) }).catch(reject);
-                } else {
+                const loadScript = () => {
                     const s = document.createElement('script');
-                    s.src = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js";
-                    s.onload = () => { try { const ff = window.FFmpeg.createFFmpeg({ log: false }); ff.load().then(() => { _ffmpeg = ff; resolve(ff) }).catch(reject); } catch (e) { reject(e) } };
+                    s.src = "https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/umd/ffmpeg.min.js";
+                    s.onload = async () => {
+                        try {
+                            const { createFFmpeg } = FFmpeg;
+                            const ff = createFFmpeg({
+                                log: false,
+                                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/umd/ffmpeg-core.js'
+                            });
+                            await ff.load();
+                            _ffmpeg = ff;
+                            resolve(ff);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    };
                     s.onerror = reject;
                     document.head.appendChild(s);
+                };
+
+                if (window.FFmpeg) {
+                    try {
+                        const { createFFmpeg } = window.FFmpeg;
+                        const ff = createFFmpeg({
+                            log: false,
+                            corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/umd/ffmpeg-core.js'
+                        });
+                        ff.load().then(() => {
+                            _ffmpeg = ff;
+                            resolve(ff);
+                        }).catch(reject);
+                    } catch (e) {
+                        loadScript();
+                    }
+                } else {
+                    loadScript();
                 }
             });
             return _ffmpegLoading;
