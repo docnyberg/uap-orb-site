@@ -1500,26 +1500,18 @@
             refresh();
         });
 
-        /* =================
-   Pro modal events
-   ================= */
         $('#upgradeBtn').addEventListener('click', () => showProModal());
         $('#closePro').addEventListener('click', () => hideProModal());
-        $('#upgradeToPro').addEventListener('click', async () => {
-            const res = await fetch('/.netlify/functions/pro-checkout', { method: 'POST' });
-            const { url } = await res.json();
-            window.location.href = url;
-        });
         $('#iPaid').addEventListener('click', () => {
             const code = prompt('Enter your upgrade code:');
-            if (code === '4EverJung') {  // <-- Change this to your secret code
+            if (!code) return; // User cancelled
+            if (code === '4EverJung') {
                 setPro();
                 hideProModal();
                 alert('Pro mode activated!');
-            } else if (code) {
-                alert('Invalid code. Please use PayPal to upgrade or contact support.');
+            } else {
+                alert('Invalid code');
             }
-            // If they cancel the prompt (code is null), nothing happens
         });
 
         window.addEventListener('click', (e) => {
