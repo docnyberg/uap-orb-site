@@ -582,15 +582,66 @@
         let currentView = "all";
         let MODAL = null;
 
+        // Video file mapping
+        const VIDEO_FILES = {
+            'aguadilla_plaza': 'vids/aguadilla_plaza.mp4',
+            'columbus_oh': 'vids/columbus_oh.mp4',
+            // ... etc
+        };
+
+        // Helper to get video key from filename
+        function getVideoKey(videoFile) {
+            if (!videoFile) return null;
+            return videoFile.replace(/\.[^.]+$/, '').replace(/_\d+$/, '');
+        }
+
+
         /* =========================
-           Pro gating & counters
-           ========================= */
+   Pro gating & counters with tamper resistance
+   ========================= */
         function isPro() { return localStorage.getItem('atlas_pro') === '1' || !!localStorage.getItem('atlas_pro_token'); }
         function setPro() { localStorage.setItem('atlas_pro', '1'); updateBadges(); }
-        function getDL(kind) { return +(localStorage.getItem('dl_' + kind) || 0); }
-        function setDL(kind, val) { localStorage.setItem('dl_' + kind, String(Math.max(0, val | 0))); updateBadges(); }
+
+        // We'll use multiple storage mechanisms and a hash
+        function getDownloadSignature() {
+            const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // Current day
+            return btoa(`${navigator.userAgent.slice(0, 20)}:${now}`); // Simple signature
+        }
+
+        function getDL(kind) {
+            // Check multiple storage locations
+            const lsCount = +(localStorage.getItem('dl_' + kind) || 0);
+            const ssCount = +(sessionStorage.getItem('dl_' + kind) || 0);
+            const dlSig = localStorage.getItem('dl_sig');
+
+            // If we have a download signature but counts are 0, likely tampered
+            if (dlSig && lsCount === 0 && ssCount === 0) {
+                // Restore to a high value to discourage tampering
+                setDL(kind, FREE_LIMIT - 1);
+                return FREE_LIMIT - 1;
+            }
+
+            // Use the highest count we find
+            return Math.max(lsCount, ssCount);
+        }
+
+        function setDL(kind, val) {
+            const count = Math.max(0, val | 0);
+            localStorage.setItem('dl_' + kind, String(count));
+            sessionStorage.setItem('dl_' + kind, String(count));
+
+            // Store a signature of download activity
+            if (count > 0) {
+                localStorage.setItem('dl_sig', getDownloadSignature());
+                document.cookie = `dl_act=1; path=/; max-age=${60 * 60 * 24 * 30}`;
+            }
+
+            updateBadges();
+        }
+
         // Allow 3 free image and 3 free svg downloads by default
         const FREE_LIMIT = 3;
+
         function allowDownload(kind) {
             if (isPro()) return true;
             const used = getDL(kind);
@@ -601,8 +652,15 @@
             }
             return true;
         }
-        function recordDownload(kind) { if (!isPro()) setDL(kind, getDL(kind) + 1); }
-        function recordVideoDownload(kind) { if (!isPro()) setDL(kind, getDL(kind) + 2); }
+
+        function recordDownload(kind) {
+            if (!isPro()) setDL(kind, getDL(kind) + 1);
+        }
+
+        function recordVideoDownload(kind) {
+            if (!isPro()) setDL(kind, getDL(kind) + 2);
+        }
+
         function updateBadges() {
             $('#dlBadge').textContent = `img ${getDL('image')} / svg ${getDL('svg')}`;
             $('#proBadge').textContent = isPro() ? 'Pro' : 'Free';
@@ -1282,6 +1340,33 @@
             return _ffmpegLoading;
         }
 
+        /* =========================
+   Full video download
+   ========================= */
+        function getFullVideoName(objectId) {
+            // Extract the base name from object ID
+            // Example: "20250328_124758000_iOS.2_e000_000300_obj" -> "20250328_124758000_iOS.2"
+            const match = objectId.match(/^(.+?)_e\d+_\d+_obj$/);
+            return match ? match[1] + '.mp4' : null;
+        }
+
+        function downloadFullVideo(objectId) {
+            const fullVideoName = getFullVideoName(objectId);
+
+            if (fullVideoName) {
+                // Create download link for full video
+                const link = document.createElement('a');
+                link.href = `/vids_full/${fullVideoName}`;
+                link.download = fullVideoName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                console.error('Could not determine full video name for:', objectId);
+                alert('Full video not available for this object');
+            }
+        }
+
         function tileDurationMs(row) {
             const st = num(row.start_ts, null), et = num(row.end_ts, null);
             if (st !== null && et !== null && et > st) return Math.round((et - st) * 1000);
@@ -1410,6 +1495,31 @@
                     alert('Video export requires full timeline. Please uncheck "Collapse dead space" and try again.');
                     return;
                 }
+
+                // Try to download pre-made full video first
+                const currentObjectId = MODAL.id; // The modal ID should be the object ID
+                const fullVideoName = getFullVideoName(currentObjectId);
+
+                if (fullVideoName) {
+                    console.log('Downloading pre-made full video:', fullVideoName);
+
+                    // Check if full video exists
+                    try {
+                        const response = await fetch(`/vids_full/${fullVideoName}`, { method: 'HEAD' });
+                        if (response.ok) {
+                            // Download the pre-made full video
+                            downloadFullVideo(currentObjectId);
+                            return; // Exit early - we're done!
+                        }
+                    } catch (e) {
+                        console.log('Full video not found, falling back to FFmpeg generation');
+                    }
+                }
+
+                // If we get here, continue with the original FFmpeg-based code
+                console.log('Falling back to FFmpeg video generation');
+
+        // ... rest of your existing FFmpeg code continues here ...
 
                 const useSvg = !!MODAL.svg;
                 const bucket = useSvg ? 'svg' : 'image';
