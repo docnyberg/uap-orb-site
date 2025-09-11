@@ -1202,20 +1202,45 @@
         };
 
         function svgTriesFor(it) {
-            const paths = [];
+            // Use the active style list; "" means the plain filename without style suffix
             const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
+
+            // Derive the base name (without extension) from csv 'svg' or thumb filenames
             let base = null;
             if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
             else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
             else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
-            for (const suf of styles) {
-                if (suf === "") { if (it.svg) paths.push(`svgs/${encodeURIComponent(it.svg)}`); }
-                else if (base) paths.push(`svgs/${encodeURIComponent(base + suf)}.svg`);
+
+            // Build candidate "roots" to try, in this order:
+            //  1) base_obj, 2) base_obj_hybrid, 3) base, 4) (if csv included a different exact name) csvBase
+            const roots = [];
+            const addRoot = r => { if (r && !roots.includes(r)) roots.push(r); };
+
+            if (base) {
+                addRoot(`${base}_obj`);
+                addRoot(`${base}_obj_hybrid`);
+                addRoot(base);
             }
-            if (it.svg) paths.push(`svgs/${encodeURIComponent(it.svg)}`);
-            if (base) paths.push(`svgs/${encodeURIComponent(base)}.svg`);
-            return paths;
+            if (it.svg) {
+                const csvBase = it.svg.replace(/\.[^.]+$/, "");
+                addRoot(csvBase);
+            }
+
+            // Create the try list:
+            // For each root, try <root><style>.svg and .SVG (case variants);
+            // style "" produces the plain root.svg/root.SVG
+            const tries = [];
+            for (const root of roots) {
+                for (const suf of styles) {
+                    const name = (suf === "") ? root : (root + suf);
+                    tries.push(`svgs/${encodeURIComponent(name)}.svg`);
+                    tries.push(`svgs/${encodeURIComponent(name)}.SVG`);
+                }
+            }
+
+            return tries;
         }
+}
 
         async function renderModal() {
             if (!MODAL) return;
