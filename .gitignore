@@ -11,4 +11,6 @@ npm-debug.log*
 
 # Python caches (in case you keep scripts here)
 __pycache__/
-*.pyc
+*.pycpublic/vids_full/
+hello.txt
+public/_tt_black_global.json

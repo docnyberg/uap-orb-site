@@ -1375,21 +1375,21 @@
             return match ? match[1] + '.mp4' : null;
         }
 
-        function downloadFullVideo(objectId) {
+        async function downloadFullVideo(objectId) {
             const fullVideoName = getFullVideoName(objectId);
+            if (!fullVideoName) { alert('Full video not available for this object'); return; }
 
-            if (fullVideoName) {
-                // Create download link for full video
-                const link = document.createElement('a');
-                link.href = `/vids_full/${fullVideoName}`;
-                link.download = fullVideoName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                console.error('Could not determine full video name for:', objectId);
-                alert('Full video not available for this object');
-            }
+            const res = await fetch(`/.netlify/functions/get-r2-url?file=${encodeURIComponent(fullVideoName)}`);
+            if (!res.ok) { alert('Could not fetch download link'); return; }
+            const { url } = await res.json();
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fullVideoName; // server also sets Content-Disposition
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
         }
 
         function tileDurationMs(row) {
