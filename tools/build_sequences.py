@@ -302,83 +302,169 @@ class StrictGatedMetric:
 # ---------------------------
 
 def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
+    """
+    Robust atlas reader:
+      - Accepts many alternate header names for: thumbnail, clip/json id, event index, HSV, shape, phash.
+      - If event index is missing, derives it from the thumbnail filename (e###/frame###/obj_frame###),
+        else by per-clip rank of start_ts, else by per-clip row order.
+      - Back-fills missing HSV/shape/pHash directly from the image when available.
+      - Applies an optional minimum-area filter.
+      - Computes log_area for downstream normalization.
+    Returns: list[dict] with keys:
+      thumb, json_file, e_idx, h, s, v, area, solidity, ecc, ar, phash64, log_area
+    """
+    import os, re
+    import pandas as pd
+    import numpy as np
+
     df = pd.read_csv(atlas_csv)
-    # normalize columns
-    df.columns = [c.strip().lower() for c in df.columns]
-    # Expected columns (best-effort): thumb_obj, json_file, e_idx/eid, hsv_mean_h, hsv_mean_s, hsv_mean_v,
-    # area, solidity, eccentricity, aspect_ratio, phash64
-    # Provide safe fallbacks
-    def getcol(*names):
-        for n in names:
-            if n in df.columns:
-                return n
+    if df.empty:
+        raise ValueError("atlas.csv is empty")
+
+    # Map lower->original for flexible lookup
+    colmap = {c.strip().lower(): c for c in df.columns}
+
+    def pick(*cands) -> str | None:
+        for c in cands:
+            if c and c.lower() in colmap:
+                return colmap[c.lower()]
         return None
 
-    col_thumb = getcol('thumb_obj', 'thumb', 'thumb_path')
-    col_json  = getcol('json_file', 'video', 'source_json')
-    col_eidx  = getcol('e_idx', 'event_idx', 'idx', 'eindex', 'e_id', 'eid')
-    col_h     = getcol('hsv_mean_h', 'mean_h', 'h')
-    col_s     = getcol('hsv_mean_s', 'mean_s', 's')
-    col_v     = getcol('hsv_mean_v', 'mean_v', 'v')
-    col_area  = getcol('area')
-    col_sol   = getcol('solidity')
-    col_ecc   = getcol('eccentricity', 'ecc')
-    col_ar    = getcol('aspect_ratio', 'ar')
-    col_phash = getcol('phash64', 'phash')
+    # Likely names in atlas
+    col_thumb = pick("thumb_obj", "thumb", "thumb_path", "obj_thumb", "obj", "thumbname", "thumb_name")
+    col_json  = pick("json_file", "json", "video_file", "video", "source_json", "file", "src", "clip")
+    col_event = pick("event_index", "event_idx", "e_idx", "eid", "e_id", "eindex", "index", "idx",
+                     "frame_idx", "frame_index", "frame", "slice_index")
 
-    if col_thumb is None or col_json is None or col_eidx is None:
-        raise ValueError("atlas.csv must include at least thumb_obj, json_file, and event index (e_idx/eid).")
+    col_start = pick("start_ts", "start", "t0", "begin_ts", "ts_start")
+    col_end   = pick("end_ts", "end", "t1", "stop_ts", "ts_end")
+
+    col_h = pick("h_deg_img", "h_deg", "hsv_mean_h", "hue_deg", "h")   # degrees (0..360)
+    col_s = pick("s_norm", "hsv_mean_s", "s")                           # 0..1
+    col_v = pick("v_norm", "hsv_mean_v", "v")                           # 0..1
+
+    col_area = pick("area", "area_px")
+    col_sol  = pick("solidity")
+    col_ecc  = pick("eccentricity", "ecc")
+    col_ar   = pick("aspect_ratio", "ar")
+    col_phash = pick("phash64", "phash")
+
+    if not col_thumb or not col_json:
+        raise ValueError(
+            "atlas.csv must include a thumbnail column and a clip id column.\n"
+            f"Looked for thumb_obj/thumb/... and json_file/video/...; got: {list(df.columns)}"
+        )
+
+    # Derive event index if missing
+    if not col_event:
+        def infer_idx_from_thumb(name: str) -> int | None:
+            s = os.path.basename(str(name))
+            for pat in (r"_e(\d+)_", r"e(\d+)", r"event[_\-]?(\d+)", r"frame[_\-]?(\d+)", r"obj_frame[_\-]?(\d+)"):
+                m = re.search(pat, s, flags=re.IGNORECASE)
+                if m:
+                    try:
+                        return int(m.group(1))
+                    except Exception:
+                        pass
+            return None
+
+        df["_e_idx_inferred"] = df[col_thumb].apply(infer_idx_from_thumb)
+
+        if df["_e_idx_inferred"].isna().all() and col_start:
+            # Rank by start_ts per clip
+            try:
+                df["_e_idx_inferred"] = (
+                    df.groupby(df[col_json])[col_start]
+                      .rank(method="first")
+                      .astype("Int64")
+                      .fillna(0)
+                      .astype(int) - 1
+                )
+            except Exception:
+                df["_e_idx_inferred"] = df.groupby(df[col_json]).cumcount()
+        elif df["_e_idx_inferred"].isna().all():
+            # Stable per-clip row order
+            df["_e_idx_inferred"] = df.groupby(df[col_json]).cumcount()
+
+        col_event = "_e_idx_inferred"
 
     # Build records
     recs = []
-    missing_needed = 0
-    for i, row in df.iterrows():
-        thumb = str(row[col_thumb]) if not pd.isna(row[col_thumb]) else None
-        json_file = str(row[col_json]) if not pd.isna(row[col_json]) else None
-        e_idx = int(row[col_eidx]) if not pd.isna(row[col_eidx]) else None
+    for _, row in df.iterrows():
+        thumb = str(row[col_thumb]) if (col_thumb and not pd.isna(row[col_thumb])) else None
+        json_file = str(row[col_json]) if (col_json and not pd.isna(row[col_json])) else None
+        e_idx = int(row[col_event]) if (col_event and not pd.isna(row[col_event])) else 0
+
         h = safe_float(row[col_h]) if col_h else np.nan
         s = safe_float(row[col_s]) if col_s else np.nan
         v = safe_float(row[col_v]) if col_v else np.nan
+
         area = safe_float(row[col_area]) if col_area else np.nan
         sol  = safe_float(row[col_sol])  if col_sol  else np.nan
         ecc  = safe_float(row[col_ecc])  if col_ecc  else np.nan
         ar   = safe_float(row[col_ar])   if col_ar   else np.nan
+
         ph   = parse_phash64(row[col_phash]) if col_phash else None
 
         recs.append(dict(
-            idx=i, thumb=thumb, json_file=json_file, e_idx=e_idx,
-            h=h, s=s, v=v, area=area, solidity=sol, ecc=ecc, ar=ar,
+            idx=e_idx,
+            thumb=thumb,
+            json_file=json_file,
+            e_idx=e_idx,
+            h=h, s=s, v=v,
+            area=area, solidity=sol, ecc=ecc, ar=ar,
             phash64=ph,
         ))
-        # Need to compute missing basic features?
-        if (np.isnan(area) or np.isnan(sol) or np.isnan(ecc) or np.isnan(ar) or ph is None):
-            missing_needed += 1
 
-    # Compute missing from thumbs if needed
-    if missing_needed > 0 and cv2 is not None:
+    # Determine if we need image-derived backfills
+    need_img_fill = any(
+        (np.isnan(r["h"]) or np.isnan(r["s"]) or np.isnan(r["v"])
+         or np.isnan(r["area"]) or np.isnan(r["solidity"]) or np.isnan(r["ecc"]) or np.isnan(r["ar"])
+         or r["phash64"] is None)
+        for r in recs
+    )
+
+    # Back-fill from images when available
+    if need_img_fill and cv2 is not None:
         for r in recs:
-            need_shape = np.isnan(r['area']) or np.isnan(r['solidity']) or np.isnan(r['ecc']) or np.isnan(r['ar'])
-            need_phash = (r['phash64'] is None)
-            if need_shape or need_phash:
-                img = load_img(thumbs_dir, r['thumb']) if r['thumb'] else None
-                if need_shape:
-                    feats = compute_basic_shape_from_img(img)
-                    for k in ['area', 'aspect_ratio', 'solidity', 'eccentricity']:
-                        rk = 'ecc' if k == 'eccentricity' else k
-                        r[rk] = feats.get(k, r.get(rk, np.nan))
-                if need_phash:
-                    ph = compute_phash64_from_img(img)
-                    r['phash64'] = ph
+            if not r["thumb"]:
+                continue
+            img = load_img(thumbs_dir, r["thumb"])
+            if img is None:
+                continue
 
-    # Filter very small area if requested
+            # HSV backfill
+            if np.isnan(r["h"]) or np.isnan(r["s"]) or np.isnan(r["v"]):
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+                H, S, V = cv2.split(hsv)
+                if np.isnan(r["h"]): r["h"] = float(H.mean()) * 2.0
+                if np.isnan(r["s"]): r["s"] = float(S.mean()) / 255.0
+                if np.isnan(r["v"]): r["v"] = float(V.mean()) / 255.0
+
+            # Shape backfill
+            if np.isnan(r["area"]) or np.isnan(r["solidity"]) or np.isnan(r["ecc"]) or np.isnan(r["ar"]):
+                feats = compute_basic_shape_from_img(img)
+                if np.isnan(r["area"])      and not np.isnan(feats.get("area", np.nan)):           r["area"]     = float(feats["area"])
+                if np.isnan(r["ar"])        and not np.isnan(feats.get("aspect_ratio", np.nan)):   r["ar"]       = float(feats["aspect_ratio"])
+                if np.isnan(r["solidity"])  and not np.isnan(feats.get("solidity", np.nan)):       r["solidity"] = float(feats["solidity"])
+                if np.isnan(r["ecc"])       and not np.isnan(feats.get("eccentricity", np.nan)):   r["ecc"]      = float(feats["eccentricity"])
+
+            # pHash backfill
+            if r["phash64"] is None:
+                ph = compute_phash64_from_img(img)
+                if ph is not None:
+                    r["phash64"] = ph
+
+    # Optional: minimum area filter
     if min_area_px and min_area_px > 0:
-        recs = [r for r in recs if (np.isnan(r['area']) or r['area'] >= float(min_area_px))]
+        recs = [r for r in recs if (np.isnan(r["area"]) or r["area"] >= float(min_area_px))]
 
-    # Precompute log_area (safe)
+    # Compute log_area
     for r in recs:
-        r['log_area'] = np.log(max(1.0, r['area'])) if not np.isnan(r['area']) else np.nan
+        r["log_area"] = np.log(max(1.0, r["area"])) if not np.isnan(r["area"]) else np.nan
 
     return recs
+
 
 # ---------------------------
 # Clustering (strict‑gated)
