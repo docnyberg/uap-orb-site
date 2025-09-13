@@ -3,6 +3,7 @@
 
 [functions]
   directory = "public/netlify/functions"
+  node_bundler = "esbuild"
 
 [[headers]]
   for = "/*"
