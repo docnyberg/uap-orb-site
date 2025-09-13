@@ -3,10 +3,4 @@
   functions = "netlify/functions"
 
 [functions]
-  directory = "public/netlify/functions"
   node_bundler = "esbuild"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-  cache-control = "public, max-age=600"
