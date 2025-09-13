@@ -5,7 +5,7 @@
   "description": "Netlify deployable site with visitor counter and atlas viewer",
   "main": "index.js",
   "scripts": {
-    "deploy": "netlify deploy --prod --dir public --functions public/netlify/functions",
+    "deploy": "npx netlify deploy --prod",
     "serve": "netlify dev",
     "test": "playwright test -c playwright.config.ts",
     "test:local": "npx serve public -p 5173 & playwright test -c playwright.config.ts"
