@@ -631,21 +631,51 @@
         }
         function pct(values, p) { if (!values.length) return 0; const a = [...values].sort((x, y) => x - y); const i = Math.floor(p * (a.length - 1)); return a[i]; }
 
+        /* === Thumb helpers (place above normalizeRow) === */
+        const pickFirst = (...xs) =>
+            xs.find(v => typeof v === "string" && v.trim().length) || "";
+
+        const isAbsoluteURL = (p) =>
+            /^https?:\/\//i.test(p || "") || /^data:/i.test(p || "") || (p || "").startsWith("/");
+
+
+        /* ========== CSV NORMALIZATION (revised) ========== */
         function normalizeRow(r, i) {
+            // scene/object thumbs — accept many possible CSV header names
+            const thumbScene = pickFirst(
+                r.thumb, r.thumb_path, r.scene_thumb, r.sceneThumb,
+                r.thumb_scene, r.frame_thumb, r.thumb_file, r.thumb_url, r.scene_thumb_url
+            );
+
+            const thumbObj = pickFirst(
+                r.thumb_obj, r.thumb_object, r.object_thumb, r.object_thumb_path,
+                r.obj_thumb, r.thumb_obj_file, r.thumb_obj_url, r.object_thumb_url
+            );
+
+            // sanitize: normalize slashes + trim
+            const clean = (s) => (typeof s === "string" ? s.replace(/\\/g, "/").trim() : "");
+
             return {
                 _i: i,
                 h_deg_img: num(r.h_deg_img, num(r.h_deg, NaN)),
                 s_norm: num(r.s_norm, num(r.s, NaN)),
                 v_norm: num(r.v_norm, num(r.v, NaN)),
+
                 hex_img: r.hex_img || r.hex || "",
+
                 json_file: r.json_file || r.json || "",
                 video_file: r.video_file || r.video || "",
                 event_index: r.event_index || r.event || "",
+
                 start_ts: num(r.start_ts, num(r.t_start, 0)),
                 end_ts: num(r.end_ts, num(r.t_end, 0)),
-                thumb: r.thumb || r.thumb_path || "",
-                thumb_obj: r.thumb_obj || r.thumb_object || "",
+
+                // NEW: broadened thumbnail field mapping
+                thumb: clean(thumbScene),
+                thumb_obj: clean(thumbObj),
+
                 svg: r.svg || r.svg_path || "",
+
                 shape: r.shape || r.shape_class || "other",
                 motion: r.motion || r.motion_class || "unknown",
                 sharpness: num(r.sharpness, NaN),
@@ -655,6 +685,7 @@
                 h_range_deg: num(r.h_range_deg, NaN)
             };
         }
+
 
         function colorGroup(it) {
             const h = hueOf(it), s = num(it.s_norm, 0), v = num(it.v_norm, 0);
@@ -750,7 +781,7 @@
         let stream = { i: 0, FIRST: 200, STEP: (navigator.connection && (navigator.connection.effectiveType||"").includes("2g")) ? 200 : 600, observer: null };
 
         function cardHTML(it, globalIdx) {
-            const src = (thumbMode === "object" && it.thumb_obj) ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`;
+            const src = rasterUrlFor(it);
             const h = hueOf(it); const hueLbl = Number.isFinite(h) ? `${h.toFixed(1)}°` : "–";
             return `
             <div class="card" data-idx="${globalIdx}">
@@ -863,6 +894,12 @@
             const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
         }
 
+        /* Robust CSV URL */
+        const CSV_URL = (() => {
+            try { return new URL('atlas.csv', document.baseURI || location.href).href; }
+            catch { return 'atlas.csv'; }  // fallback
+        })();
+
         /* ===== Modal sequence helpers (from your file) ===== */
         let MODAL = { seq: [], pos: 0, svg: false };
         function seqIndicesForVideo(videoFile) {
@@ -873,34 +910,51 @@
             });
             return seq;
         }
-        function rasterUrlFor(it) { const useObj = (thumbMode === "object" && it.thumb_obj); return useObj ? `thumbs_obj/${it.thumb_obj}` : `thumbs/${it.thumb}`; }
+        function rasterUrlFor(it) {
+            const useObj = (thumbMode === "object" && it.thumb_obj);
+            const src = useObj ? it.thumb_obj : it.thumb;
+            if (!src) return ""; // no image available
+
+            // Absolute (http/https/data:/leading slash) — use as-is
+            if (isAbsoluteURL(src)) return src;
+
+            // Relative — keep your existing folders
+            return useObj ? `thumbs_obj/${src}` : `thumbs/${src}`;
+        }
+
         function svgTriesFor(it) {
-            const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default; let base = null;
+            const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
+            let base = null;
             if (it.svg) base = it.svg.replace(/\.[^.]+$/, "");
-            else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, ""); else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
-            const tries = []; for (const suf of styles) {
+            else if (it.thumb_obj) base = it.thumb_obj.replace(/_obj\.jpg$/i, "");
+            else if (it.thumb) base = it.thumb.replace(/\.jpg$/i, "");
+            const tries = [];
+            for (const suf of styles) {
                 if (suf === "") { if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`); }
-                else if (base) { tries.push(`svgs/${encodeURIComponent(base + suf)}.svg`); }
+                else if (base) tries.push(`svgs/${encodeURIComponent(base + suf)}.svg`);
             }
             if (it.svg) tries.push(`svgs/${encodeURIComponent(it.svg)}`);
             if (base) tries.push(`svgs/${encodeURIComponent(base)}.svg`);
             return tries;
         }
-        
+
         function setImgSrcWithTries(imgEl, tries) {
-            // Use a cache so repeated toggles and revisits do not refetch
             const key = tries && tries.length ? tries.join("|") : "";
             if (key && svgCache[key]) { imgEl.src = svgCache[key]; return; }
-            imgEl.dataset.tries = JSON.stringify(tries); imgEl.dataset.tryi = "0";
+            imgEl.dataset.tries = JSON.stringify(tries);
+            imgEl.dataset.tryi = "0";
             imgEl.onload = () => { if (key) svgCache[key] = imgEl.src; };
             imgEl.onerror = () => {
                 try {
-                    const list = JSON.parse(imgEl.dataset.tries || "[]"); let i = parseInt(imgEl.dataset.tryi || "0", 10) + 1;
-                    if (i < list.length) { imgEl.dataset.tryi = String(i); imgEl.src = list[i]; } else { imgEl.onerror = null; }
+                    const list = JSON.parse(imgEl.dataset.tries || "[]");
+                    let i = parseInt(imgEl.dataset.tryi || "0", 10) + 1;
+                    if (i < list.length) { imgEl.dataset.tryi = String(i); imgEl.src = list[i]; }
+                    else { imgEl.onerror = null; }
                 } catch (e) { imgEl.onerror = null; }
             };
             if (tries && tries.length) { imgEl.src = tries[0]; }
         }
+
         function renderModalSequence() {
             const cont = document.getElementById("modalCarousel"); cont.innerHTML = "";
             const seq = MODAL.seq, pos = MODAL.pos;
@@ -1068,6 +1122,12 @@
             currentView = "all"; updateNote(); const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
         });
 
+        function parseCsvText(text) {
+            // You can keep your streaming integration; this parses once
+            const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+            DATA = parsed.data.map(normalizeRow);
+            // ... annotate, build filters, refresh, etc.
+        }
         // Init
         
         (function init() {
@@ -1118,16 +1178,15 @@
                     refresh(); updateHueRange();
                 }
             }
-            Papa.parse("atlas.csv", {
+            Papa.parse(CSV_URL, {
                 download: true, header: true, skipEmptyLines: true, worker: true,
-                chunk: (results) => {
-                    // Normalize immediately
-                    const rows = results.data.map(normalizeRow);
+                chunk: ({ data }) => {
+                    const rows = data.map(normalizeRow);
                     buffer.push(...rows);
                     if (buffer.length >= PAGE) flushPage(false);
                 },
                 complete: () => flushPage(true),
-                error: () => { toast("Failed to load atlas.csv"); }
+                error: (e) => { toast("Failed to load atlas.csv"); console.error(e); }
             });
         })();
 
