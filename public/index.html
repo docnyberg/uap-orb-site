@@ -595,6 +595,11 @@
             return videoFile.replace(/\.[^.]+$/, '').replace(/_\d+$/, '');
         }
 
+        function getCurrentObjectIdFromModal() {
+            const gi = MODAL?.seq?.[MODAL?.pos];
+            return Number.isInteger(gi) ? DATA[gi]?.id : null;
+        }
+
 
         /* =========================
    Pro gating & counters with tamper resistance
@@ -1376,20 +1381,26 @@
 
         async function downloadFullVideo(objectId) {
             const fullVideoName = getFullVideoName(objectId);
-            if (!fullVideoName) { alert('Full video not available for this object'); return; }
-
+            if (!fullVideoName) {
+                alert('Full video not available for this object');
+                return;
+            }
+            // Ask Netlify to mint a short-lived R2 URL
             const res = await fetch(`/.netlify/functions/get-r2-url?file=${encodeURIComponent(fullVideoName)}`);
-            if (!res.ok) { alert('Could not fetch download link'); return; }
+            if (!res.ok) {
+                const msg = await res.text().catch(() => '');
+                throw new Error(`Failed to fetch presigned URL (${res.status}) ${msg}`);
+            }
             const { url } = await res.json();
-
             const a = document.createElement('a');
             a.href = url;
-            a.download = fullVideoName; // server also sets Content-Disposition
+            a.download = fullVideoName;
             a.rel = 'noopener';
             document.body.appendChild(a);
             a.click();
             a.remove();
         }
+
 
         function tileDurationMs(row) {
             const st = num(row.start_ts, null), et = num(row.end_ts, null);
@@ -1507,37 +1518,13 @@
 
         async function onDownloadVideoClick() {
             try {
-                console.log('Video download clicked');
+                if (!MODAL) { alert('No video sequence loaded.'); return; }
 
-                if (!MODAL) {
-                    alert('No video sequence loaded.');
-                    return;
-                }
-                console.log('Modal exists:', MODAL);
-
-                if ($('#collapseDS').checked) {
-                    alert('Video export requires full timeline. Please uncheck "Collapse dead space" and try again.');
-                    return;
-                }
-
-                // Try to download pre-made full video first
-                const currentObjectId = MODAL.id; // The modal ID should be the object ID
-                const fullVideoName = getFullVideoName(currentObjectId);
-
-                if (fullVideoName) {
-                    console.log('Downloading pre-made full video:', fullVideoName);
-
-                    // Check if full video exists
-                    try {
-                        const response = await fetch(`/vids_full/${fullVideoName}`, { method: 'HEAD' });
-                        if (response.ok) {
-                            // Download the pre-made full video
-                            downloadFullVideo(currentObjectId);
-                            return; // Exit early - we're done!
-                        }
-                    } catch (e) {
-                        console.log('Full video not found, falling back to FFmpeg generation');
-                    }
+                // *** FIX: pull the id from the current modal frame ***
+                const objectId = getCurrentObjectIdFromModal();
+                if (objectId) {
+                    await downloadFullVideo(objectId);   // uses Netlify presign -> R2
+                    return;                               // done — skip the fallback
                 }
 
                 // If we get here, continue with the original FFmpeg-based code
