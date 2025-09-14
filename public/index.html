@@ -563,6 +563,7 @@
         </div>
     </div>
 
+
     <script>
         /* =========================
            Tiny DOM helpers & state
@@ -598,6 +599,16 @@
         function getCurrentObjectIdFromModal() {
             const gi = MODAL?.seq?.[MODAL?.pos];
             return Number.isInteger(gi) ? DATA[gi]?.id : null;
+        }
+
+        function normalizeVideoFileName(name) {
+            if (!name) return null;
+            let v = String(name).trim();
+            // keep only the base filename (no folders)
+            v = v.split(/[\\/]/).pop();
+            // ensure exactly one .mp4 (fixes cases like .mp4.mp4)
+            v = v.replace(/(\.mp4)+$/i, '');
+            return v + '.mp4';
         }
 
 
@@ -1373,10 +1384,18 @@
    Full video download
    ========================= */
         function getFullVideoName(objectId) {
-            // Extract the base name from object ID
-            // Example: "20250328_124758000_iOS.2_e000_000300_obj" -> "20250328_124758000_iOS.2"
-            const match = objectId.match(/^(.+?)_e\d+_\d+_obj$/);
-            return match ? match[1] + '.mp4' : null;
+            // Legacy pattern, if objectId looks like "..._e000_000300_obj"
+            if (objectId && typeof objectId === 'string') {
+                const m = objectId.match(/^(.+?)_e\d+_\d+_obj$/);
+                if (m) return m[1] + '.mp4';
+                // If the id matches a row, use its video_file
+                const row = (typeof DATA !== 'undefined') ? DATA.find(r => r.id === objectId) : null;
+                if (row) return normalizeVideoFileName(row.video_file);
+            }
+            // Fallback to the currently selected row in the modal
+            const gi = MODAL?.seq?.[MODAL?.pos];
+            const row2 = Number.isInteger(gi) ? DATA[gi] : null;
+            return normalizeVideoFileName(row2?.video_file);
         }
 
         async function downloadFullVideo(objectId) {
