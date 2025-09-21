@@ -1,8 +1,8 @@
 diff --git a/tools/remove_tiktok_thumbs.py b/tools/remove_tiktok_thumbs.py
-index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e8319e2f3d6 100644
+index 8480ba93dcb6135d45f7099f9253d11898394a65..6a354039efd0b68429ab1cf3d902c8cb53ac4c45 100644
 --- a/tools/remove_tiktok_thumbs.py
 +++ b/tools/remove_tiktok_thumbs.py
-@@ -1,77 +1,141 @@
+@@ -1,77 +1,210 @@
  ﻿#!/usr/bin/env python3
  # tools/remove_tiktok_thumbs.py
  #
@@ -12,14 +12,14 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
  
  import argparse, os, json, cv2, numpy as np
  from pathlib import Path
- from typing import Tuple
+-from typing import Tuple
++from typing import Optional, Tuple
  
  # ---------------------------- HSV color ranges ----------------------------
  # OpenCV HSV: H in [0,180)
  RED_1  = (np.array([  0, 50, 50]), np.array([ 10,255,255]))
  RED_2  = (np.array([160, 50, 50]), np.array([180,255,255]))
  CYAN   = (np.array([ 80, 50, 50]), np.array([100,255,255]))
-+WHITE  = (np.array([  0,  0,200]), np.array([180, 60,255]))
  
  # --------------------------- Helper detectors ----------------------------
  
@@ -57,66 +57,136 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
      return float(np.count_nonzero(overlap)) / float(H * W)
  
 +
-+def detect_friends_badge(img: np.ndarray,
-+                         min_red: float = 0.003,
-+                         min_white: float = 0.0015,
-+                         corner_only: bool = True,
-+                         margin: float = 0.24,
-+                         pad: float = 0.12,
-+                         min_white_overlap: float = 0.45):
-+    """Detect TikTok "Friends" notification badges (bright red pill with white numerals)."""
++def expand_box(box: Tuple[int, int, int, int], pad: float, width: int, height: int) -> Tuple[int, int, int, int]:
++    """Pad a bounding box by `pad` proportion while keeping it inside the image."""
++    if pad <= 0:
++        return box
++    x0, y0, x1, y1 = box
++    w = max(0, x1 - x0 + 1)
++    h = max(0, y1 - y0 + 1)
++    if w == 0 or h == 0:
++        return box
++    dw, dh = int(round(w * pad)), int(round(h * pad))
++    x0 = max(0, x0 - dw)
++    y0 = max(0, y0 - dh)
++    x1 = min(width - 1, x1 + dw)
++    y1 = min(height - 1, y1 + dh)
++    return x0, y0, x1, y1
 +
-+    def _mask_detector(region_mask: np.ndarray):
-+        corner_px = max(int(np.count_nonzero(region_mask)), 1)
-+        red_mask = cv2.bitwise_and(m_red, region_mask)
-+        white_mask = cv2.bitwise_and(m_white, region_mask)
-+        red_ratio = np.count_nonzero(red_mask) / corner_px
-+        white_ratio = np.count_nonzero(white_mask) / corner_px
-+        if red_ratio < min_red or white_ratio < min_white:
-+            return None
 +
-+        white_pixels = np.count_nonzero(white_mask)
-+        if white_pixels == 0:
-+            return None
++def detect_notification_badge(
++    img: np.ndarray,
++    min_area_ratio: float = 0.0005,
++    max_area_ratio: float = 0.05,
++    min_fill_ratio: float = 0.4,
++    min_white_ratio: float = 0.08,
++) -> Tuple[bool, Optional[Tuple[int, int, int, int]]]:
++    """Detect red notification badges with white numerals (e.g., TikTok friends counter)."""
 +
-+        dil_k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-+        red_dilated = cv2.dilate(red_mask, dil_k, iterations=1)
-+        overlap = np.count_nonzero(cv2.bitwise_and(red_dilated, white_mask)) / white_pixels
-+        if overlap < min_white_overlap:
-+            return None
-+
-+        combined = cv2.bitwise_or(red_mask, white_mask)
-+        ys, xs = np.where(combined > 0)
-+        if xs.size == 0 or ys.size == 0:
-+            return None
-+
-+        x0, x1 = xs.min(), xs.max()
-+        y0, y1 = ys.min(), ys.max()
-+        w, h = x1 - x0 + 1, y1 - y0 + 1
-+        dw, dh = int(w * pad), int(h * pad)
-+        return (max(0, x0 - dw),
-+                max(0, y0 - dh),
-+                min(W - 1, x1 + dw),
-+                min(H - 1, y1 + dh))
-+
-+    H, W = img.shape[:2]
 +    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-+    m1 = cv2.inRange(hsv, RED_1[0], RED_1[1])
-+    m2 = cv2.inRange(hsv, RED_2[0], RED_2[1])
-+    m_red = cv2.bitwise_or(m1, m2)
-+    m_white = cv2.inRange(hsv, WHITE[0], WHITE[1])
++    H, W = hsv.shape[:2]
 +
-+    if corner_only:
-+        for cm in corner_mask(img.shape, margin):
-+            box = _mask_detector(cm)
-+            if box is not None:
-+                return True, box
++    # Bright pink/red bubble
++    badge_mask_1 = cv2.inRange(hsv, np.array([0, 120, 120]), np.array([10, 255, 255]))
++    badge_mask_2 = cv2.inRange(hsv, np.array([160, 120, 120]), np.array([180, 255, 255]))
++    badge_mask = cv2.bitwise_or(badge_mask_1, badge_mask_2)
++
++    if np.count_nonzero(badge_mask) == 0:
 +        return False, None
 +
-+    full_mask = np.full((H, W), 255, dtype=np.uint8)
-+    box = _mask_detector(full_mask)
-+    if box is not None:
-+        return True, box
++    badge_mask = cv2.medianBlur(badge_mask, 3)
++    cnts, _ = cv2.findContours(badge_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
++
++    for cnt in cnts:
++        area = float(cv2.contourArea(cnt))
++        if area <= 0:
++            continue
++        area_ratio = area / float(H * W)
++        if area_ratio < min_area_ratio or area_ratio > max_area_ratio:
++            continue
++
++        x, y, w, h = cv2.boundingRect(cnt)
++        if w == 0 or h == 0:
++            continue
++
++        aspect = w / float(h)
++        if aspect < 0.5 or aspect > 1.8:
++            continue
++
++        rect_area = float(w * h)
++        fill_ratio = area / rect_area
++        if fill_ratio < min_fill_ratio:
++            continue
++
++        roi_hsv = hsv[y : y + h, x : x + w]
++        white_mask = cv2.inRange(roi_hsv, np.array([0, 0, 200]), np.array([180, 60, 255]))
++        white_ratio = float(np.count_nonzero(white_mask)) / rect_area
++        if white_ratio < min_white_ratio:
++            continue
++
++        return True, (x, y, x + w - 1, y + h - 1)
++
++    return False, None
++
++
++def detect_golden_medallion(
++    img: np.ndarray,
++    min_area_ratio: float = 0.0002,
++    max_area_ratio: float = 0.04,
++    min_fill_ratio: float = 0.25,
++    min_dark_ratio: float = 0.08,
++    min_circularity: float = 0.45,
++) -> Tuple[bool, Optional[Tuple[int, int, int, int]]]:
++    """Detect circular gold medallion avatars resembling the provided sample."""
++
++    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
++    H, W = hsv.shape[:2]
++
++    gold_mask = cv2.inRange(hsv, np.array([15, 80, 80]), np.array([45, 255, 255]))
++    if np.count_nonzero(gold_mask) == 0:
++        return False, None
++
++    gold_mask = cv2.GaussianBlur(gold_mask, (5, 5), 0)
++    gold_mask = cv2.morphologyEx(gold_mask, cv2.MORPH_CLOSE,
++                                 cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
++
++    cnts, _ = cv2.findContours(gold_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
++    for cnt in cnts:
++        area = float(cv2.contourArea(cnt))
++        if area <= 0:
++            continue
++        area_ratio = area / float(H * W)
++        if area_ratio < min_area_ratio or area_ratio > max_area_ratio:
++            continue
++
++        peri = cv2.arcLength(cnt, True)
++        if peri <= 0:
++            continue
++        circularity = 4.0 * np.pi * area / (peri * peri)
++        if circularity < min_circularity:
++            continue
++
++        x, y, w, h = cv2.boundingRect(cnt)
++        if w == 0 or h == 0:
++            continue
++
++        aspect = w / float(h)
++        if aspect < 0.75 or aspect > 1.3:
++            continue
++
++        rect_area = float(w * h)
++        fill_ratio = area / rect_area
++        if fill_ratio < min_fill_ratio:
++            continue
++
++        roi_hsv = hsv[y : y + h, x : x + w]
++        dark_mask = cv2.inRange(roi_hsv, np.array([0, 0, 0]), np.array([180, 255, 120]))
++        dark_ratio = float(np.count_nonzero(dark_mask)) / rect_area
++        if dark_ratio < min_dark_ratio:
++            continue
++
++        return True, (x, y, x + w - 1, y + h - 1)
++
 +    return False, None
 +
  def detect_tiktok_aggressive(img: np.ndarray,
@@ -145,23 +215,10 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
  def detect_tiktok(img: np.ndarray, min_red=0.01, min_cyan=0.05,
                    corner_only=True, margin=0.22, pad=0.10):
 diff --git a/tools/remove_tiktok_thumbs.py b/tools/remove_tiktok_thumbs.py
-index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e8319e2f3d6 100644
+index 8480ba93dcb6135d45f7099f9253d11898394a65..6a354039efd0b68429ab1cf3d902c8cb53ac4c45 100644
 --- a/tools/remove_tiktok_thumbs.py
 +++ b/tools/remove_tiktok_thumbs.py
-@@ -100,135 +164,153 @@ def detect_tiktok(img: np.ndarray, min_red=0.01, min_cyan=0.05,
-                 x0, x1 = xs.min(), xs.max()
-                 y0, y1 = ys.min(), ys.max()
-                 # pad
-                 w, h = x1 - x0 + 1, y1 - y0 + 1
-                 dw, dh = int(w * pad), int(h * pad)
-                 x0 = max(0, x0 - dw); y0 = max(0, y0 - dh)
-                 x1 = min(W-1, x1 + dw); y1 = min(H-1, y1 + dh)
-                 return True, (x0, y0, x1, y1)
-         return False, None
- 
-     # global ratios (more conservative than aggressive)
-     red_ratio = np.count_nonzero(m_red)  / (H * W)
-     cyn_ratio = np.count_nonzero(m_cyan) / (H * W)
+@@ -113,50 +246,68 @@ def detect_tiktok(img: np.ndarray, min_red=0.01, min_cyan=0.05,
      if red_ratio > min_red and cyn_ratio > min_cyan:
          comb = cv2.bitwise_or(m_red, m_cyan)
          cnts, _ = cv2.findContours(comb, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -174,8 +231,7 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
  # ------------------------------- Worker ----------------------------------
  
  def process_file(fp: Path, mode: str,
--                 min_red: float, min_cyan: float,
-+                 min_red: float, min_cyan: float, min_white: float,
+                  min_red: float, min_cyan: float,
                   corner_only: bool, margin: float, pad: float,
                   aggressive: bool, rc_min: float):
      img = cv2.imread(str(fp))
@@ -185,15 +241,27 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
  
      # Standard detector: corner → global fallback
      is_logo, box = detect_tiktok(img, min_red, min_cyan, corner_only, margin, pad=pad)
-+    if not is_logo:
-+        is_logo, box = detect_friends_badge(img, min_red=min_red, min_white=min_white,
-+                                            corner_only=corner_only, margin=margin, pad=pad)
      if not is_logo and corner_only:
          is_logo, box = detect_tiktok(img, min_red, min_cyan, False, margin, pad=pad)
-+        if not is_logo:
-+            is_logo, box = detect_friends_badge(img, min_red=min_red, min_white=min_white,
-+                                                corner_only=False, margin=margin, pad=pad)
  
++    if not is_logo:
++        badge_hit, badge_box = detect_notification_badge(img)
++        if badge_hit:
++            is_logo = True
++            if badge_box is not None:
++                box = expand_box(badge_box, pad, W, H)
++            else:
++                box = None
++
++    if not is_logo:
++        medallion_hit, medallion_box = detect_golden_medallion(img)
++        if medallion_hit:
++            is_logo = True
++            if medallion_box is not None:
++                box = expand_box(medallion_box, pad, W, H)
++            else:
++                box = None
++
      # Aggressive fallback (global red–cyan overlap)
      if not is_logo and aggressive:
          if detect_tiktok_aggressive(img, min_red=min_red, min_cyan=min_cyan, rc_min=rc_min):
@@ -219,33 +287,11 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
          else:
              x0, y0, x1, y1 = box
          cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 0), thickness=-1)
-         cv2.imwrite(str(fp), img)
-         return True, "mask"
- 
-     return False, "noop"
- 
- # --------------------------------- CLI -----------------------------------
- 
- def main():
-     p = argparse.ArgumentParser()
-     p.add_argument("paths", nargs="+", help="folders to scan (e.g., public/thumbs ...)")
-     p.add_argument("--mode", choices=["mask","black","delete","move"], default="black",
-                    help="what to do with detected logos (default: black full-tile)")
-     p.add_argument("--move-to", default=None, help="if --mode move, destination folder")
-     p.add_argument("--min-red",  type=float, default=0.002,
-                    help="red/pink ratio threshold (default tuned to 0.002)")
-     p.add_argument("--min-cyan", type=float, default=0.002,
-                    help="cyan ratio threshold (default tuned to 0.002)")
-+    p.add_argument("--min-white", type=float, default=0.0015,
-+                   help="white ratio threshold for Friends badge detection (default 0.0015)")
-     p.add_argument("--corner-only", action="store_true",
-                    help="only consider corners first (recommended)")
-     p.add_argument("--margin", type=float, default=0.22,
-                    help="corner window size as fraction of side length")
-     p.add_argument("--pad", type=float, default=0.10,
-                    help="padding around detected red/cyan region")
-     p.add_argument("--aggressive", action="store_true",
-                    help="add red–cyan overlap detector (global) as fallback")
+diff --git a/tools/remove_tiktok_thumbs.py b/tools/remove_tiktok_thumbs.py
+index 8480ba93dcb6135d45f7099f9253d11898394a65..6a354039efd0b68429ab1cf3d902c8cb53ac4c45 100644
+--- a/tools/remove_tiktok_thumbs.py
++++ b/tools/remove_tiktok_thumbs.py
+@@ -188,47 +339,55 @@ def main():
      p.add_argument("--rc-min", type=float, default=0.0008,
                     help="min red–cyan overlap fraction for aggressive detector (default tuned to 0.0008)")
      p.add_argument("--log", default=None, help="write JSON action log")
@@ -265,22 +311,20 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
                              continue
                          hit, _ = detect_tiktok(img, args.min_red, args.min_cyan,
                                                 args.corner_only, args.margin, pad=args.pad)
-+                        if not hit:
-+                            hit, _ = detect_friends_badge(img, min_red=args.min_red,
-+                                                          min_white=args.min_white,
-+                                                          corner_only=args.corner_only,
-+                                                          margin=args.margin, pad=args.pad)
                          if not hit and args.corner_only:
                              hit, _ = detect_tiktok(img, args.min_red, args.min_cyan,
                                                     False, args.margin, pad=args.pad)
-+                            if not hit:
-+                                hit, _ = detect_friends_badge(img, min_red=args.min_red,
-+                                                              min_white=args.min_white,
-+                                                              corner_only=False,
-+                                                              margin=args.margin, pad=args.pad)
                          if not hit and args.aggressive:
                              hit = detect_tiktok_aggressive(img, min_red=args.min_red,
                                                             min_cyan=args.min_cyan, rc_min=args.rc_min)
++                        if not hit:
++                            badge_hit, _ = detect_notification_badge(img)
++                            if badge_hit:
++                                hit = True
++                        if not hit:
++                            medallion_hit, _ = detect_golden_medallion(img)
++                            if medallion_hit:
++                                hit = True
                          if hit and args.move_to:
                              os.makedirs(args.move_to, exist_ok=True)
                              dest = Path(args.move_to) / name
@@ -290,8 +334,7 @@ index 8480ba93dcb6135d45f7099f9253d11898394a65..eed961450ffbcc251b1faf674b653e83
                              actions.append({"file": str(fp), "action": "move", "dest": str(dest)})
                          continue
  
--                    changed, note = process_file(fp, args.mode, args.min_red, args.min_cyan,
-+                    changed, note = process_file(fp, args.mode, args.min_red, args.min_cyan, args.min_white,
+                     changed, note = process_file(fp, args.mode, args.min_red, args.min_cyan,
                                                   args.corner_only, args.margin, args.pad,
                                                   args.aggressive, args.rc_min)
                      if changed:
