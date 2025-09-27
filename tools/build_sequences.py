@@ -118,7 +118,204 @@ def write_json(path: Path, obj):
     with path.open("w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=2)
 
-        # ---------------------------
+# === RADIAL + VACUOLE HELPERS (DROP-IN) ======================================
+
+
+def _polar_sector_index(cx: float, cy: float, x: float, y: float, n_sectors: int = 8) -> int:
+    """
+    Angle measured from +X axis, increasing counter-clockwise, mapped to sectors of 360/n.
+    We flip Y with a minus sign to keep screen coords consistent.
+    """
+    ang = math.degrees(math.atan2(-(y - cy), (x - cx))) % 360.0
+    w = 360.0 / float(n_sectors)
+    return int(ang // w) % n_sectors
+
+
+def _median_contour_radius(cnt, cx, cy):
+    ds = [math.hypot(float(p[0][0]) - cx, float(p[0][1]) - cy) for p in cnt]
+    return float(np.median(ds)) if ds else 0.0
+
+
+def _edge_band_mask_from_contour(shape_hw, cnt, band_px: int) -> np.ndarray:
+    """
+    Build a thin mask around the contour boundary (band of given thickness).
+    """
+    h, w = shape_hw
+    band_px = max(1, int(band_px))
+    mask = np.zeros((h, w), np.uint8)
+    cv2.drawContours(mask, [cnt], -1, 255, thickness=band_px)
+    return mask
+
+
+def _annulus_mask_from_filled(shape_hw, cnt, band_frac: float = 0.12) -> np.ndarray:
+    """
+    Make an annulus by filling contour then eroding it by a fraction of the approximate radius.
+    Useful for ring-like periphery analysis independent of solidity.
+    """
+    h, w = shape_hw
+    fill = np.zeros((h, w), np.uint8)
+    cv2.drawContours(fill, [cnt], -1, 255, thickness=cv2.FILLED)
+
+    M = cv2.moments(cnt)
+    if M["m00"] <= 0:
+        return fill  # fallback
+    cx = M["m10"] / M["m00"]
+    cy = M["m01"] / M["m00"]
+    r_med = _median_contour_radius(cnt, cx, cy)
+    k = max(1, int(band_frac * max(6, r_med)))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1))
+    inner = cv2.erode(fill, kernel, iterations=1)
+    annulus = cv2.subtract(fill, inner)
+    return annulus
+
+
+def compute_radial_and_vacuole_features(
+    bgr: np.ndarray,
+    cnt: np.ndarray,
+    n_sectors: int = 8,
+    periphery_band_frac: float = 0.12,
+    hough_min_r_frac: float = 0.03,
+    hough_max_r_frac: float = 0.12,
+    hough_dp: float = 1.2,
+    hough_param1: int = 80,
+    hough_param2: int = 14,
+    hough_min_dist_frac: float = 0.08
+) -> dict:
+    """
+    Compute:
+      - orientation8 (ellipse angle -> 8 bins)
+      - bright_sector8 (sector with max V-sum in periphery annulus)
+      - vacuole detection near periphery via HoughCircles (both bright & dark),
+        returning vacuole_count, vacuole_angles_deg, vacuole_sectors8 (list),
+        and vacuole_mask8 (bitmask over 8 sectors).
+
+    Returns a dict with fields. Safely handles degenerate contours and small objects.
+    """
+    out = {
+        "orientation8": None,
+        "bright_sector8": None,
+        "vacuole_count": 0,
+        "vacuole_angles_deg": [],
+        "vacuole_sectors8": [],
+        "vacuole_mask8": 0,
+    }
+    if bgr is None or cnt is None or len(cnt) < 5:
+        return out
+
+    h, w = bgr.shape[:2]
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    V = hsv[:, :, 2]
+
+    # Orientation (8 bins) from fitEllipse (OpenCV angle 0..180)
+    try:
+        ellipse = cv2.fitEllipse(cnt)
+        # ellipse = ((cx,cy),(MA,ma),angle)
+        angle = float(ellipse[2])  # 0..180 (OpenCV)
+        orient8 = int(round(angle / (180.0 / 8.0))) % 8
+        out["orientation8"] = orient8
+    except Exception:
+        out["orientation8"] = None
+
+    # Centroid + reference radius
+    M = cv2.moments(cnt)
+    if M["m00"] <= 0:
+        return out
+    cx = M["m10"] / M["m00"]
+    cy = M["m01"] / M["m00"]
+    r_med = _median_contour_radius(cnt, cx, cy)
+    if r_med <= 1:
+        return out
+
+    # Periphery annulus for brightness & vacuoles
+    annulus = _annulus_mask_from_filled((h, w), cnt, band_frac=periphery_band_frac)
+    if annulus is None or annulus.max() == 0:
+        # fallback: thin band along edge
+        band_px = max(2, int(0.08 * r_med))
+        annulus = _edge_band_mask_from_contour((h, w), cnt, band_px)
+
+    # --- Brightness sector (sum V in each sector of the annulus)
+    ys, xs = np.nonzero(annulus)
+    if len(xs) >= 3:
+        sector_sums = [0.0] * n_sectors
+        for py, px in zip(ys, xs):
+            sector = _polar_sector_index(cx, cy, px, py, n_sectors=n_sectors)
+            sector_sums[sector] += float(V[py, px])
+        out["bright_sector8"] = int(np.argmax(sector_sums))
+    else:
+        out["bright_sector8"] = None
+
+    # --- Vacuole detection near periphery
+    # We detect circular blobs in the annulus area in both bright and dark passes.
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # Radii and min distance relative to object size
+    minR = max(2, int(hough_min_r_frac * r_med))
+    maxR = max(minR + 1, int(hough_max_r_frac * r_med))
+    minDist = max(4, int(hough_min_dist_frac * r_med))
+
+    vac_angles = []
+    vac_sectors = []
+    mask8 = 0
+
+    def _hough_pass(src_img):
+        try:
+            circles = cv2.HoughCircles(
+                src_img,
+                cv2.HOUGH_GRADIENT,
+                dp=hough_dp,
+                minDist=minDist,
+                param1=hough_param1,
+                param2=hough_param2,
+                minRadius=minR,
+                maxRadius=maxR,
+            )
+        except Exception:
+            circles = None
+        if circles is None:
+            return []
+        return circles[0]
+
+    # Two passes: normal and inverted (to catch bright and dark vacuoles)
+    candidates = []
+    for mat in (blur, (255 - blur)):
+        cand = _hough_pass(mat)
+        if len(cand):
+            candidates.append(cand)
+    if len(candidates):
+        cand = np.vstack(candidates)
+        # Filter: must lie within the periphery annulus and at boundary radius
+        # We'll require distance to centroid near r_med, within ±0.35*r_med.
+        band_tol = 0.35 * r_med
+        ann = annulus > 0
+        for (x, y, rr) in cand:
+            x, y, rr = float(x), float(y), float(rr)
+            # Check inside image
+            if not (0 <= int(round(x)) < w and 0 <= int(round(y)) < h):
+                continue
+            # Must be in the annulus band:
+            if not ann[int(round(y)), int(round(x))]:
+                continue
+            dist = math.hypot(x - cx, y - cy)
+            if abs(dist - r_med) > band_tol:
+                continue
+            ang = math.degrees(math.atan2(-(y - cy), (x - cx))) % 360.0
+            sector = _polar_sector_index(cx, cy, x, y, n_sectors=n_sectors)
+            vac_angles.append(float(ang))
+            vac_sectors.append(int(sector))
+            mask8 |= 1 << int(sector)
+
+    # Deduplicate sector hits lightly (optional); here we keep all but report unique sectors in mask.
+    out["vacuole_count"] = int(len(vac_angles))
+    out["vacuole_angles_deg"] = vac_angles
+    out["vacuole_sectors8"] = vac_sectors
+    out["vacuole_mask8"] = int(mask8)
+
+    return out
+
+# === END RADIAL + VACUOLE HELPERS ============================================
+
+# ---------------------------
 # Color / morphology helpers
 # ---------------------------
 
@@ -733,201 +930,291 @@ def assign_tokens(by_cluster, min_cluster_size: int = 3):
 # Sequence builder
 # ---------------------------
 
-def build_sequences(recs, token_map):
-    """
-    For each video json_file: sort by event index and assign the majority token
-    among thumbs that share that event index. Also produce:
-      - binary_seq (V-based)
-      - symbol_seq_enhanced (full color names + ↑/↓ + ✦)
-      - events list (per-event details, including cluster_id and thumb_obj)
-      - cycles list (split by >2s gap OR timestamp reset; always a list)
-    """
-    per_event = defaultdict(list)
-    per_event_v = defaultdict(list)
 
-    # Build per-event aggregates
+def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict, n_sectors: int = 8):
+    """
+    Aggregate detections per (json_file, e_idx) and compute:
+      - majority cluster token
+      - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
+      - arrow (↑/↓) if present in recs, but we also add orientation8
+      - bright_sector8 (from V in annulus)
+      - vacuoles: angles, sector list, 8-bit mask, count
+
+    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8, sector8, vac_*...}
+    """
+    by_event = defaultdict(list)
     for r in recs:
-        jf = r.get('json_file')
-        ei = r.get('e_idx')
+        jf = r.get("json_file")
+        ei = r.get("e_idx")
         if jf is None or pd.isna(jf) or ei is None:
             continue
-        cid = r.get('cluster', None)
-        if cid is not None:
-            per_event[(jf, int(ei))].append(cid)
-        v_val = r.get('v', np.nan)
-        if not np.isnan(v_val):
-            per_event_v[(jf, int(ei))].append(float(v_val))
+        by_event[(jf, int(ei))].append(r)
 
-    # Build index lists per video
-    videos = defaultdict(list)
-    for (jf, ei) in per_event.keys():
-        videos[jf].append(int(ei))
+    out = {}
+    for (jf, ei), rows in by_event.items():
+        cids = [rr.get("cluster") for rr in rows if rr.get("cluster") is not None]
+        token = "_"
+        maj_cid = None
+        if cids:
+            maj_cid = Counter(cids).most_common(1)[0][0]
+            toks = [token_map[c] for c in cids if c in token_map]
+            if toks:
+                token = Counter(toks).most_common(1)[0][0]
+
+        color_lbls = [str(rr.get("color_label")) for rr in rows if rr.get("color_label")]
+        if color_lbls:
+            color_label = Counter(color_lbls).most_common(1)[0][0]
+        else:
+            hues = [rr.get("h") for rr in rows if not np.isnan(rr.get("h", np.nan))]
+            color_label = "Unknown"
+            if hues:
+                hmed = float(np.median(hues))
+                if 35.0 <= hmed < 70.0:
+                    color_label = "Yellow"
+                elif 80.0 <= hmed < 160.0:
+                    color_label = "Green"
+                elif 200.0 <= hmed < 260.0:
+                    color_label = "Blue"
+                elif hmed >= 300.0 or hmed < 10.0:
+                    color_label = "Pink/Magenta"
+
+        thumbs = [rr.get("thumb") for rr in rows if rr.get("thumb")]
+        thumb = Counter(thumbs).most_common(1)[0][0] if thumbs else None
+
+        arrow = None
+        for rr in rows:
+            orient_str = str(rr.get("orientation", ""))
+            if orient_str.endswith("↑"):
+                arrow = "↑"
+                break
+            if orient_str.endswith("↓"):
+                arrow = "↓"
+                break
+
+        orient8 = None
+        bright_sector8 = None
+        vac_angles = []
+        vac_sectors = []
+        vac_mask8 = 0
+        vac_count = 0
+
+        if thumb and thumbs_dir is not None and cv2 is not None:
+            img = load_img(thumbs_dir, thumb)
+            if img is not None:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                thr = cv2.adaptiveThreshold(
+                    gray,
+                    255,
+                    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                    cv2.THRESH_BINARY,
+                    35,
+                    2,
+                )
+                cnts, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                if cnts:
+                    cnt = max(cnts, key=cv2.contourArea)
+                    feats = compute_radial_and_vacuole_features(img, cnt, n_sectors=n_sectors)
+                    orient8 = feats.get("orientation8", None)
+                    bright_sector8 = feats.get("bright_sector8", None)
+                    vac_angles = feats.get("vacuole_angles_deg", [])
+                    vac_sectors = feats.get("vacuole_sectors8", [])
+                    vac_mask8 = feats.get("vacuole_mask8", 0)
+                    vac_count = feats.get("vacuole_count", 0)
+
+        sector_idx = None if bright_sector8 is None else int(bright_sector8)
+        if sector_idx is None:
+            sector_label = "sector_unknown"
+        else:
+            sector_label = f"sector_{sector_idx}_of_{n_sectors}"
+
+        out[(jf, ei)] = dict(
+            token=token,
+            cluster_id=None if maj_cid is None else int(maj_cid),
+            color_label=color_label,
+            arrow=arrow,
+            orientation8=None if orient8 is None else int(orient8),
+            sector8=sector_idx,
+            sector_label=sector_label,
+            vacuole_count=int(vac_count),
+            vacuole_angles_deg=[float(a) for a in vac_angles],
+            vacuole_sectors8=[int(s) for s in vac_sectors],
+            vacuole_mask8=int(vac_mask8),
+            thumb_obj=thumb,
+        )
+
+    return out
+
+
+# ====== SEQUENCE BUILDER (DROP-IN) ============================================
+def build_sequences(recs, token_map, thumbs_dir: Path, args):
+    """
+    Build per-video sequences with enriched per-event attributes:
+      - token (majority), cluster_id (majority)
+      - color_label (full names)
+      - arrow (↑/↓ when seen in prior pipeline)
+      - orientation8 (0..7), sector8 (0..7)
+      - vacuole_* (count, angles, sectors, mask8)
+      - enhanced_token for human-readable stream
+    Also produce:
+      - symbol_seq (classic token stream),
+      - binary_seq from V,
+      - cycles split by time gaps/resets.
+    """
+    from collections import defaultdict
+    import numpy as np
+
+    # brightness list for binary thresholding
+    per_event_v = defaultdict(list)
+    for r in recs:
+        jf = r.get('json_file'); ei = r.get('e_idx')
+        if jf is None or pd.isna(jf) or ei is None:
+            continue
+        if not np.isnan(r.get('v', np.nan)):
+            per_event_v[(jf, int(ei))].append(float(r['v']))
+
+    # video -> sorted event indices
+    videos = defaultdict(set)
+    for r in recs:
+        jf = r.get('json_file'); ei = r.get('e_idx')
+        if jf is None or pd.isna(jf) or ei is None:
+            continue
+        videos[jf].add(int(ei))
     for (jf, ei) in per_event_v.keys():
-        if ei not in videos[jf]:
-            videos[jf].append(int(ei))
-    for jf in videos:
-        videos[jf] = sorted(set(videos[jf]))
+        videos[jf].add(int(ei))
+    videos = {jf: sorted(list(eis)) for jf, eis in videos.items()}
 
-    # A global, deterministic fallback cluster-id map for sparse clustering:
-    # Use negative ids to avoid colliding with real cluster ids.
-    combo_map = {}
-    next_combo_id = -1
+    # Attributes per event
+    attrs = extract_event_attributes_with_radial(
+        recs, thumbs_dir, token_map,
+        n_sectors=args.sectors,
+        enable_radial=args.enable_radial,
+        enable_vacuoles=args.enable_vacuoles,
+        max_thumb_side=args.max_thumb_side,
+        periphery_band_frac=args.radial_band_frac,
+        hough_min_r_frac=args.hough_minr_frac,
+        hough_max_r_frac=args.hough_maxr_frac,
+        hough_dp=args.hough_dp,
+        hough_param1=args.hough_param1,
+        hough_param2=args.hough_param2,
+        hough_min_dist_frac=args.hough_mindist_frac,
+        s_min_for_color=args.s_min_for_color,
+        v_min_for_color=args.v_min_for_color
+    )
 
     results = {}
     for jf, e_idxs in videos.items():
         if not e_idxs:
             results[jf] = dict(
-                json_file=jf, n_events=0,
-                symbol_seq="", binary_seq="", v_threshold=None,
-                symbol_seq_enhanced="", events=[], cycles=[]
+                json_file=jf, n_events=0, legend={}, symbol_seq="",
+                binary_seq="", v_threshold=None, symbol_seq_enhanced="",
+                events=[], cycles=[]
             )
             continue
 
-        sym_seq = []            # original token stream (cluster tokens or "_")
-        v_list = []             # V means for binary thresholding
-        symbol_tokens = []      # full-color symbolic tokens with ↑/↓ and ✦
-        events_list = []        # per-event dicts
-
+        raw_tokens, v_vals, events_list = [], [], []
         for ei in e_idxs:
-            cids = per_event.get((jf, ei), [])
-            vs = per_event_v.get((jf, ei), [])
+            a = attrs.get((jf, ei), None)
+            tok = a["token"] if a else "_"
+            raw_tokens.append(tok)
 
-            # Representative record for this event
-            rec = None
-            main_cid = None
-            if cids:
-                tok = most_common_token(cids, token_map)
-                main_cid = Counter(cids).most_common(1)[0][0]
-                rec = next((rr for rr in recs
-                            if rr.get("json_file") == jf and rr.get("e_idx") == ei and rr.get("cluster") == main_cid), None)
-                if rec is None:
-                    rec = next((rr for rr in recs
-                                if rr.get("json_file") == jf and rr.get("e_idx") == ei), None)
-            else:
-                tok = "_"
-                rec = next((rr for rr in recs
-                            if rr.get("json_file") == jf and rr.get("e_idx") == ei), None)
+            # V for binary threshold
+            vv = per_event_v.get((jf, ei), [])
+            v_vals.append(np.nan if not vv else float(np.nanmean(vv)))
 
-            sym_seq.append(tok)
-            v_list.append(np.nan if not vs else float(np.nanmean(vs)))
-
-            # Extract attributes (with safe defaults)
-            if rec:
-                color_lbl = rec.get("color_label", "Unknown")
-                orient    = rec.get("orientation", None)    # "↑" / "↓" / None
-                flash_flag= bool(rec.get("flash", False))
-                morph     = rec.get("morphology", "unknown")
-                st        = rec.get("start_ts", None)
-                en        = rec.get("end_ts",   None)
-                start_ts  = float(st) if (st is not None and not np.isnan(st)) else None
-                end_ts    = float(en) if (en is not None and not np.isnan(en)) else None
-                thumb_name= rec.get("thumb")
-            else:
-                color_lbl = "Unknown"
-                orient    = None
-                flash_flag= False
-                morph     = "unknown"
-                start_ts  = None
-                end_ts    = None
-                # try to find any thumb for this event
-                thumb_name= None
-                ev_recs = [rr for rr in recs if rr.get("json_file")==jf and rr.get("e_idx")==ei]
-                for rr in ev_recs:
-                    if rr.get("thumb"):
-                        thumb_name = rr["thumb"]
-                        break
-
-            # Build enhanced symbol token (full color + optional ↑/↓ + ✦)
-            token_str = color_lbl + (orient or "")
-            if flash_flag:
-                token_str += "✦"
-            symbol_tokens.append(token_str)
-
-            # Cluster id for auditor:
-            # - Use real cluster id when available
-            # - Otherwise create a deterministic fallback based on (color|morph)
-            if main_cid is not None:
-                cluster_id_for_event = int(main_cid)
-            else:
-                combo = f"{color_lbl}|{morph}"
-                if combo not in combo_map:
-                    combo_map[combo] = next_combo_id
-                    next_combo_id -= 1
-                cluster_id_for_event = combo_map[combo]
-
+            # Best-effort timestamps
+            rr = next((rr for rr in recs if rr.get("json_file")==jf and rr.get("e_idx")==ei), None)
+            st = rr.get("start_ts") if rr else None
+            en = rr.get("end_ts") if rr else None
+            start_ts = float(st) if (st is not None and not np.isnan(st)) else None
+            end_ts   = float(en) if (en is not None and not np.isnan(en)) else None
             duration = (end_ts - start_ts) if (start_ts is not None and end_ts is not None) else None
 
-            events_list.append({
-                "event_index": int(ei),
-                "start_ts": start_ts,
-                "end_ts": end_ts,
-                "duration": duration,
-                "morphology": morph,
-                "orientation": orient,
-                "flash": flash_flag,
-                "color_label": color_lbl,
-                "cluster_id": cluster_id_for_event,
-                "thumb_obj":  thumb_name
-            })
+            if a:
+                parts = []
+                clr = a.get("color_label", "Unknown")
+                arr = a.get("arrow") or ""
+                parts.append(clr + arr)
+                if a.get("orientation8") is not None:
+                    parts.append(f"o{int(a['orientation8'])}")
+                if a.get("sector8") is not None:
+                    parts.append(f"s{int(a['sector8'])}")
+                vc = int(a.get("vacuole_count", 0))
+                if vc > 0:
+                    vsec = a.get("vacuole_sectors8", [])
+                    if vsec:
+                        uniq = sorted(set([int(x) for x in vsec]))
+                        parts.append("V[" + ",".join(str(x) for x in uniq) + "]")
+                    else:
+                        parts.append("Vx")
+                else:
+                    parts.append("V0")
+                enhanced_display = " ".join(parts)
 
-        # Original cluster-token stream
-        sym_seq_str = "".join(sym_seq)
+                events_list.append({
+                    "event_index": int(ei),
+                    "start_ts": start_ts, "end_ts": end_ts, "duration": duration,
+                    "morphology": rr.get("morphology","unknown") if rr else "unknown",
+                    "color_label": clr,
+                    "arrow": arr,
+                    "orientation8": a.get("orientation8", None),
+                    "sector8": a.get("sector8", None),
+                    "vacuole_count": vc,
+                    "vacuole_angles_deg": a.get("vacuole_angles_deg", []),
+                    "vacuole_sectors8": a.get("vacuole_sectors8", []),
+                    "vacuole_mask8": a.get("vacuole_mask8", 0),
+                    "cluster_id": a.get("cluster_id", None),
+                    "thumb_obj": a.get("thumb_obj", None),
+                    "enhanced_token": enhanced_display
+                })
+            else:
+                events_list.append({
+                    "event_index": int(ei),
+                    "start_ts": start_ts, "end_ts": end_ts, "duration": duration,
+                    "morphology": rr.get("morphology","unknown") if rr else "unknown",
+                    "color_label": "Unknown", "arrow": "",
+                    "orientation8": None, "sector8": None,
+                    "vacuole_count": 0, "vacuole_angles_deg": [],
+                    "vacuole_sectors8": [], "vacuole_mask8": 0,
+                    "cluster_id": None, "thumb_obj": None,
+                    "enhanced_token": "Unknown V0"
+                })
 
-        # Enhanced full-color symbolic stream
-        sym_seq_enhanced_str = " ".join(symbol_tokens)
-
-        # Binary (V-threshold via median + 0.8*MAD)
-        v_arr = np.array(v_list, dtype=float)
+        symbol_seq = "".join(raw_tokens)
+        v_arr = np.array(v_vals, dtype=float)
         v_med = np.nanmedian(v_arr)
         v_mad = np.nanmedian(np.abs(v_arr - v_med))
         v_thr = v_med + 0.8 * (v_mad if not np.isnan(v_mad) else 0.0)
-        bin_seq = [("1" if (not np.isnan(v) and v >= v_thr) else "0") for v in v_arr]
-        bin_seq_str = "".join(bin_seq)
+        binary_seq = "".join(("1" if (not np.isnan(v) and v >= v_thr) else "0") for v in v_arr)
+        symbol_seq_enhanced = " ".join(ev["enhanced_token"] for ev in events_list)
 
-                # Make flash more robust using per-video V spikes (OR with existing flags)
-        extra = 0.5 * (v_mad if not np.isnan(v_mad) else 0.0)
-        for idx, ev in enumerate(events_list):
-            vv = v_arr[idx]
-            spike = (not np.isnan(vv)) and (vv >= (v_thr + extra))
-            if spike and not ev["flash"]:
-                ev["flash"] = True
-                # add ✦ to enhanced token if not already present
-                if not symbol_tokens[idx].endswith("✦"):
-                    symbol_tokens[idx] += "✦"
-        # refresh enhanced sequence in case we added stars
-        sym_seq_enhanced_str = " ".join(symbol_tokens)
-
-        # Cycles: break on >2s gaps OR timestamp resets; always emit a list
+        # cycles by >2s gap or time reset
         cycles_list = []
         if events_list and any(e.get("start_ts") is not None for e in events_list):
             current = []
             prev_st = events_list[0].get("start_ts")
             for idx, ev in enumerate(events_list):
                 st = ev.get("start_ts")
-                if (
-                    idx > 0 and st is not None and prev_st is not None
-                    and ((st - prev_st) > 2.0 or st < prev_st)
-                ):
+                if idx > 0 and st is not None and prev_st is not None and ((st - prev_st) > 2.0 or st < prev_st):
                     cycles_list.append(" ".join(current))
                     current = []
-                current.append(symbol_tokens[idx])
+                current.append(ev["enhanced_token"])
                 prev_st = st
-            if current:
-                cycles_list.append(" ".join(current))
-        cycles = cycles_list  # always a list (even single cycle)
+            if current: cycles_list.append(" ".join(current))
 
         results[jf] = {
             "json_file": jf,
             "n_events": len(e_idxs),
-            "symbol_seq": sym_seq_str,
-            "binary_seq": bin_seq_str,
+            "symbol_seq": symbol_seq,
+            "binary_seq": binary_seq,
             "v_threshold": float(v_thr) if not np.isnan(v_thr) else None,
-            "symbol_seq_enhanced": sym_seq_enhanced_str,
+            "symbol_seq_enhanced": symbol_seq_enhanced,
             "events": events_list,
-            "cycles": cycles
+            "cycles": cycles_list
         }
-
     return results
+# ==============================================================================
+
+
 
 def most_common_token(cids, token_map):
     cnt = Counter([token_map.get(c) for c in cids if c in token_map])
@@ -939,17 +1226,19 @@ def most_common_token(cids, token_map):
 # Main
 # ---------------------------
 
+# ====== MAIN (DROP-IN) ========================================================
 def main():
+    import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--atlas", required=True, help="Path to atlas.csv")
     ap.add_argument("--thumbs", required=True, help="Directory containing thumbs (thumbs_obj)")
     ap.add_argument("--out", required=True, help="Output directory for sequences & codebook")
 
-    ap.add_argument("--min-samples", type=int, default=6, help="DBSCAN min_samples (default 6)")
-    ap.add_argument("--eps", type=float, default=0.28, help="DBSCAN eps (default 0.28)")
-
+    # clustering/tokens (kept)
+    ap.add_argument("--min-samples", type=int, default=6, help="DBSCAN min_samples")
+    ap.add_argument("--eps", type=float, default=0.28, help="DBSCAN eps")
     ap.add_argument("--min-cluster-size", type=int, default=3,
-                    help="Do not assign tokens to clusters smaller than this; they render as 'X' (default 3)")
+                    help="Clusters smaller than this render as 'X'")
 
     ap.add_argument("--w-phash", type=float, default=2.0)
     ap.add_argument("--w-hue", type=float, default=1.0)
@@ -961,7 +1250,24 @@ def main():
     ap.add_argument("--gate-ecc", type=float, default=0.28)
     ap.add_argument("--gate-ar", type=float, default=0.60)
 
-    ap.add_argument("--min-area", type=int, default=50, help="Ignore blobs with area < this (default 50)")
+    ap.add_argument("--min-area", type=int, default=50, help="Ignore blobs with area < this")
+
+    # NEW: radial/vacuole controls
+    ap.add_argument("--sectors", type=int, default=8)
+    ap.add_argument("--enable-radial", action="store_true", help="Compute orientation8/sector8")
+    ap.add_argument("--enable-vacuoles", action="store_true", help="Detect vacuoles on periphery")
+    ap.add_argument("--max-thumb-side", type=int, default=256)
+    ap.add_argument("--radial-band-frac", type=float, default=0.12)
+
+    ap.add_argument("--hough-minr-frac", type=float, default=0.03)
+    ap.add_argument("--hough-maxr-frac", type=float, default=0.12)
+    ap.add_argument("--hough-dp", type=float, default=1.2)
+    ap.add_argument("--hough-param1", type=int, default=80)
+    ap.add_argument("--hough-param2", type=int, default=14)
+    ap.add_argument("--hough-mindist-frac", type=float, default=0.08)
+
+    ap.add_argument("--s-min-for-color", type=float, default=0.12)
+    ap.add_argument("--v-min-for-color", type=float, default=0.08)
 
     args = ap.parse_args()
 
@@ -984,7 +1290,7 @@ def main():
     print("[tokenize] assign tokens & build codebook…")
     token_map, legend = assign_tokens(by_cluster, min_cluster_size=int(getattr(args, "min_cluster_size", 3)))
 
-    # Build and write codebook
+    # Build codebook
     codebook = dict(
         n_clusters=int(n_clusters),
         weights=dict(w_phash=args.w_phash, w_hue=args.w_hue, w_feat=args.w_feat),
@@ -994,10 +1300,26 @@ def main():
                    ecc=args.gate_ecc,
                    aspect_ratio=args.gate_ar),
         min_area_px=int(args.min_area),
+        radial=dict(
+            sectors=int(args.sectors),
+            enable_radial=bool(args.enable_radial),
+            enable_vacuoles=bool(args.enable_vacuoles),
+            band_frac=float(args.radial_band_frac),
+            hough=dict(
+                minr_frac=float(args.hough_minr_frac),
+                maxr_frac=float(args.hough_maxr_frac),
+                dp=float(args.hough_dp),
+                p1=int(args.hough_param1),
+                p2=int(args.hough_param2),
+                mindist_frac=float(args.hough_mindist_frac)
+            ),
+            color_guards=dict(s_min=float(args.s_min_for_color), v_min=float(args.v_min_for_color)),
+            max_thumb_side=int(args.max_thumb_side)
+        ),
         legend=legend
     )
 
-    # Add a clusters list for tools that expect codebook["clusters"]
+    # Provide 'clusters' list for tools that expect it
     clusters_list = []
     for tok, meta in legend.items():
         clusters_list.append({
@@ -1014,13 +1336,12 @@ def main():
     write_json(codebook_path, codebook)
     print(f"[OK] codebook → {codebook_path}")
 
-    # Build sequences per video
+    # Build sequences per video (NOTE: pass thumbs_dir and args)
     print("[sequence] building per-video sequences…")
-    seqs = build_sequences(recs, token_map)
+    seqs = build_sequences(recs, token_map, thumbs_dir, args)
 
     # Per-video JSONs
     for jf, obj in seqs.items():
-        # tokens used from original symbol_seq (ignore '_' and spaces)
         used = sorted(set([c for c in obj['symbol_seq'] if c not in ['_', ' ']]))
         vid_legend = {k: legend[k] for k in used if k in legend}
 
@@ -1044,7 +1365,7 @@ def main():
             }
         }
 
-        stem = Path(jf).name  # e.g., v15044g….json
+        stem = Path(jf).name
         out_path = out_dir / f"{stem}.sequence.json"
         write_json(out_path, out)
         print(f"[OK] {stem} → {out_path}")
@@ -1053,3 +1374,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+# ==============================================================================
+
