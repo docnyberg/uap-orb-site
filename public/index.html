@@ -240,6 +240,16 @@
                 top: 8px;
                 right: 8px
             }
+        .modal-extras {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4
+        }
+
+            .modal-extras div + div {
+                margin-top: 2px
+            }
 
         .thumb.watermark { /* flagged; effect under .hideTTActive */
         }
@@ -632,7 +642,33 @@
         }
         function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t = setTimeout(()=>fn.apply(null,a), ms); }; }
         const svgCache = {}; // key -> resolved successful URL
+        const SEQ_CACHE = new Map();
 
+        function sequenceJsonURL(jsonFile) {
+            if (!jsonFile) return null;
+            const safe = String(jsonFile).split('/').map(part => encodeURIComponent(part)).join('/');
+            return `sequences_merge/${safe}.sequence.json`;
+        }
+
+        async function loadSequenceMetadata(jsonFile) {
+            if (!jsonFile) return null;
+            if (SEQ_CACHE.has(jsonFile)) return SEQ_CACHE.get(jsonFile);
+            const prom = (async () => {
+                try {
+                    const url = sequenceJsonURL(jsonFile);
+                    if (!url) return null;
+                    const res = await fetch(url, { cache: "force-cache" });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return await res.json();
+                } catch (err) {
+                    console.warn('sequence fetch failed', err);
+                    return null;
+                }
+            })();
+            SEQ_CACHE.set(jsonFile, prom);
+            return prom;
+        }
+        
         let DATA = [], CURRENT = [], CURRENT_IDX = [];
         let sortAsc = true, groupMode = "none", sortMode = "hue", thumbMode = "object", svgStyle = "default";
         let hideDup = false;
@@ -1041,7 +1077,9 @@
             <div><strong>${it.json_file}</strong> (event ${it.event_index})</div>
             <div>${it.video_file} • t=${(+it.start_ts).toFixed(2)}–${(+it.end_ts).toFixed(2)}s</div>
             <div>hex ${it.hex_img || ""} • hue ${Number.isFinite(hueOf(it)) ? hueOf(it).toFixed(1) : "–"}° • S ${num(it.s_norm, 0).toFixed(2)} • V ${num(it.v_norm, 0).toFixed(2)}</div>
-            <div>shape ${it.shape} • motion ${it.motion}</div>`;
+            <div>shape ${it.shape} • motion ${it.motion}</div>
+            <div id="modalExtras" class="modal-extras">Loading sequence metadata…</div>`;
+            updateModalExtras(it);
         }
         function selectSequenceIndex(k) {
             MODAL.pos = Math.max(0, Math.min(MODAL.seq.length - 1, k));
@@ -1054,6 +1092,58 @@
         }
         function stepSequence(dir) { selectSequenceIndex(MODAL.pos + (dir < 0 ? -1 : 1)); }
         function setSvgMode(on) { MODAL.svg = !!on; document.getElementById("modalSvgToggle").checked = MODAL.svg; renderModalSequence(); updateModalMain(); }
+        
+        function updateModalExtras(it) {
+            const extrasEl = document.getElementById("modalExtras");
+            if (!extrasEl) return;
+            if (!it || !it.json_file) {
+                extrasEl.textContent = "No sequence metadata.";
+                return;
+            }
+            extrasEl.textContent = "Loading sequence metadata…";
+            loadSequenceMetadata(it.json_file).then(seq => {
+                if (!extrasEl.isConnected) return;
+                if (!seq || !Array.isArray(seq.events)) {
+                    extrasEl.textContent = "No sequence metadata.";
+                    return;
+                }
+                const evIdx = Number(it.event_index);
+                const ev = seq.events.find(e => Number(e.event_index) === evIdx);
+                if (!ev) {
+                    extrasEl.textContent = "No matching event metadata.";
+                    return;
+                }
+                const lines = [];
+                if (ev.enhanced_token) lines.push(`Token: ${ev.enhanced_token}`);
+                const orientBits = [];
+                if (ev.orientation) orientBits.push(String(ev.orientation));
+                if (Number.isFinite(ev.orientation8)) orientBits.push(`o${ev.orientation8}`);
+                if (orientBits.length) lines.push(`Orientation: ${orientBits.join(' • ')}`);
+                if (Number.isFinite(ev.sector8)) lines.push(`Sector: s${ev.sector8}`);
+                const vac = [];
+                if (typeof ev.vacuole_count === "number") vac.push(`count ${ev.vacuole_count}`);
+                if (Array.isArray(ev.vacuole_sectors8) && ev.vacuole_sectors8.length) vac.push(`sectors ${ev.vacuole_sectors8.join(',')}`);
+                if (typeof ev.vacuole_mask8 === "number" && ev.vacuole_mask8 > 0) {
+                    const mask = ev.vacuole_mask8.toString(2).padStart(8, '0');
+                    vac.push(`mask ${mask}`);
+                }
+                if (vac.length) lines.push(`Vacuoles: ${vac.join(' • ')}`);
+                if (typeof ev.cluster_id === "number") lines.push(`Cluster ID: ${ev.cluster_id}`);
+                if (ev.flash) lines.push("Flash: ✦");
+                extrasEl.innerHTML = "";
+                if (!lines.length) {
+                    extrasEl.textContent = "No radial/vacuole metadata.";
+                    return;
+                }
+                lines.forEach(txt => {
+                    const div = document.createElement("div");
+                    div.textContent = txt;
+                    extrasEl.appendChild(div);
+                });
+            }).catch(() => {
+                if (extrasEl.isConnected) extrasEl.textContent = "Sequence metadata unavailable.";
+            });
+        }
 
         function openModalByGlobalIndex(gi) {
             const it = DATA[gi];
