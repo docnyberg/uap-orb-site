@@ -931,17 +931,37 @@ def assign_tokens(by_cluster, min_cluster_size: int = 3):
 # ---------------------------
 
 
-def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict, n_sectors: int = 8):
-    """
+def extract_event_attributes_with_radial(
+    recs,
+    thumbs_dir: Path,
+    token_map: dict,
+    n_sectors: int = 8,
+    *,
+    enable_radial: bool = True,
+    enable_vacuoles: bool = True,
+    max_thumb_side: int = 256,
+    periphery_band_frac: float = 0.12,
+    hough_min_r_frac: float = 0.03,
+    hough_max_r_frac: float = 0.12,
+    hough_dp: float = 1.2,
+    hough_param1: int = 80,
+    hough_param2: int = 14,
+    hough_min_dist_frac: float = 0.08,
+    s_min_for_color: float = 0.12,
+    v_min_for_color: float = 0.08,
+):
+     """
     Aggregate detections per (json_file, e_idx) and compute:
       - majority cluster token
       - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
-      - arrow (↑/↓) if present in recs, but we also add orientation8
-      - bright_sector8 (from V in annulus)
-      - vacuoles: angles, sector list, 8-bit mask, count
+      - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
+  
+  Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
+  computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
+  true. Hue-based color inference respects the provided S/V guard rails.
 
-    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8, sector8, vac_*...}
-    """
+  Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}    
+  """
     by_event = defaultdict(list)
     for r in recs:
         jf = r.get("json_file")
@@ -951,6 +971,85 @@ def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict
         by_event[(jf, int(ei))].append(r)
 
     out = {}
+
+
+    # Cache expensive thumbnail analyses so repeated thumbs only pay the cost once
+    process_sig = (
+        int(n_sectors),
+        float(periphery_band_frac),
+        float(hough_min_r_frac),
+        float(hough_max_r_frac),
+        float(hough_dp),
+        int(hough_param1),
+        int(hough_param2),
+        float(hough_min_dist_frac),
+        int(max_thumb_side) if isinstance(max_thumb_side, (int, float)) else None,
+    )
+    thumb_feature_cache = {}
+
+    def analyze_thumb(thumb_name: str):
+        """Return cached radial/vacuole features for a thumbnail."""
+        key = (thumb_name, process_sig)
+        if key in thumb_feature_cache:
+            return thumb_feature_cache[key]
+
+        result = None
+        if thumbs_dir is None or cv2 is None or not thumb_name:
+            thumb_feature_cache[key] = result
+            return result
+
+        img = load_img(thumbs_dir, thumb_name)
+        if img is None:
+            thumb_feature_cache[key] = result
+            return result
+
+        if isinstance(max_thumb_side, (int, float)) and max_thumb_side:
+            max_side = int(max_thumb_side)
+            if max_side > 0:
+                h, w = img.shape[:2]
+                m = max(h, w)
+                if m > max_side:
+                    scale = max_side / float(m)
+                    new_w = max(1, int(round(w * scale)))
+                    new_h = max(1, int(round(h * scale)))
+                    img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        thr = cv2.adaptiveThreshold(
+            gray,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            35,
+            2,
+        )
+        cnts, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if cnts:
+            cnt = max(cnts, key=cv2.contourArea)
+            result = compute_radial_and_vacuole_features(
+                img,
+                cnt,
+                n_sectors=n_sectors,
+                periphery_band_frac=periphery_band_frac,
+                hough_min_r_frac=hough_min_r_frac,
+                hough_max_r_frac=hough_max_r_frac,
+                hough_dp=hough_dp,
+                hough_param1=hough_param1,
+                hough_param2=hough_param2,
+                hough_min_dist_frac=hough_min_dist_frac,
+            )
+        else:
+            result = {
+                "orientation8": None,
+                "bright_sector8": None,
+                "vacuole_angles_deg": [],
+                "vacuole_sectors8": [],
+                "vacuole_mask8": 0,
+                "vacuole_count": 0,
+            }
+
+        thumb_feature_cache[key] = result
+        return result
     for (jf, ei), rows in by_event.items():
         cids = [rr.get("cluster") for rr in rows if rr.get("cluster") is not None]
         token = "_"
@@ -965,10 +1064,21 @@ def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict
         if color_lbls:
             color_label = Counter(color_lbls).most_common(1)[0][0]
         else:
-            hues = [rr.get("h") for rr in rows if not np.isnan(rr.get("h", np.nan))]
-            color_label = "Unknown"
-            if hues:
-                hmed = float(np.median(hues))
+            valid_hues = []
+            for rr in rows:
+                h_val = safe_float(rr.get("h"), np.nan)
+                if np.isnan(h_val):
+                    continue
+                s_val = safe_float(rr.get("s"), np.nan)
+                v_val = safe_float(rr.get("v"), np.nan)
+                if not np.isnan(s_val) and s_val < s_min_for_color:
+                    continue
+                if not np.isnan(v_val) and v_val < v_min_for_color:
+                    continue
+                valid_hues.append(h_val)
+          color_label = "Unknown"
+          if valid_hues:
+                hmed = float(np.median(valid_hues))
                 if 35.0 <= hmed < 70.0:
                     color_label = "Yellow"
                 elif 80.0 <= hmed < 160.0:
@@ -990,6 +1100,9 @@ def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict
             if orient_str.endswith("↓"):
                 arrow = "↓"
                 break
+        
+        flash_vals = [bool(rr.get("flash")) for rr in rows]
+        flash_flag = any(flash_vals)
 
         orient8 = None
         bright_sector8 = None
@@ -997,25 +1110,14 @@ def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict
         vac_sectors = []
         vac_mask8 = 0
         vac_count = 0
-
-        if thumb and thumbs_dir is not None and cv2 is not None:
-            img = load_img(thumbs_dir, thumb)
-            if img is not None:
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                thr = cv2.adaptiveThreshold(
-                    gray,
-                    255,
-                    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                    cv2.THRESH_BINARY,
-                    35,
-                    2,
-                )
-                cnts, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                if cnts:
-                    cnt = max(cnts, key=cv2.contourArea)
-                    feats = compute_radial_and_vacuole_features(img, cnt, n_sectors=n_sectors)
-                    orient8 = feats.get("orientation8", None)
-                    bright_sector8 = feats.get("bright_sector8", None)
+        want_radial = enable_radial or enable_vacuoles
+        if thumb and want_radial:
+            feats = analyze_thumb(thumb)
+            if feats:
+                if enable_radial:
+                    orient8 = feats.get("orientation8")
+                    bright_sector8 = feats.get("bright_sector8")
+                if enable_vacuoles:
                     vac_angles = feats.get("vacuole_angles_deg", [])
                     vac_sectors = feats.get("vacuole_sectors8", [])
                     vac_mask8 = feats.get("vacuole_mask8", 0)
@@ -1032,6 +1134,7 @@ def extract_event_attributes_with_radial(recs, thumbs_dir: Path, token_map: dict
             cluster_id=None if maj_cid is None else int(maj_cid),
             color_label=color_label,
             arrow=arrow,
+            flash=flash_flag,  
             orientation8=None if orient8 is None else int(orient8),
             sector8=sector_idx,
             sector_label=sector_label,
@@ -1111,7 +1214,7 @@ def build_sequences(recs, token_map, thumbs_dir: Path, args):
             )
             continue
 
-        raw_tokens, v_vals, events_list = [], [], []
+        raw_tokens, v_vals, events_list, symbol_tokens = [], [], [], []
         for ei in e_idxs:
             a = attrs.get((jf, ei), None)
             tok = a["token"] if a else "_"
@@ -1133,7 +1236,17 @@ def build_sequences(recs, token_map, thumbs_dir: Path, args):
                 parts = []
                 clr = a.get("color_label", "Unknown")
                 arr = a.get("arrow") or ""
-                parts.append(clr + arr)
+                if (not arr) and rr:
+                    orient_str = str(rr.get("orientation") or "")
+                    if orient_str.endswith("↑"):
+                        arr = "↑"
+                    elif orient_str.endswith("↓"):
+                        arr = "↓"
+                flash_flag = bool(a.get("flash"))
+                base_tok = clr + arr
+                if flash_flag and not base_tok.endswith("✦"):
+                    base_tok += "✦"
+                parts.append(base_tok)
                 if a.get("orientation8") is not None:
                     parts.append(f"o{int(a['orientation8'])}")
                 if a.get("sector8") is not None:
@@ -1149,13 +1262,18 @@ def build_sequences(recs, token_map, thumbs_dir: Path, args):
                 else:
                     parts.append("V0")
                 enhanced_display = " ".join(parts)
-
+              
+                thumb_name = a.get("thumb_obj", None)
+                if not thumb_name and rr:
+                    thumb_name = rr.get("thumb")
                 events_list.append({
                     "event_index": int(ei),
                     "start_ts": start_ts, "end_ts": end_ts, "duration": duration,
                     "morphology": rr.get("morphology","unknown") if rr else "unknown",
                     "color_label": clr,
                     "arrow": arr,
+                    "orientation": arr or None,
+                    "flash": flash_flag,
                     "orientation8": a.get("orientation8", None),
                     "sector8": a.get("sector8", None),
                     "vacuole_count": vc,
@@ -1163,21 +1281,31 @@ def build_sequences(recs, token_map, thumbs_dir: Path, args):
                     "vacuole_sectors8": a.get("vacuole_sectors8", []),
                     "vacuole_mask8": a.get("vacuole_mask8", 0),
                     "cluster_id": a.get("cluster_id", None),
-                    "thumb_obj": a.get("thumb_obj", None),
+                    "thumb_obj": thumb_name,
                     "enhanced_token": enhanced_display
                 })
+                symbol_tokens.append(enhanced_display)
             else:
+                flash_flag = bool(rr.get("flash", False)) if rr else False
+                base_tok = "Unknown"
+                if flash_flag:
+                    base_tok += "✦"
+                enhanced_display = f"{base_tok} V0"
+                thumb_name = rr.get("thumb") if rr else None
                 events_list.append({
                     "event_index": int(ei),
                     "start_ts": start_ts, "end_ts": end_ts, "duration": duration,
                     "morphology": rr.get("morphology","unknown") if rr else "unknown",
                     "color_label": "Unknown", "arrow": "",
+                    "orientation": None,
+                    "flash": flash_flag,
                     "orientation8": None, "sector8": None,
                     "vacuole_count": 0, "vacuole_angles_deg": [],
                     "vacuole_sectors8": [], "vacuole_mask8": 0,
-                    "cluster_id": None, "thumb_obj": None,
-                    "enhanced_token": "Unknown V0"
+                    "cluster_id": None, "thumb_obj": thumb_name,
+                    "enhanced_token": enhanced_display
                 })
+                symbol_tokens.append(enhanced_display)
 
         symbol_seq = "".join(raw_tokens)
         v_arr = np.array(v_vals, dtype=float)
@@ -1185,7 +1313,20 @@ def build_sequences(recs, token_map, thumbs_dir: Path, args):
         v_mad = np.nanmedian(np.abs(v_arr - v_med))
         v_thr = v_med + 0.8 * (v_mad if not np.isnan(v_mad) else 0.0)
         binary_seq = "".join(("1" if (not np.isnan(v) and v >= v_thr) else "0") for v in v_arr)
-        symbol_seq_enhanced = " ".join(ev["enhanced_token"] for ev in events_list)
+        extra = 0.5 * (v_mad if not np.isnan(v_mad) else 0.0)
+        for idx, ev in enumerate(events_list):
+            vv = v_arr[idx]
+            spike = (not np.isnan(vv)) and (vv >= (v_thr + extra))
+            if spike and not ev.get("flash", False):
+                ev["flash"] = True
+                parts = symbol_tokens[idx].split(" ") if symbol_tokens[idx] else []
+                if parts:
+                    if not parts[0].endswith("✦"):
+                        parts[0] = parts[0] + "✦"
+                    updated = " ".join(parts)
+                    symbol_tokens[idx] = updated
+                    ev["enhanced_token"] = updated
+        symbol_seq_enhanced = " ".join(symbol_tokens)
 
         # cycles by >2s gap or time reset
         cycles_list = []
