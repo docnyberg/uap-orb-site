@@ -1,0 +1,1 @@
+python build_color_atlas.py --atlas-dir "C:\Users\docny\Projects\uap-orb-site\public" --trace-svgs --force --workers 8 --mode polygon --path-precision 7 --filter-speckle 1 --gradient-step 7 --corner-threshold 82 --splice-threshold 82 --color-precision 8 --dilate-px 1 --feather-px 0.2 --supersample 2 --vtracer "C:\Users\docny\AppData\Roaming\npm\vtracer.exe"

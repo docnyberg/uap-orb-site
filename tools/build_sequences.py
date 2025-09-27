@@ -118,6 +118,62 @@ def write_json(path: Path, obj):
     with path.open("w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=2)
 
+        # ---------------------------
+# Color / morphology helpers
+# ---------------------------
+
+# Tunables (you can later promote to CLI if you want)
+SAT_MIN        = 0.18   # if S < SAT_MIN → "Unknown"
+V_DARK_MIN     = 0.05   # very dark = effectively unknown/neutral
+EDGE_FRAC_FLASH= 0.12   # edge density fraction that suggests a burst
+V_FLASH_MIN    = 0.60   # minimum V to treat an edge spike as flash
+RING_SCORE_MIN = 0.25   # annulus brighter than center by ≥25% → ring
+
+# 4 bins that cover the full 360° hue circle, with wrap-around
+# Yellow: 30–90°, Green: 90–160°, Blue: 160–260°, Pink/Magenta: 260–360° + 0–30°
+COLOR_BINS = [
+    ("Yellow",       30.0,  90.0),
+    ("Green",        90.0, 160.0),
+    ("Blue",        160.0, 260.0),
+    ("Pink/Magenta", 260.0, 360.0),
+    ("Pink/Magenta",   0.0,  30.0),  # wrap segment
+]
+
+def label_color_hsv(h, s, v, sat_min=SAT_MIN, v_dark=V_DARK_MIN):
+    """Map HSV → one of 4 full-name color bins; reserve 'Unknown' for low S or very low V."""
+    if np.isnan(h) or np.isnan(s) or np.isnan(v):
+        return "Unknown"
+    if s < sat_min or v < v_dark:
+        return "Unknown"
+    h = float(h) % 360.0
+    for name, lo, hi in COLOR_BINS:
+        if lo <= h < hi:
+            return name
+    return "Unknown"
+
+def ring_score_center_vs_annulus(gray: np.ndarray) -> float:
+    """
+    Simple ring detector: compare mean intensity in a small center disk vs an annulus.
+    Returns a score in [0, 1]-ish: max(annulus - center, 0) / max(annulus, 1).
+    """
+    hh, ww = gray.shape[:2]
+    cy, cx = hh // 2, ww // 2
+    R  = int(min(hh, ww) * 0.40)     # outer radius for our analysis window
+    r1 = max(1, int(R * 0.25))       # center radius
+    r2 = max(r1 + 1, int(R * 0.50))  # annulus outer radius
+
+    yy, xx = np.ogrid[:hh, :ww]
+    dist = np.sqrt((yy - cy) ** 2 + (xx - cx) ** 2)
+
+    center_mask  = (dist <= r1)
+    annulus_mask = (dist >  r1) & (dist <= r2)
+
+    center_mean  = float(np.mean(gray[center_mask])) if np.any(center_mask) else 0.0
+    annulus_mean = float(np.mean(gray[annulus_mask])) if np.any(annulus_mask) else 0.0
+    if annulus_mean <= 1.0:  # avoid div-by-zero and tiny denominators
+        return 0.0
+    return max(annulus_mean - center_mean, 0.0) / annulus_mean
+
 # ---------------------------
 # Feature extraction (fallbacks if missing)
 # ---------------------------
@@ -414,6 +470,9 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
             h=h, s=s, v=v,
             area=area, solidity=sol, ecc=ecc, ar=ar,
             phash64=ph,
+            # include timestamps if your atlas has them
+            start_ts=safe_float(row[col_start]) if col_start else None,
+            end_ts=safe_float(row[col_end]) if col_end else None,
         ))
 
     # Determine if we need image-derived backfills
@@ -424,7 +483,7 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
         for r in recs
     )
 
-    # Back-fill from images when available
+    # Back-fill from images when available (HSV, shape, phash)
     if need_img_fill and cv2 is not None:
         for r in recs:
             if not r["thumb"]:
@@ -455,13 +514,66 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
                 if ph is not None:
                     r["phash64"] = ph
 
-    # Optional: minimum area filter
-    if min_area_px and min_area_px > 0:
-        recs = [r for r in recs if (np.isnan(r["area"]) or r["area"] >= float(min_area_px))]
-
-    # Compute log_area
+        # ---- Enhanced annotations (always run) ----
     for r in recs:
+        # log_area
         r["log_area"] = np.log(max(1.0, r["area"])) if not np.isnan(r["area"]) else np.nan
+
+        # Base morphology via solidity (quick triage)
+        if not np.isnan(r["solidity"]):
+            if r["solidity"] >= 0.85:
+                morph = "sphere"
+            elif r["solidity"] >= 0.50:
+                morph = "ring"   # candidate ring; will verify with center/annulus test
+            else:
+                morph = "cross/star"
+        else:
+            morph = "unknown"
+
+        # Load image once for per-event visual tests
+        img = load_img(thumbs_dir, r["thumb"]) if r.get("thumb") else None
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if (img is not None and cv2 is not None) else None
+
+        # Optional: refine ring via center vs annulus brightness
+        if gray is not None:
+            rs = ring_score_center_vs_annulus(gray)
+            r["ring_score"] = float(rs)
+            if rs >= RING_SCORE_MIN:
+                morph = "ring"
+        else:
+            r["ring_score"] = float("nan")
+
+        # Orientation (yin-yang) for all shapes (↑ top-bright, ↓ bottom-bright)
+        ori = None
+        if gray is not None:
+            hh, ww = gray.shape
+            top_mean = float(np.mean(gray[:hh // 2, :]))
+            bot_mean = float(np.mean(gray[hh // 2:, :]))
+            if top_mean > bot_mean * 1.10:
+                ori = "↑"
+            elif bot_mean > top_mean * 1.10:
+                ori = "↓"
+
+        # Edge density for flash detection
+        edge_frac = float("nan")
+        if gray is not None:
+            edges = cv2.Canny(gray, 50, 150)
+            edge_frac = float(np.count_nonzero(edges)) / float(edges.size)
+
+        # Robust flash: very bright OR (edge spike + moderately bright)
+        v_val = r.get("v", np.nan)
+        flash = (not np.isnan(v_val) and v_val >= 0.90)  # absolute bright spike
+        if (not flash) and (not np.isnan(edge_frac)) and (edge_frac >= EDGE_FRAC_FLASH) and (not np.isnan(v_val)) and (v_val >= V_FLASH_MIN):
+            flash = True
+
+        # Full-circle color label (Unknown reserved for low S or very low V)
+        r["color_label"] = label_color_hsv(r.get("h", np.nan), r.get("s", np.nan), r.get("v", np.nan))
+
+        # Commit fields
+        r["morphology"] = morph
+        r["orientation"] = ori
+        r["edge_frac"] = edge_frac
+        r["flash"] = bool(flash)
 
     return recs
 
@@ -471,6 +583,13 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
 # ---------------------------
 
 def cluster_records_strict(recs, args):
+    """
+    Cluster with strict gating. IMPORTANT: -1 (DBSCAN noise) stays noise (cluster=None).
+    Very small clusters (< args.min_cluster_size) remain clusters here; we skip them in tokenization.
+    """
+    import numpy as np
+    from collections import defaultdict
+
     # Prepare global z-scale for shape features
     arr_logA = np.array([r['log_area'] for r in recs], dtype=float)
     arr_sol  = np.array([r['solidity'] for r in recs], dtype=float)
@@ -490,136 +609,125 @@ def cluster_records_strict(recs, args):
         solidity_gate=args.gate_solidity, ecc_gate=args.gate_ecc, ar_gate=args.gate_ar
     )
 
-    # Hue-bucketed clustering to keep color-coherent groups and reduce O(N^2)
-    # If hue is NaN, put into special bin
+    # Hue buckets
     hue_bins = defaultdict(list)
     for r in recs:
         hb = quantize_hue(r['h'], bin_deg=6.0) if not np.isnan(r['h']) else ('nan',)
         hue_bins[hb].append(r)
 
-    # Within each hue bin, build pairwise distances and DBSCAN
     next_cluster_id = 0
     for hb, bucket in hue_bins.items():
-        if len(bucket) == 1:
-            bucket[0]['cluster'] = next_cluster_id
-            next_cluster_id += 1
+        n = len(bucket)
+        if n == 1:
+            # don't assign a cluster yet; treat as tiny/noise-like; tokenization will skip it
+            bucket[0]['cluster'] = None
             continue
 
-        n = len(bucket)
+        # pairwise distances in bucket
         D = np.zeros((n, n), dtype=float)
         for i in range(n):
-            D[i, i] = 0.0
-        for i in range(n):
-            ai = bucket[i]
             for j in range(i+1, n):
-                aj = bucket[j]
-                d = metric.pair_dist(ai, aj, feat_scale)
-                D[i, j] = D[j, i] = d
+                D[i, j] = D[j, i] = metric.pair_dist(bucket[i], bucket[j], feat_scale)
 
-        # DBSCAN on precomputed distances
-        db = DBSCAN(eps=float(args.eps), min_samples=int(args.min_samples),
-                    metric='precomputed')
+        # DBSCAN
+        db = DBSCAN(eps=float(args.eps), min_samples=int(args.min_samples), metric='precomputed')
         labels = db.fit_predict(D)
-        # Assign
-        lab_map = {}
-        # remap local labels to global cluster ids
-        for li in np.unique(labels):
-            if li == -1:
-                # treat as singleton clusters
-                for i, lb in enumerate(labels):
-                    if lb == -1:
-                        bucket[i]['cluster'] = next_cluster_id
-                        next_cluster_id += 1
-                continue
-            # indices in this local cluster
+
+        # Assign clusters; keep noise as None
+        unique = np.unique(labels)
+        for li in unique:
             idxs = np.where(labels == li)[0]
-            # select a medoid
+            if li == -1:
+                for k in idxs:
+                    bucket[k]['cluster'] = None
+                continue
+            # select medoid within this component
             subD = D[np.ix_(idxs, idxs)]
-            m_idx_local = medoid_index(subD)
-            m_idx = int(idxs[m_idx_local]) if m_idx_local is not None else int(idxs[0])
-            # assign global id
+            mloc = np.argmin(subD.sum(axis=1))
+            med_k = int(idxs[int(mloc)])
             gid = next_cluster_id
             next_cluster_id += 1
             for k in idxs:
                 bucket[k]['cluster'] = gid
-            # annotate prototype
-            proto = bucket[m_idx]
+            # tag a prototype
             for k in idxs:
-                bucket[k]['_proto_idx_in_bin'] = m_idx
-                bucket[k]['_proto_global'] = gid
+                bucket[k]['is_prototype'] = (k == med_k)
 
-    # Collect clusters
+    # Gather clusters (exclude None)
     by_cluster = defaultdict(list)
     for r in recs:
         cid = r.get('cluster', None)
-        if cid is None:
-            # should not happen; put singleton
-            cid = next_cluster_id
-            next_cluster_id += 1
-            r['cluster'] = cid
-        by_cluster[cid].append(r)
+        if cid is not None:
+            by_cluster[cid].append(r)
 
-    # Determine prototype per cluster (global medoid within cluster)
+    # If a cluster has no prototype tag (rare), mark its first as prototype
     for cid, rows in by_cluster.items():
-        if len(rows) == 1:
+        if not any(row.get('is_prototype') for row in rows):
             rows[0]['is_prototype'] = True
-            continue
-        n = len(rows)
-        D = np.zeros((n, n), dtype=float)
-        for i in range(n):
-            for j in range(i+1, n):
-                d = metric.pair_dist(rows[i], rows[j], feat_scale)
-                D[i, j] = D[j, i] = d
-        m = medoid_index(D)
-        for i in range(n):
-            rows[i]['is_prototype'] = (i == m)
 
     return recs, by_cluster, feat_scale
+
 
 # ---------------------------
 # Tokenization & codebook
 # ---------------------------
 
-def assign_tokens(by_cluster):
-    # Order clusters by size desc, then by prototype hue
+def assign_tokens(by_cluster, min_cluster_size: int = 3):
+    """
+    Assign tokens to clusters, skipping tiny clusters (treated as noise later).
+    Uses an unbounded base-26 stream: A..Z, AA..AZ, BA..BZ, ... AAA.., etc.
+    Returns (token_map: cid->token, legend: token->meta)
+    """
+    import string
+    def base26_stream():
+        letters = string.ascii_uppercase
+        n = 1
+        while True:
+            # emit all length-n strings
+            total = len(letters) ** n
+            for idx in range(total):
+                x = idx
+                s = []
+                for _ in range(n):
+                    s.append(letters[x % 26])
+                    x //= 26
+                yield "".join(reversed(s))
+            n += 1
+
+    # clusters sorted by size (desc), then by prototype hue if available
     clusters = []
     for cid, rows in by_cluster.items():
-        count = len(rows)
+        if not rows:
+            continue
+        cnt = len(rows)
         proto = next((r for r in rows if r.get('is_prototype')), rows[0])
-        clusters.append((cid, count, proto))
-    clusters.sort(key=lambda x: (-x[1], (x[2]['h'] if not np.isnan(x[2]['h']) else 999.0)))
+        clusters.append((cid, cnt, proto))
+    clusters.sort(key=lambda x: (-x[1], (x[2].get('h', 999.0) if x[2].get('h') is not None else 999.0)))
 
-    # Token alphabet A..Z then AA, AB, ...
-    def token_gen():
-        letters = [chr(i) for i in range(ord('A'), ord('Z')+1)]
-        # A..Z
-        for L in letters:
-            yield L
-        # AA..AZ, BA..BZ, ...
-        for a in letters:
-            for b in letters:
-                yield a + b
-
-    gen = token_gen()
-    token_map = {}  # cid -> token
+    token_map = {}
     legend = {}
-    for cid, count, proto in clusters:
-        tok = next(gen)
+    gen = base26_stream()
+    for cid, cnt, proto in clusters:
+        if cnt < min_cluster_size:
+            # leave un-tokenized; will render as 'X' later
+            continue
+        tok = next(gen)  # unlimited supply
         token_map[cid] = tok
         legend[tok] = dict(
             cluster_id=int(cid),
-            count=int(count),
+            count=int(cnt),
             prototype=dict(
-                thumb_obj=proto['thumb'],
-                json_file=proto['json_file'],
-                e_idx=proto['e_idx'],
-                h=proto['h'], s=proto['s'], v=proto['v'],
-                area=proto['area'], solidity=proto['solidity'],
-                ecc=proto['ecc'], ar=proto['ar'],
-                phash64=proto['phash64']
+                thumb_obj=proto.get('thumb'),
+                json_file=proto.get('json_file'),
+                e_idx=proto.get('e_idx'),
+                h=proto.get('h'), s=proto.get('s'), v=proto.get('v'),
+                area=proto.get('area'), solidity=proto.get('solidity'),
+                ecc=proto.get('ecc'), ar=proto.get('ar'),
+                phash64=proto.get('phash64')
             )
         )
     return token_map, legend
+
 
 # ---------------------------
 # Sequence builder
@@ -628,23 +736,30 @@ def assign_tokens(by_cluster):
 def build_sequences(recs, token_map):
     """
     For each video json_file: sort by event index and assign the majority token
-    among thumbs that share that event index. Also produce V-based binary seq.
+    among thumbs that share that event index. Also produce:
+      - binary_seq (V-based)
+      - symbol_seq_enhanced (full color names + ↑/↓ + ✦)
+      - events list (per-event details, including cluster_id and thumb_obj)
+      - cycles list (split by >2s gap OR timestamp reset; always a list)
     """
-    # Map (json_file, e_idx) -> list of cluster_ids
     per_event = defaultdict(list)
     per_event_v = defaultdict(list)
+
+    # Build per-event aggregates
     for r in recs:
-        jf = r['json_file']; ei = r['e_idx']
+        jf = r.get('json_file')
+        ei = r.get('e_idx')
         if jf is None or pd.isna(jf) or ei is None:
             continue
         cid = r.get('cluster', None)
         if cid is not None:
             per_event[(jf, int(ei))].append(cid)
-        if not np.isnan(r['v']):
-            per_event_v[(jf, int(ei))].append(float(r['v']))
+        v_val = r.get('v', np.nan)
+        if not np.isnan(v_val):
+            per_event_v[(jf, int(ei))].append(float(v_val))
 
-    # For each video, build sequence
-    videos = defaultdict(list)  # jf -> list of event idxs present
+    # Build index lists per video
+    videos = defaultdict(list)
     for (jf, ei) in per_event.keys():
         videos[jf].append(int(ei))
     for (jf, ei) in per_event_v.keys():
@@ -653,49 +768,165 @@ def build_sequences(recs, token_map):
     for jf in videos:
         videos[jf] = sorted(set(videos[jf]))
 
+    # A global, deterministic fallback cluster-id map for sparse clustering:
+    # Use negative ids to avoid colliding with real cluster ids.
+    combo_map = {}
+    next_combo_id = -1
+
     results = {}
     for jf, e_idxs in videos.items():
         if not e_idxs:
-            results[jf] = dict(json_file=jf, n_events=0, legend={}, symbol_seq="", binary_seq="", v_threshold=None)
+            results[jf] = dict(
+                json_file=jf, n_events=0,
+                symbol_seq="", binary_seq="", v_threshold=None,
+                symbol_seq_enhanced="", events=[], cycles=[]
+            )
             continue
 
-        # majority token per event
-        sym_seq = []
-        v_list = []
+        sym_seq = []            # original token stream (cluster tokens or "_")
+        v_list = []             # V means for binary thresholding
+        symbol_tokens = []      # full-color symbolic tokens with ↑/↓ and ✦
+        events_list = []        # per-event dicts
+
         for ei in e_idxs:
             cids = per_event.get((jf, ei), [])
+            vs = per_event_v.get((jf, ei), [])
+
+            # Representative record for this event
+            rec = None
+            main_cid = None
             if cids:
                 tok = most_common_token(cids, token_map)
+                main_cid = Counter(cids).most_common(1)[0][0]
+                rec = next((rr for rr in recs
+                            if rr.get("json_file") == jf and rr.get("e_idx") == ei and rr.get("cluster") == main_cid), None)
+                if rec is None:
+                    rec = next((rr for rr in recs
+                                if rr.get("json_file") == jf and rr.get("e_idx") == ei), None)
             else:
-                tok = "_"  # underscore for "no symbol for this event"
+                tok = "_"
+                rec = next((rr for rr in recs
+                            if rr.get("json_file") == jf and rr.get("e_idx") == ei), None)
+
             sym_seq.append(tok)
+            v_list.append(np.nan if not vs else float(np.nanmean(vs)))
 
-            vs = per_event_v.get((jf, ei), [])
-            if vs:
-                v_list.append(np.mean(vs))
+            # Extract attributes (with safe defaults)
+            if rec:
+                color_lbl = rec.get("color_label", "Unknown")
+                orient    = rec.get("orientation", None)    # "↑" / "↓" / None
+                flash_flag= bool(rec.get("flash", False))
+                morph     = rec.get("morphology", "unknown")
+                st        = rec.get("start_ts", None)
+                en        = rec.get("end_ts",   None)
+                start_ts  = float(st) if (st is not None and not np.isnan(st)) else None
+                end_ts    = float(en) if (en is not None and not np.isnan(en)) else None
+                thumb_name= rec.get("thumb")
             else:
-                v_list.append(np.nan)
+                color_lbl = "Unknown"
+                orient    = None
+                flash_flag= False
+                morph     = "unknown"
+                start_ts  = None
+                end_ts    = None
+                # try to find any thumb for this event
+                thumb_name= None
+                ev_recs = [rr for rr in recs if rr.get("json_file")==jf and rr.get("e_idx")==ei]
+                for rr in ev_recs:
+                    if rr.get("thumb"):
+                        thumb_name = rr["thumb"]
+                        break
 
+            # Build enhanced symbol token (full color + optional ↑/↓ + ✦)
+            token_str = color_lbl + (orient or "")
+            if flash_flag:
+                token_str += "✦"
+            symbol_tokens.append(token_str)
+
+            # Cluster id for auditor:
+            # - Use real cluster id when available
+            # - Otherwise create a deterministic fallback based on (color|morph)
+            if main_cid is not None:
+                cluster_id_for_event = int(main_cid)
+            else:
+                combo = f"{color_lbl}|{morph}"
+                if combo not in combo_map:
+                    combo_map[combo] = next_combo_id
+                    next_combo_id -= 1
+                cluster_id_for_event = combo_map[combo]
+
+            duration = (end_ts - start_ts) if (start_ts is not None and end_ts is not None) else None
+
+            events_list.append({
+                "event_index": int(ei),
+                "start_ts": start_ts,
+                "end_ts": end_ts,
+                "duration": duration,
+                "morphology": morph,
+                "orientation": orient,
+                "flash": flash_flag,
+                "color_label": color_lbl,
+                "cluster_id": cluster_id_for_event,
+                "thumb_obj":  thumb_name
+            })
+
+        # Original cluster-token stream
         sym_seq_str = "".join(sym_seq)
 
-        # V-based binary (Morse-like) thresholding: robust median + MAD
+        # Enhanced full-color symbolic stream
+        sym_seq_enhanced_str = " ".join(symbol_tokens)
+
+        # Binary (V-threshold via median + 0.8*MAD)
         v_arr = np.array(v_list, dtype=float)
         v_med = np.nanmedian(v_arr)
         v_mad = np.nanmedian(np.abs(v_arr - v_med))
-        # dynamic threshold: median + 0.8*MAD (tunable)
         v_thr = v_med + 0.8 * (v_mad if not np.isnan(v_mad) else 0.0)
-        bin_seq = []
-        for v in v_arr:
-            if np.isnan(v):
-                bin_seq.append("0")
-            else:
-                bin_seq.append("1" if v >= v_thr else "0")
+        bin_seq = [("1" if (not np.isnan(v) and v >= v_thr) else "0") for v in v_arr]
         bin_seq_str = "".join(bin_seq)
 
-        results[jf] = dict(json_file=jf, n_events=len(e_idxs),
-                           symbol_seq=sym_seq_str,
-                           binary_seq=bin_seq_str,
-                           v_threshold=float(v_thr) if not np.isnan(v_thr) else None)
+                # Make flash more robust using per-video V spikes (OR with existing flags)
+        extra = 0.5 * (v_mad if not np.isnan(v_mad) else 0.0)
+        for idx, ev in enumerate(events_list):
+            vv = v_arr[idx]
+            spike = (not np.isnan(vv)) and (vv >= (v_thr + extra))
+            if spike and not ev["flash"]:
+                ev["flash"] = True
+                # add ✦ to enhanced token if not already present
+                if not symbol_tokens[idx].endswith("✦"):
+                    symbol_tokens[idx] += "✦"
+        # refresh enhanced sequence in case we added stars
+        sym_seq_enhanced_str = " ".join(symbol_tokens)
+
+        # Cycles: break on >2s gaps OR timestamp resets; always emit a list
+        cycles_list = []
+        if events_list and any(e.get("start_ts") is not None for e in events_list):
+            current = []
+            prev_st = events_list[0].get("start_ts")
+            for idx, ev in enumerate(events_list):
+                st = ev.get("start_ts")
+                if (
+                    idx > 0 and st is not None and prev_st is not None
+                    and ((st - prev_st) > 2.0 or st < prev_st)
+                ):
+                    cycles_list.append(" ".join(current))
+                    current = []
+                current.append(symbol_tokens[idx])
+                prev_st = st
+            if current:
+                cycles_list.append(" ".join(current))
+        cycles = cycles_list  # always a list (even single cycle)
+
+        results[jf] = {
+            "json_file": jf,
+            "n_events": len(e_idxs),
+            "symbol_seq": sym_seq_str,
+            "binary_seq": bin_seq_str,
+            "v_threshold": float(v_thr) if not np.isnan(v_thr) else None,
+            "symbol_seq_enhanced": sym_seq_enhanced_str,
+            "events": events_list,
+            "cycles": cycles
+        }
+
     return results
 
 def most_common_token(cids, token_map):
@@ -716,6 +947,9 @@ def main():
 
     ap.add_argument("--min-samples", type=int, default=6, help="DBSCAN min_samples (default 6)")
     ap.add_argument("--eps", type=float, default=0.28, help="DBSCAN eps (default 0.28)")
+
+    ap.add_argument("--min-cluster-size", type=int, default=3,
+                    help="Do not assign tokens to clusters smaller than this; they render as 'X' (default 3)")
 
     ap.add_argument("--w-phash", type=float, default=2.0)
     ap.add_argument("--w-hue", type=float, default=1.0)
@@ -748,9 +982,9 @@ def main():
     print(f"[cluster] formed {n_clusters} clusters.")
 
     print("[tokenize] assign tokens & build codebook…")
-    token_map, legend = assign_tokens(by_cluster)
+    token_map, legend = assign_tokens(by_cluster, min_cluster_size=int(getattr(args, "min_cluster_size", 3)))
 
-    # Write codebook
+    # Build and write codebook
     codebook = dict(
         n_clusters=int(n_clusters),
         weights=dict(w_phash=args.w_phash, w_hue=args.w_hue, w_feat=args.w_feat),
@@ -762,6 +996,20 @@ def main():
         min_area_px=int(args.min_area),
         legend=legend
     )
+
+    # Add a clusters list for tools that expect codebook["clusters"]
+    clusters_list = []
+    for tok, meta in legend.items():
+        clusters_list.append({
+            "cluster_id": int(meta["cluster_id"]),
+            "token": tok,
+            "count": int(meta.get("count", 0)),
+            "prototype": {
+                "thumb_obj": meta.get("prototype", {}).get("thumb_obj", "")
+            }
+        })
+    codebook["clusters"] = clusters_list
+
     codebook_path = out_dir / "symbol_codebook.json"
     write_json(codebook_path, codebook)
     print(f"[OK] codebook → {codebook_path}")
@@ -770,28 +1018,32 @@ def main():
     print("[sequence] building per-video sequences…")
     seqs = build_sequences(recs, token_map)
 
-    # Also construct per-video legend subset (tokens used in that video)
-    # and write per-video sequence json
+    # Per-video JSONs
     for jf, obj in seqs.items():
-        # tokens used
+        # tokens used from original symbol_seq (ignore '_' and spaces)
         used = sorted(set([c for c in obj['symbol_seq'] if c not in ['_', ' ']]))
         vid_legend = {k: legend[k] for k in used if k in legend}
-        out = dict(
-            json_file=jf,
-            n_events=obj['n_events'],
-            legend=vid_legend,
-            symbol_seq=obj['symbol_seq'],
-            binary_seq=obj['binary_seq'],
-            v_threshold=obj['v_threshold'],
-            clustering=dict(
-                eps=float(args.eps),
-                min_samples=int(args.min_samples),
-                weights=codebook['weights'],
-                gates=codebook['gates'],
-                min_area_px=int(args.min_area),
-                method="strict-gated (hue-bucketed DBSCAN)"
-            )
-        )
+
+        out = {
+            "json_file": jf,
+            "n_events": obj["n_events"],
+            "legend": vid_legend,
+            "symbol_seq": obj["symbol_seq"],
+            "symbol_seq_enhanced": obj["symbol_seq_enhanced"],
+            "binary_seq": obj["binary_seq"],
+            "v_threshold": obj["v_threshold"],
+            "events": obj["events"],
+            "cycles": obj["cycles"],
+            "clustering": {
+                "eps": float(args.eps),
+                "min_samples": int(args.min_samples),
+                "weights": codebook["weights"],
+                "gates": codebook["gates"],
+                "min_area_px": int(args.min_area),
+                "method": "strict-gated (hue-bucketed DBSCAN)"
+            }
+        }
+
         stem = Path(jf).name  # e.g., v15044g….json
         out_path = out_dir / f"{stem}.sequence.json"
         write_json(out_path, out)

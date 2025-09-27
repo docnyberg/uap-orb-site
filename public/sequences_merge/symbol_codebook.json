@@ -1,0 +1,1895 @@
+{
+  "n_clusters": 75,
+  "weights": {
+    "w_phash": 2.0,
+    "w_hue": 1.0,
+    "w_feat": 1.0
+  },
+  "gates": {
+    "hue_deg": 14.0,
+    "area_ratio": 0.45,
+    "solidity": 0.2,
+    "ecc": 0.28,
+    "aspect_ratio": 0.6
+  },
+  "min_area_px": 50,
+  "legend": {
+    "A": {
+      "cluster_id": 48,
+      "count": 359,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e199_099700_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 199,
+        "h": 228.0,
+        "s": 0.49,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "B": {
+      "cluster_id": 37,
+      "count": 293,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.json",
+        "e_idx": 10,
+        "h": 233.3,
+        "s": 0.53,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "C": {
+      "cluster_id": 3,
+      "count": 274,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e359_179749_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 359,
+        "h": 240.2,
+        "s": 0.49,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.941,
+        "phash64": 0
+      }
+    },
+    "D": {
+      "cluster_id": 51,
+      "count": 263,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e073_045950_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.6.json",
+        "e_idx": 73,
+        "h": 221.5,
+        "s": 0.48,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "E": {
+      "cluster_id": 8,
+      "count": 254,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e173_086750_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 173,
+        "h": 33.6,
+        "s": 0.42,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 15711692668243515708
+      }
+    },
+    "F": {
+      "cluster_id": 22,
+      "count": 237,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e066_041050_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.6.json",
+        "e_idx": 66,
+        "h": 213.9,
+        "s": 0.45,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.947,
+        "phash64": 0
+      }
+    },
+    "G": {
+      "cluster_id": 39,
+      "count": 236,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS_e035_041900_obj.jpg",
+        "json_file": "20250812_034218000_iOS.json",
+        "e_idx": 35,
+        "h": 248.1,
+        "s": 0.56,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.067,
+        "phash64": 0
+      }
+    },
+    "H": {
+      "cluster_id": 0,
+      "count": 216,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e020_010250_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 20,
+        "h": 39.9,
+        "s": 0.66,
+        "v": 0.52,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.115,
+        "phash64": 11180577941783940325
+      }
+    },
+    "I": {
+      "cluster_id": 12,
+      "count": 211,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e014_007250_obj.jpg",
+        "json_file": "Michelle_orb_video.json",
+        "e_idx": 14,
+        "h": 49.3,
+        "s": 0.62,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 10239551217767010103
+      }
+    },
+    "J": {
+      "cluster_id": 40,
+      "count": 201,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e033_033500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 33,
+        "h": 250.0,
+        "s": 0.57,
+        "v": 0.6,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "K": {
+      "cluster_id": 13,
+      "count": 194,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e040_040500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 40,
+        "h": 27.1,
+        "s": 0.86,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.158,
+        "phash64": 11416169726894460003
+      }
+    },
+    "L": {
+      "cluster_id": 71,
+      "count": 177,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e038_019250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 38,
+        "h": 21.4,
+        "s": 0.94,
+        "v": 0.57,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 11212384644132903369
+      }
+    },
+    "M": {
+      "cluster_id": 19,
+      "count": 163,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e036_036500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 36,
+        "h": 255.8,
+        "s": 0.5,
+        "v": 0.64,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.077,
+        "phash64": 0
+      }
+    },
+    "N": {
+      "cluster_id": 17,
+      "count": 145,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS4_e042_030834_obj.jpg",
+        "json_file": "20250815_204153000_iOS4.json",
+        "e_idx": 42,
+        "h": 206.1,
+        "s": 0.87,
+        "v": 0.56,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.025,
+        "phash64": 0
+      }
+    },
+    "O": {
+      "cluster_id": 35,
+      "count": 143,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e041_002883_obj.jpg",
+        "json_file": "20250815_204153000_iOS2.json",
+        "e_idx": 41,
+        "h": 212.2,
+        "s": 0.48,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.902,
+        "phash64": 0
+      }
+    },
+    "P": {
+      "cluster_id": 20,
+      "count": 134,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e011_005750_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 11,
+        "h": 58.8,
+        "s": 0.48,
+        "v": 0.45,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.227,
+        "phash64": 11126254581290920243
+      }
+    },
+    "Q": {
+      "cluster_id": 46,
+      "count": 128,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e135_067750_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 135,
+        "h": 18.3,
+        "s": 0.96,
+        "v": 0.46,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.973,
+        "phash64": 11140046644498389148
+      }
+    },
+    "R": {
+      "cluster_id": 30,
+      "count": 127,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2jt9vfog65vjgteco5g_e008_004250_obj.jpg",
+        "json_file": "v15044gf0000d2jt9vfog65vjgteco5g.json",
+        "e_idx": 8,
+        "h": 53.9,
+        "s": 0.46,
+        "v": 0.61,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.125,
+        "phash64": 14648297222832770102
+      }
+    },
+    "S": {
+      "cluster_id": 63,
+      "count": 121,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2fr3lfog65rbo3ud6jg_e022_011250_obj.jpg",
+        "json_file": "v15044gf0000d2fr3lfog65rbo3ud6jg.json",
+        "e_idx": 22,
+        "h": 340.7,
+        "s": 0.44,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.429,
+        "phash64": 0
+      }
+    },
+    "T": {
+      "cluster_id": 62,
+      "count": 120,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e069_069500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 69,
+        "h": 306.2,
+        "s": 0.91,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.286,
+        "phash64": 14973958801467403617
+      }
+    },
+    "U": {
+      "cluster_id": 28,
+      "count": 117,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e064_064500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 64,
+        "h": 73.4,
+        "s": 0.89,
+        "v": 0.45,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 11104580788847058356
+      }
+    },
+    "V": {
+      "cluster_id": 15,
+      "count": 114,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e108_108500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 108,
+        "h": 333.9,
+        "s": 0.87,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.8,
+        "phash64": 10289987602107058589
+      }
+    },
+    "W": {
+      "cluster_id": 4,
+      "count": 104,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e016_008250_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 16,
+        "h": 67.6,
+        "s": 0.46,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.2,
+        "phash64": 10251992298558220646
+      }
+    },
+    "X": {
+      "cluster_id": 2,
+      "count": 103,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e106_053250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 106,
+        "h": 195.6,
+        "s": 0.92,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.308,
+        "phash64": 15816189861352099224
+      }
+    },
+    "Y": {
+      "cluster_id": 55,
+      "count": 102,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e132_132500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 132,
+        "h": 194.4,
+        "s": 0.72,
+        "v": 0.53,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.2,
+        "phash64": 11119217552172279409
+      }
+    },
+    "Z": {
+      "cluster_id": 49,
+      "count": 102,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e006_006500_obj.jpg",
+        "json_file": "v15044gf0000d2iifsnog65r86tlmk0g.json",
+        "e_idx": 6,
+        "h": 270.9,
+        "s": 0.84,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.944,
+        "phash64": 11104576949207013784
+      }
+    },
+    "AA": {
+      "cluster_id": 70,
+      "count": 91,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e041_041500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 41,
+        "h": 320.6,
+        "s": 0.89,
+        "v": 0.47,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 14874318179251572114
+      }
+    },
+    "AB": {
+      "cluster_id": 44,
+      "count": 87,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gk20nog65g267kppig_e067_033750_obj.jpg",
+        "json_file": "v15044gf0000d2gk20nog65g267kppig.json",
+        "e_idx": 67,
+        "h": 300.3,
+        "s": 0.87,
+        "v": 0.52,
+        "area": 261119.0,
+        "solidity": 0.9999923407156069,
+        "ecc": 0.9979125115518365,
+        "ar": 1.068,
+        "phash64": 11112744125939213465
+      }
+    },
+    "AC": {
+      "cluster_id": 38,
+      "count": 87,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e073_005016_obj.jpg",
+        "json_file": "20250815_204153000_iOS2.json",
+        "e_idx": 73,
+        "h": 328.1,
+        "s": 0.69,
+        "v": 0.56,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.082,
+        "phash64": 14851008339538792393
+      }
+    },
+    "AD": {
+      "cluster_id": 5,
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e062_062500_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 62,
+        "h": 79.1,
+        "s": 0.7,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.13,
+        "phash64": 14932019668938444235
+      }
+    },
+    "AE": {
+      "cluster_id": 34,
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e008_005250_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.json",
+        "e_idx": 8,
+        "h": 265.0,
+        "s": 0.76,
+        "v": 0.52,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.172,
+        "phash64": 11185012719570164025
+      }
+    },
+    "AF": {
+      "cluster_id": 54,
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gk20nog65g267kppig_e057_028750_obj.jpg",
+        "json_file": "v15044gf0000d2gk20nog65g267kppig.json",
+        "e_idx": 57,
+        "h": 293.7,
+        "s": 0.61,
+        "v": 0.48,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.976,
+        "phash64": 14922717925279058995
+      }
+    },
+    "AG": {
+      "cluster_id": 26,
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e044_044500_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 44,
+        "h": 322.0,
+        "s": 0.62,
+        "v": 0.53,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.224,
+        "phash64": 11112743967089261513
+      }
+    },
+    "AH": {
+      "cluster_id": 31,
+      "count": 80,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e093_093500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 93,
+        "h": 279.4,
+        "s": 0.9,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.167,
+        "phash64": 11523691867707903052
+      }
+    },
+    "AI": {
+      "cluster_id": 67,
+      "count": 79,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e071_071500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 71,
+        "h": 309.3,
+        "s": 0.98,
+        "v": 0.56,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.077,
+        "phash64": 11424054685548597148
+      }
+    },
+    "AJ": {
+      "cluster_id": 24,
+      "count": 78,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS3_e072_056400_obj.jpg",
+        "json_file": "20250815_204153000_iOS3.json",
+        "e_idx": 72,
+        "h": 104.1,
+        "s": 0.73,
+        "v": 0.46,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.089,
+        "phash64": 11227021085224094055
+      }
+    },
+    "AK": {
+      "cluster_id": 29,
+      "count": 77,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e140_111449_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 140,
+        "h": 287.1,
+        "s": 0.71,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.143,
+        "phash64": 11390273530806062791
+      }
+    },
+    "AL": {
+      "cluster_id": 1,
+      "count": 74,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e083_041750_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 83,
+        "h": 122.9,
+        "s": 0.97,
+        "v": 0.49,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.097,
+        "phash64": 15805774552787568920
+      }
+    },
+    "AM": {
+      "cluster_id": 7,
+      "count": 73,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e034_020450_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.6.json",
+        "e_idx": 34,
+        "h": 97.3,
+        "s": 0.87,
+        "v": 0.42,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.396,
+        "phash64": 14935678788632538168
+      }
+    },
+    "AN": {
+      "cluster_id": 27,
+      "count": 67,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ftmcfog65g2pr51j70_e020_010250_obj.jpg",
+        "json_file": "v15044gf0000d2ftmcfog65g2pr51j70.json",
+        "e_idx": 20,
+        "h": 85.5,
+        "s": 0.85,
+        "v": 0.44,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.326,
+        "phash64": 15838073793497819489
+      }
+    },
+    "AO": {
+      "cluster_id": 41,
+      "count": 65,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e086_086500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 86,
+        "h": 125.2,
+        "s": 0.72,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.2,
+        "phash64": 14742868948657202533
+      }
+    },
+    "AP": {
+      "cluster_id": 9,
+      "count": 64,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e013_006750_obj.jpg",
+        "json_file": "Michelle_orb_video.json",
+        "e_idx": 13,
+        "h": 88.9,
+        "s": 0.77,
+        "v": 0.39,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.118,
+        "phash64": 14895780733025661649
+      }
+    },
+    "AQ": {
+      "cluster_id": 65,
+      "count": 53,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS3_e025_022050_obj.jpg",
+        "json_file": "20250815_204153000_iOS3.json",
+        "e_idx": 25,
+        "h": 105.0,
+        "s": 0.81,
+        "v": 0.6,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.101,
+        "phash64": 15802115366077253993
+      }
+    },
+    "AR": {
+      "cluster_id": 42,
+      "count": 52,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e076_038250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 76,
+        "h": 183.0,
+        "s": 0.86,
+        "v": 0.52,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.895,
+        "phash64": 14923579396917087177
+      }
+    },
+    "AS": {
+      "cluster_id": 64,
+      "count": 51,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e018_001350_obj.jpg",
+        "json_file": "20250815_204153000_iOS2.json",
+        "e_idx": 18,
+        "h": 274.5,
+        "s": 0.77,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.981,
+        "phash64": 16039958640810628760
+      }
+    },
+    "AT": {
+      "cluster_id": 32,
+      "count": 50,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg_e051_051500_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.json",
+        "e_idx": 51,
+        "h": 188.9,
+        "s": 0.35,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.267,
+        "phash64": 11112743576186141035
+      }
+    },
+    "AU": {
+      "cluster_id": 56,
+      "count": 49,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e040_020250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 40,
+        "h": 142.2,
+        "s": 0.96,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.073,
+        "phash64": 14652519557985520440
+      }
+    },
+    "AV": {
+      "cluster_id": 53,
+      "count": 47,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ftmcfog65g2pr51j70_e025_012750_obj.jpg",
+        "json_file": "v15044gf0000d2ftmcfog65g2pr51j70.json",
+        "e_idx": 25,
+        "h": 156.3,
+        "s": 0.7,
+        "v": 0.42,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.101,
+        "phash64": 16052572046026545212
+      }
+    },
+    "AW": {
+      "cluster_id": 58,
+      "count": 47,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e017_017500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 17,
+        "h": 170.3,
+        "s": 0.73,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.125,
+        "phash64": 11442645494235286601
+      }
+    },
+    "AX": {
+      "cluster_id": 50,
+      "count": 46,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e077_077500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 77,
+        "h": 160.9,
+        "s": 0.63,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.281,
+        "phash64": 14883888114657289324
+      }
+    },
+    "AY": {
+      "cluster_id": 45,
+      "count": 40,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e087_087500_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 87,
+        "h": 112.2,
+        "s": 0.83,
+        "v": 0.47,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.927,
+        "phash64": 14931738198390885735
+      }
+    },
+    "AZ": {
+      "cluster_id": 68,
+      "count": 40,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e106_106500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 106,
+        "h": 174.0,
+        "s": 0.74,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.25,
+        "phash64": 14883325240939525228
+      }
+    },
+    "BA": {
+      "cluster_id": 61,
+      "count": 39,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e092_046250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 92,
+        "h": 151.7,
+        "s": 0.97,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.1,
+        "phash64": 15717111219516512841
+      }
+    },
+    "BB": {
+      "cluster_id": 66,
+      "count": 34,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e002_001250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 2,
+        "h": 137.7,
+        "s": 0.68,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.444,
+        "phash64": 11224769319840147249
+      }
+    },
+    "BC": {
+      "cluster_id": 69,
+      "count": 33,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e099_049750_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 99,
+        "h": 132.3,
+        "s": 0.94,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.091,
+        "phash64": 16003085449213397353
+      }
+    },
+    "BD": {
+      "cluster_id": 59,
+      "count": 30,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e142_071250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 142,
+        "h": 15.0,
+        "s": 0.95,
+        "v": 0.53,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.947,
+        "phash64": 11045469682245750233
+      }
+    },
+    "BE": {
+      "cluster_id": 57,
+      "count": 10,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2i0647og65vlmef6qv0_e051_025750_obj.jpg",
+        "json_file": "v12044gd0000d2i0647og65vlmef6qv0.json",
+        "e_idx": 51,
+        "h": 146.1,
+        "s": 0.66,
+        "v": 0.36,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 2.102,
+        "phash64": 0
+      }
+    },
+    "BF": {
+      "cluster_id": 47,
+      "count": 9,
+      "prototype": {
+        "thumb_obj": "misc_00029_IMG_6530.png",
+        "json_file": "MISC_PNG",
+        "e_idx": 0,
+        "h": 20.31131592116074,
+        "s": 0.08601266666338733,
+        "v": 0.0047360967347433065,
+        "area": 3009790.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.4612676056338028,
+        "phash64": 11111732016892267877
+      }
+    },
+    "BG": {
+      "cluster_id": 43,
+      "count": 7,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e028_028500_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 28,
+        "h": 180.3,
+        "s": 0.63,
+        "v": 0.56,
+        "area": 252052.0,
+        "solidity": 0.9652689749196732,
+        "ecc": 0.7594614608585117,
+        "ar": 2.125,
+        "phash64": 14974415450053685296
+      }
+    },
+    "BH": {
+      "cluster_id": 21,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e048_024250_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 48,
+        "h": 60.6,
+        "s": 0.77,
+        "v": 0.28,
+        "area": 219031.0,
+        "solidity": 0.8388103599480701,
+        "ecc": 0.7238280548859406,
+        "ar": 0.665,
+        "phash64": 9652761788118870570
+      }
+    },
+    "BI": {
+      "cluster_id": 11,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e036_018250_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 36,
+        "h": 88.0,
+        "s": 0.32,
+        "v": 0.54,
+        "area": 243320.5,
+        "solidity": 0.9318304540806752,
+        "ecc": 0.544715052127397,
+        "ar": 1.056,
+        "phash64": 15837868432732480568
+      }
+    },
+    "BJ": {
+      "cluster_id": 18,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e022_022500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 22,
+        "h": 205.2,
+        "s": 0.77,
+        "v": 0.52,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 3.143,
+        "phash64": 14295896032159938864
+      }
+    },
+    "BK": {
+      "cluster_id": 14,
+      "count": 5,
+      "prototype": {
+        "thumb_obj": "misc_00022_IMG_6523.png",
+        "json_file": "MISC_PNG",
+        "e_idx": 0,
+        "h": 29.914576422819263,
+        "s": 0.1134686142061131,
+        "v": 0.005850198546781176,
+        "area": 3009785.5,
+        "solidity": 0.9999985048790779,
+        "ecc": 0.9902769691608373,
+        "ar": 0.4612676056338028,
+        "phash64": 10116381600739531635
+      }
+    },
+    "BL": {
+      "cluster_id": 60,
+      "count": 5,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e068_033950_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 68,
+        "h": 148.8,
+        "s": 0.53,
+        "v": 0.53,
+        "area": 261115.0,
+        "solidity": 0.9999770221468208,
+        "ecc": 0.9950129675408921,
+        "ar": 1.818,
+        "phash64": 11205910715457488745
+      }
+    },
+    "BM": {
+      "cluster_id": 74,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e054_054500_obj.jpg",
+        "json_file": "v15044gf0000d2iifsnog65r86tlmk0g.json",
+        "e_idx": 54,
+        "h": 8.7,
+        "s": 0.59,
+        "v": 0.37,
+        "area": 261120.0,
+        "solidity": 0.9999961703578034,
+        "ecc": 0.9985362220982807,
+        "ar": 1.286,
+        "phash64": 15138631866544894822
+      }
+    },
+    "BN": {
+      "cluster_id": 6,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e039_019750_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 39,
+        "h": 76.3,
+        "s": 0.36,
+        "v": 0.54,
+        "area": 232889.0,
+        "solidity": 0.8918815415075769,
+        "ecc": 0.3496073945540694,
+        "ar": 0.962,
+        "phash64": 11212943097525295702
+      }
+    },
+    "BO": {
+      "cluster_id": 10,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e031_015750_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 31,
+        "h": 87.9,
+        "s": 0.32,
+        "v": 0.55,
+        "area": 149040.0,
+        "solidity": 0.8250093411383734,
+        "ecc": 0.660609361557719,
+        "ar": 1.066,
+        "phash64": 10366553673704872778
+      }
+    },
+    "BP": {
+      "cluster_id": 25,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.5_e049_037050_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.5.json",
+        "e_idx": 49,
+        "h": 99.9,
+        "s": 0.75,
+        "v": 0.33,
+        "area": 147686.5,
+        "solidity": 0.9950177192675138,
+        "ecc": 0.9922601221169333,
+        "ar": 0.231,
+        "phash64": 10982985999065697380
+      }
+    },
+    "BQ": {
+      "cluster_id": 52,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.5_e025_021450_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.5.json",
+        "e_idx": 25,
+        "h": 220.5,
+        "s": 0.49,
+        "v": 0.4,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 2.345,
+        "phash64": 15755321345414949996
+      }
+    },
+    "BR": {
+      "cluster_id": 16,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2hlm8fog65pe6sb3vm0_e024_012250_obj.jpg",
+        "json_file": "v12044gd0000d2hlm8fog65pe6sb3vm0.json",
+        "e_idx": 24,
+        "h": 336.0,
+        "s": 0.47,
+        "v": 0.52,
+        "area": 167713.5,
+        "solidity": 0.9900062866536998,
+        "ecc": 0.9845474812912994,
+        "ar": 1.733,
+        "phash64": 10263124769820127899
+      }
+    },
+    "BS": {
+      "cluster_id": 73,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e001_000750_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 1,
+        "h": 347.3,
+        "s": 0.26,
+        "v": 0.42,
+        "area": 261120.0,
+        "solidity": 0.9999961703578034,
+        "ecc": 0.9992685917811807,
+        "ar": 2.25,
+        "phash64": 15001393433977273440
+      }
+    },
+    "BT": {
+      "cluster_id": 72,
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e023_011750_obj.jpg",
+        "json_file": "Michelle_orb_video.json",
+        "e_idx": 23,
+        "h": 347.9,
+        "s": 0.63,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 14926162660510043492
+      }
+    },
+    "BU": {
+      "cluster_id": 33,
+      "count": 3,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e000_000500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 0,
+        "h": 186.2,
+        "s": 0.74,
+        "v": 0.25,
+        "area": 240251.0,
+        "solidity": 0.9200753673584277,
+        "ecc": 0.5463585441831159,
+        "ar": 0.671,
+        "phash64": 10406470512185874255
+      }
+    },
+    "BV": {
+      "cluster_id": 36,
+      "count": 3,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e001_001500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 1,
+        "h": 209.3,
+        "s": 0.41,
+        "v": 0.24,
+        "area": 196910.0,
+        "solidity": 0.8096961223734529,
+        "ecc": 0.3437979596956077,
+        "ar": 1.006,
+        "phash64": 11165895221708730722
+      }
+    },
+    "BW": {
+      "cluster_id": 23,
+      "count": 3,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e103_103500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 103,
+        "h": 214.2,
+        "s": 0.29,
+        "v": 0.25,
+        "area": 250905.0,
+        "solidity": 0.9608763753202538,
+        "ecc": 0.2762893290770123,
+        "ar": 2.312,
+        "phash64": 10971626442340443960
+      }
+    }
+  },
+  "clusters": [
+    {
+      "cluster_id": 48,
+      "token": "A",
+      "count": 359,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e199_099700_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 37,
+      "token": "B",
+      "count": 293,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 3,
+      "token": "C",
+      "count": 274,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e359_179749_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 51,
+      "token": "D",
+      "count": 263,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e073_045950_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 8,
+      "token": "E",
+      "count": 254,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e173_086750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 22,
+      "token": "F",
+      "count": 237,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e066_041050_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 39,
+      "token": "G",
+      "count": 236,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS_e035_041900_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 0,
+      "token": "H",
+      "count": 216,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e020_010250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 12,
+      "token": "I",
+      "count": 211,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e014_007250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 40,
+      "token": "J",
+      "count": 201,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e033_033500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 13,
+      "token": "K",
+      "count": 194,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e040_040500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 71,
+      "token": "L",
+      "count": 177,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e038_019250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 19,
+      "token": "M",
+      "count": 163,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e036_036500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 17,
+      "token": "N",
+      "count": 145,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS4_e042_030834_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 35,
+      "token": "O",
+      "count": 143,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e041_002883_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 20,
+      "token": "P",
+      "count": 134,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e011_005750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 46,
+      "token": "Q",
+      "count": 128,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e135_067750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 30,
+      "token": "R",
+      "count": 127,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2jt9vfog65vjgteco5g_e008_004250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 63,
+      "token": "S",
+      "count": 121,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2fr3lfog65rbo3ud6jg_e022_011250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 62,
+      "token": "T",
+      "count": 120,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e069_069500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 28,
+      "token": "U",
+      "count": 117,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e064_064500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 15,
+      "token": "V",
+      "count": 114,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e108_108500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 4,
+      "token": "W",
+      "count": 104,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e016_008250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 2,
+      "token": "X",
+      "count": 103,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e106_053250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 55,
+      "token": "Y",
+      "count": 102,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e132_132500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 49,
+      "token": "Z",
+      "count": 102,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e006_006500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 70,
+      "token": "AA",
+      "count": 91,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e041_041500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 44,
+      "token": "AB",
+      "count": 87,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gk20nog65g267kppig_e067_033750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 38,
+      "token": "AC",
+      "count": 87,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e073_005016_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 5,
+      "token": "AD",
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e062_062500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 34,
+      "token": "AE",
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e008_005250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 54,
+      "token": "AF",
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gk20nog65g267kppig_e057_028750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 26,
+      "token": "AG",
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e044_044500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 31,
+      "token": "AH",
+      "count": 80,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e093_093500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 67,
+      "token": "AI",
+      "count": 79,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e071_071500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 24,
+      "token": "AJ",
+      "count": 78,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS3_e072_056400_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 29,
+      "token": "AK",
+      "count": 77,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e140_111449_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 1,
+      "token": "AL",
+      "count": 74,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e083_041750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 7,
+      "token": "AM",
+      "count": 73,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e034_020450_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 27,
+      "token": "AN",
+      "count": 67,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ftmcfog65g2pr51j70_e020_010250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 41,
+      "token": "AO",
+      "count": 65,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e086_086500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 9,
+      "token": "AP",
+      "count": 64,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e013_006750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 65,
+      "token": "AQ",
+      "count": 53,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS3_e025_022050_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 42,
+      "token": "AR",
+      "count": 52,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e076_038250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 64,
+      "token": "AS",
+      "count": 51,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e018_001350_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 32,
+      "token": "AT",
+      "count": 50,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg_e051_051500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 56,
+      "token": "AU",
+      "count": 49,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e040_020250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 53,
+      "token": "AV",
+      "count": 47,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ftmcfog65g2pr51j70_e025_012750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 58,
+      "token": "AW",
+      "count": 47,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e017_017500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 50,
+      "token": "AX",
+      "count": 46,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e077_077500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 45,
+      "token": "AY",
+      "count": 40,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e087_087500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 68,
+      "token": "AZ",
+      "count": 40,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e106_106500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 61,
+      "token": "BA",
+      "count": 39,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e092_046250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 66,
+      "token": "BB",
+      "count": 34,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e002_001250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 69,
+      "token": "BC",
+      "count": 33,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e099_049750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 59,
+      "token": "BD",
+      "count": 30,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e142_071250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 57,
+      "token": "BE",
+      "count": 10,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2i0647og65vlmef6qv0_e051_025750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 47,
+      "token": "BF",
+      "count": 9,
+      "prototype": {
+        "thumb_obj": "misc_00029_IMG_6530.png"
+      }
+    },
+    {
+      "cluster_id": 43,
+      "token": "BG",
+      "count": 7,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e028_028500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 21,
+      "token": "BH",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e048_024250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 11,
+      "token": "BI",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e036_018250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 18,
+      "token": "BJ",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e022_022500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 14,
+      "token": "BK",
+      "count": 5,
+      "prototype": {
+        "thumb_obj": "misc_00022_IMG_6523.png"
+      }
+    },
+    {
+      "cluster_id": 60,
+      "token": "BL",
+      "count": 5,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e068_033950_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 74,
+      "token": "BM",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e054_054500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 6,
+      "token": "BN",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e039_019750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 10,
+      "token": "BO",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e031_015750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 25,
+      "token": "BP",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.5_e049_037050_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 52,
+      "token": "BQ",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.5_e025_021450_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 16,
+      "token": "BR",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2hlm8fog65pe6sb3vm0_e024_012250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 73,
+      "token": "BS",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e001_000750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 72,
+      "token": "BT",
+      "count": 4,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e023_011750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 33,
+      "token": "BU",
+      "count": 3,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e000_000500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 36,
+      "token": "BV",
+      "count": 3,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e001_001500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 23,
+      "token": "BW",
+      "count": 3,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e103_103500_obj.jpg"
+      }
+    }
+  ]
+}

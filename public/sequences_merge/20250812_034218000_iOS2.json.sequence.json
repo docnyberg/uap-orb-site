@@ -1,0 +1,418 @@
+{
+  "json_file": "20250812_034218000_iOS2.json",
+  "n_events": 15,
+  "legend": {
+    "A": {
+      "cluster_id": 48,
+      "count": 359,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e199_099700_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 199,
+        "h": 228.0,
+        "s": 0.49,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "B": {
+      "cluster_id": 37,
+      "count": 293,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.json",
+        "e_idx": 10,
+        "h": 233.3,
+        "s": 0.53,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "C": {
+      "cluster_id": 3,
+      "count": 274,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e359_179749_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 359,
+        "h": 240.2,
+        "s": 0.49,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.941,
+        "phash64": 0
+      }
+    },
+    "E": {
+      "cluster_id": 8,
+      "count": 254,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e173_086750_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 173,
+        "h": 33.6,
+        "s": 0.42,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 15711692668243515708
+      }
+    },
+    "G": {
+      "cluster_id": 39,
+      "count": 236,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS_e035_041900_obj.jpg",
+        "json_file": "20250812_034218000_iOS.json",
+        "e_idx": 35,
+        "h": 248.1,
+        "s": 0.56,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.067,
+        "phash64": 0
+      }
+    },
+    "J": {
+      "cluster_id": 40,
+      "count": 201,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e033_033500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 33,
+        "h": 250.0,
+        "s": 0.57,
+        "v": 0.6,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "R": {
+      "cluster_id": 30,
+      "count": 127,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2jt9vfog65vjgteco5g_e008_004250_obj.jpg",
+        "json_file": "v15044gf0000d2jt9vfog65vjgteco5g.json",
+        "e_idx": 8,
+        "h": 53.9,
+        "s": 0.46,
+        "v": 0.61,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.125,
+        "phash64": 14648297222832770102
+      }
+    },
+    "S": {
+      "cluster_id": 63,
+      "count": 121,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2fr3lfog65rbo3ud6jg_e022_011250_obj.jpg",
+        "json_file": "v15044gf0000d2fr3lfog65rbo3ud6jg.json",
+        "e_idx": 22,
+        "h": 340.7,
+        "s": 0.44,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.429,
+        "phash64": 0
+      }
+    },
+    "T": {
+      "cluster_id": 62,
+      "count": 120,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e069_069500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 69,
+        "h": 306.2,
+        "s": 0.91,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.286,
+        "phash64": 14973958801467403617
+      }
+    },
+    "V": {
+      "cluster_id": 15,
+      "count": 114,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e108_108500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 108,
+        "h": 333.9,
+        "s": 0.87,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.8,
+        "phash64": 10289987602107058589
+      }
+    },
+    "W": {
+      "cluster_id": 4,
+      "count": 104,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e016_008250_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 16,
+        "h": 67.6,
+        "s": 0.46,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.2,
+        "phash64": 10251992298558220646
+      }
+    },
+    "X": {
+      "cluster_id": 2,
+      "count": 103,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e106_053250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 106,
+        "h": 195.6,
+        "s": 0.92,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.308,
+        "phash64": 15816189861352099224
+      }
+    }
+  },
+  "symbol_seq": "SJATAXVGBAWAEARBCG_AT",
+  "symbol_seq_enhanced": "Unknown Blue Unknown↑ Unknown Pink/Magenta Blue Blue Unknown Blue↓ Unknown Blue Blue Blue Unknown Unknown↓",
+  "binary_seq": "100010100010001",
+  "v_threshold": 0.576,
+  "events": [
+    {
+      "event_index": 0,
+      "start_ts": 0.0,
+      "end_ts": 0.4,
+      "duration": 0.4,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 63,
+      "thumb_obj": "20250812_034218000_iOS2_e000_000200_obj.jpg"
+    },
+    {
+      "event_index": 1,
+      "start_ts": 0.5,
+      "end_ts": 0.5,
+      "duration": 0.0,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 40,
+      "thumb_obj": "20250812_034218000_iOS2_e001_000500_obj.jpg"
+    },
+    {
+      "event_index": 2,
+      "start_ts": 0.6,
+      "end_ts": 0.8,
+      "duration": 0.20000000000000007,
+      "morphology": "sphere",
+      "orientation": "↑",
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 32,
+      "thumb_obj": "20250812_034218000_iOS2_e002_000700_obj.jpg"
+    },
+    {
+      "event_index": 3,
+      "start_ts": 0.9,
+      "end_ts": 1.0,
+      "duration": 0.09999999999999998,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 50,
+      "thumb_obj": "20250812_034218000_iOS2_e003_000950_obj.jpg"
+    },
+    {
+      "event_index": 4,
+      "start_ts": 1.1,
+      "end_ts": 3.5,
+      "duration": 2.4,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Pink/Magenta",
+      "cluster_id": 15,
+      "thumb_obj": "20250812_034218000_iOS2_e004_002300_obj.jpg"
+    },
+    {
+      "event_index": 5,
+      "start_ts": 3.6,
+      "end_ts": 3.6,
+      "duration": 0.0,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 39,
+      "thumb_obj": "20250812_034218000_iOS2_e005_003600_obj.jpg"
+    },
+    {
+      "event_index": 6,
+      "start_ts": 3.7,
+      "end_ts": 4.4,
+      "duration": 0.7000000000000002,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 37,
+      "thumb_obj": "20250812_034218000_iOS2_e006_004050_obj.jpg"
+    },
+    {
+      "event_index": 7,
+      "start_ts": 4.5,
+      "end_ts": 4.6,
+      "duration": 0.09999999999999964,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 58,
+      "thumb_obj": "20250812_034218000_iOS2_e007_004550_obj.jpg"
+    },
+    {
+      "event_index": 8,
+      "start_ts": 4.7,
+      "end_ts": 5.8,
+      "duration": 1.0999999999999996,
+      "morphology": "sphere",
+      "orientation": "↓",
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 34,
+      "thumb_obj": "20250812_034218000_iOS2_e008_005250_obj.jpg"
+    },
+    {
+      "event_index": 9,
+      "start_ts": 5.9,
+      "end_ts": 6.0,
+      "duration": 0.09999999999999964,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 42,
+      "thumb_obj": "20250812_034218000_iOS2_e009_005950_obj.jpg"
+    },
+    {
+      "event_index": 10,
+      "start_ts": 6.1,
+      "end_ts": 7.1,
+      "duration": 1.0,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 37,
+      "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg"
+    },
+    {
+      "event_index": 11,
+      "start_ts": 7.2,
+      "end_ts": 7.2,
+      "duration": 0.0,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 3,
+      "thumb_obj": "20250812_034218000_iOS2_e011_007200_obj.jpg"
+    },
+    {
+      "event_index": 12,
+      "start_ts": 7.3,
+      "end_ts": 7.4,
+      "duration": 0.10000000000000053,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Blue",
+      "cluster_id": 39,
+      "thumb_obj": "20250812_034218000_iOS2_e012_007350_obj.jpg"
+    },
+    {
+      "event_index": 13,
+      "start_ts": 7.5,
+      "end_ts": 7.6,
+      "duration": 0.09999999999999964,
+      "morphology": "sphere",
+      "orientation": null,
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": -2,
+      "thumb_obj": "20250812_034218000_iOS2_e013_007550_obj.jpg"
+    },
+    {
+      "event_index": 14,
+      "start_ts": 7.7,
+      "end_ts": 8.0,
+      "duration": 0.2999999999999998,
+      "morphology": "sphere",
+      "orientation": "↓",
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 32,
+      "thumb_obj": "20250812_034218000_iOS2_e014_007850_obj.jpg"
+    }
+  ],
+  "cycles": [
+    "Unknown Blue Unknown↑ Unknown Pink/Magenta",
+    "Blue Blue Unknown Blue↓ Unknown Blue Blue Blue Unknown Unknown↓"
+  ],
+  "clustering": {
+    "eps": 0.34,
+    "min_samples": 3,
+    "weights": {
+      "w_phash": 2.0,
+      "w_hue": 1.0,
+      "w_feat": 1.0
+    },
+    "gates": {
+      "hue_deg": 14.0,
+      "area_ratio": 0.45,
+      "solidity": 0.2,
+      "ecc": 0.28,
+      "aspect_ratio": 0.6
+    },
+    "min_area_px": 50,
+    "method": "strict-gated (hue-bucketed DBSCAN)"
+  }
+}

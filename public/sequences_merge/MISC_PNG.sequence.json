@@ -1,0 +1,77 @@
+{
+  "json_file": "MISC_PNG",
+  "n_events": 1,
+  "legend": {
+    "B": {
+      "cluster_id": 37,
+      "count": 293,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.json",
+        "e_idx": 10,
+        "h": 233.3,
+        "s": 0.53,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "F": {
+      "cluster_id": 22,
+      "count": 237,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e066_041050_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.6.json",
+        "e_idx": 66,
+        "h": 213.9,
+        "s": 0.45,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.947,
+        "phash64": 0
+      }
+    }
+  },
+  "symbol_seq": "BF",
+  "symbol_seq_enhanced": "Unknown↓",
+  "binary_seq": "1",
+  "v_threshold": 0.08806213883779401,
+  "events": [
+    {
+      "event_index": 0,
+      "start_ts": null,
+      "end_ts": null,
+      "duration": null,
+      "morphology": "sphere",
+      "orientation": "↓",
+      "flash": false,
+      "color_label": "Unknown",
+      "cluster_id": 47,
+      "thumb_obj": "misc_00013_File_046.png"
+    }
+  ],
+  "cycles": [],
+  "clustering": {
+    "eps": 0.34,
+    "min_samples": 3,
+    "weights": {
+      "w_phash": 2.0,
+      "w_hue": 1.0,
+      "w_feat": 1.0
+    },
+    "gates": {
+      "hue_deg": 14.0,
+      "area_ratio": 0.45,
+      "solidity": 0.2,
+      "ecc": 0.28,
+      "aspect_ratio": 0.6
+    },
+    "min_area_px": 50,
+    "method": "strict-gated (hue-bucketed DBSCAN)"
+  }
+}

@@ -957,6 +957,7 @@
             return useObj ? `thumbs_obj/${src}` : `thumbs/${src}`;
         }
 
+        /* ===== Permissive SVG candidate list (roots + .SVG) ===== */
         function svgTriesFor(it) {
             // Active style list; "" means the plain root with no style suffix
             const styles = STYLE_ALIASES[svgStyle] || STYLE_ALIASES.default;
