@@ -43,6 +43,186 @@
             margin-left: 8px
         }
 
+        .codebook-sidebar {
+            position: fixed;
+            top: 86px;
+            right: 16px;
+            width: 260px;
+            max-height: calc(100vh - 120px);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform .25s ease, opacity .2s ease;
+        }
+
+        .codebook-sidebar.collapsed {
+            transform: translateX(calc(100% + 24px));
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .codebook-sidebar .sidebar-header {
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            z-index: 1;
+        }
+
+        .codebook-sidebar .sidebar-title {
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .codebook-sidebar .sidebar-subtitle {
+            display: block;
+            margin-top: 2px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .codebook-sidebar .sidebar-body {
+            padding: 10px;
+            overflow-y: auto;
+            display: grid;
+            gap: 8px;
+        }
+
+        .codebook-entry {
+            display: grid;
+            grid-template-columns: 56px 1fr;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            padding: 6px;
+            background: var(--chip);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+            transition: border-color .15s ease, transform .15s ease;
+        }
+
+        .codebook-entry:hover {
+            border-color: #395072;
+            transform: translateY(-1px);
+        }
+
+        .codebook-entry.busy {
+            opacity: .6;
+            pointer-events: none;
+        }
+
+        .codebook-entry .preview {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #05070b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .codebook-entry .preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .codebook-entry .preview .missing-thumb {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: center;
+            padding: 6px;
+        }
+
+        .codebook-entry .info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .codebook-entry .info strong {
+            font-size: 12px;
+            letter-spacing: .02em;
+        }
+
+        .codebook-entry .info small {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .sidebar-empty {
+            padding: 12px;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .sidebar-drop {
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 11px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .sidebar-drop:hover {
+            color: var(--fg);
+            border-color: #395072;
+        }
+
+        #codebookToggle {
+            position: fixed;
+            right: 16px;
+            bottom: 20px;
+            display: none;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 30;
+        }
+
+        #codebookToggle:hover {
+            border-color: #395072;
+        }
+
+        .codebook-sidebar.collapsed + #codebookToggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        @media (max-width: 900px) {
+            .codebook-sidebar {
+                width: min(90vw, 260px);
+                top: auto;
+                bottom: 80px;
+            }
+        }
+
         .controls {
             display: flex;
             flex-wrap: wrap;
@@ -407,6 +587,20 @@
         <button id="donateBtn" class="pill" title="Donate">Donate</button>
     </header>
 
+    <aside id="codebookSidebar" class="codebook-sidebar" tabindex="-1">
+        <div class="sidebar-header">
+            <div>
+                <div class="sidebar-title">Symbol Codebook</div>
+                <span class="sidebar-subtitle">Cluster prototypes</span>
+            </div>
+            <button id="codebookDrop" class="sidebar-drop" type="button">Drop</button>
+        </div>
+        <div class="sidebar-body">
+            <div class="sidebar-empty">Loading codebook…</div>
+        </div>
+    </aside>
+    <button id="codebookToggle" class="codebook-toggle" type="button">Codebook</button>
+
     <div class="controls">
         <div class="group">
             <label for="sizeRange">Tile size</label>
@@ -644,6 +838,21 @@
         const svgCache = {}; // key -> resolved successful URL
         const SEQ_CACHE = new Map();
 
+        const CODEBOOK_URL = "sequences_merge/symbol_codebook.json";
+        let CODEBOOK_CLUSTERS = [];
+        const CODEBOOK_PROMISE = loadCodebookData().then(clusters => {
+            CODEBOOK_CLUSTERS = clusters;
+            return clusters;
+        });
+
+        const THUMB_TO_INDEX = new Map();
+        let resolveDataReady;
+        const dataReady = new Promise(resolve => { resolveDataReady = resolve; });
+
+        const sequenceClusterPromises = new Map();
+        const CLUSTER_MEMBERS = new Map();
+        const CLUSTER_WINDOW_FEATURES = "width=980,height=720,resizable=yes,scrollbars=yes";
+
         function sequenceJsonURL(jsonFile) {
             if (!jsonFile) return null;
             const safe = String(jsonFile).split('/').map(part => encodeURIComponent(part)).join('/');
@@ -668,6 +877,334 @@
             SEQ_CACHE.set(jsonFile, prom);
             return prom;
         }
+
+        async function loadCodebookData() {
+            try {
+                const res = await fetch(CODEBOOK_URL, { cache: "force-cache" });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const text = await res.text();
+                const safe = text.replace(/\bNaN\b/g, "null");
+                const data = JSON.parse(safe);
+                const clusters = Array.isArray(data?.clusters) ? data.clusters : [];
+                return clusters.map(cluster => ({
+                    cluster_id: Number(cluster.cluster_id),
+                    token: cluster.token || "",
+                    count: Number(cluster.count) || 0,
+                    thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || "")
+                }));
+            } catch (err) {
+                console.warn('codebook fetch failed', err);
+                return [];
+            }
+        }
+
+        function rebuildThumbIndex() {
+            THUMB_TO_INDEX.clear();
+            DATA.forEach((it, idx) => {
+                const key = normalizeThumbName(it.thumb_obj);
+                if (key && !THUMB_TO_INDEX.has(key)) {
+                    THUMB_TO_INDEX.set(key, idx);
+                }
+            });
+        }
+
+        function ensureSequenceClusters(jsonFile) {
+            if (!jsonFile) return Promise.resolve();
+            if (sequenceClusterPromises.has(jsonFile)) return sequenceClusterPromises.get(jsonFile);
+            const prom = loadSequenceMetadata(jsonFile).then(seq => {
+                if (!seq || !Array.isArray(seq.events)) return;
+                seq.events.forEach(ev => {
+                    const cid = Number(ev.cluster_id);
+                    const thumb = normalizeThumbName(ev.thumb_obj);
+                    if (!Number.isFinite(cid) || !thumb) return;
+                    let arr = CLUSTER_MEMBERS.get(cid);
+                    if (!arr) {
+                        arr = [];
+                        CLUSTER_MEMBERS.set(cid, arr);
+                    }
+                    if (!arr.some(item => item.thumb_obj === thumb)) {
+                        arr.push({
+                            thumb_obj: thumb,
+                            json_file: jsonFile,
+                            event_index: ev.event_index
+                        });
+                    }
+                });
+            }).catch(err => {
+                console.warn('cluster mapping failed', err);
+            });
+            sequenceClusterPromises.set(jsonFile, prom);
+            return prom;
+        }
+
+        async function fetchClusterMembers(clusterId) {
+            await dataReady;
+            const files = Array.from(new Set(DATA.map(it => it.json_file).filter(Boolean)));
+            if (files.length) {
+                await Promise.all(files.map(ensureSequenceClusters));
+            }
+            const entries = (CLUSTER_MEMBERS.get(clusterId) || []).map(item => ({ ...item }));
+            entries.sort((a, b) => {
+                const aj = (a.json_file || "").toLowerCase();
+                const bj = (b.json_file || "").toLowerCase();
+                if (aj !== bj) return aj < bj ? -1 : 1;
+                const ai = Number(a.event_index);
+                const bi = Number(b.event_index);
+                if (Number.isFinite(ai) && Number.isFinite(bi)) return ai - bi;
+                return String(a.event_index).localeCompare(String(b.event_index));
+            });
+            return entries;
+        }
+
+        async function openClusterWindow(cluster, preOpenedWindow) {
+            const name = `codebook_cluster_${cluster?.cluster_id ?? ""}`;
+            const win = preOpenedWindow || window.open("", name, CLUSTER_WINDOW_FEATURES);
+            if (!win) {
+                toast("Please allow pop-ups for cluster viewer.");
+                return;
+            }
+            try {
+                if (!preOpenedWindow) {
+                    win.document.write("<!doctype html><title>Loading…</title><body style='background:#0b0d12;color:#c9d3e5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Loading cluster…</body>");
+                    win.document.close();
+                }
+                await dataReady;
+                const members = await fetchClusterMembers(cluster.cluster_id);
+                const enriched = members.map(item => {
+                    const idx = THUMB_TO_INDEX.get(item.thumb_obj);
+                    const row = (typeof idx === "number") ? DATA[idx] : null;
+                    const scenePath = row ? sanitizeRelativePath(row.thumb) : "";
+                    const objectPath = row ? sanitizeRelativePath(row.thumb_obj) : sanitizeRelativePath(item.thumb_obj);
+                    return {
+                        thumb_obj: objectPath || item.thumb_obj,
+                        thumb_scene: scenePath,
+                        json_file: item.json_file,
+                        event_index: item.event_index,
+                        dataIdx: (typeof idx === "number") ? idx : null
+                    };
+                });
+                const payload = {
+                    cluster: {
+                        id: cluster.cluster_id,
+                        token: cluster.token || "",
+                        count: cluster.count || enriched.length
+                    },
+                    items: enriched
+                };
+                const payloadStr = JSON.stringify(payload).replace(/</g, "\\u003c");
+                const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
+                const memberCount = payload.cluster.count;
+                if (win.closed) return;
+                const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${clusterTitle}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root { color-scheme: dark; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b0d12; color:#e7eaf0; }
+body { margin:0; background:#0b0d12; color:#e7eaf0; }
+header { padding:16px 20px; border-bottom:1px solid #243041; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+header h1 { font-size:16px; margin:0; }
+header span { font-size:12px; color:#9aa3b2; }
+header button { margin-left:auto; padding:6px 10px; border-radius:999px; border:1px solid #243041; background:#131722; color:#e7eaf0; cursor:pointer; }
+header button:hover { border-color:#395072; }
+main { padding:18px; }
+.grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+.cluster-card { background:#131722; border:1px solid #243041; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+.cluster-card button { padding:0; border:0; background:none; color:inherit; text-align:left; cursor:pointer; display:flex; flex-direction:column; height:100%; }
+.cluster-card button:focus-visible { outline:2px solid #58a6ff; outline-offset:2px; }
+.cluster-card img { width:100%; aspect-ratio:1/1; object-fit:cover; background:#000; }
+.cluster-card .meta { padding:10px 12px; font-size:12px; line-height:1.4; color:#c9d3e5; display:flex; flex-direction:column; gap:4px; }
+.cluster-card .status { font-size:11px; color:#9aa3b2; }
+.empty { padding:40px 0; text-align:center; color:#9aa3b2; font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>${clusterTitle}</h1>
+  <span>${memberCount} total members</span>
+  <button id="focusMain" type="button">Focus main viewer</button>
+</header>
+<main>
+  <div id="clusterGrid" class="grid"></div>
+</main>
+<script>
+const PAYLOAD = ${payloadStr};
+function encodePath(name){ return name ? name.split('/').map(encodeURIComponent).join('/') : ''; }
+function focusMain(){ if (window.opener && !window.opener.closed){ window.opener.focus(); } }
+function handleClick(name){
+  if (window.opener && !window.opener.closed && typeof window.opener.handleCodebookSelection === 'function'){
+    window.opener.focus();
+    window.opener.handleCodebookSelection(name);
+  } else {
+    alert('Main viewer not available.');
+  }
+}
+document.getElementById('focusMain').addEventListener('click', focusMain);
+(function render(){
+  const grid = document.getElementById('clusterGrid');
+  if (!grid) return;
+  if (!PAYLOAD.items.length){
+    grid.outerHTML = '<p class="empty">No thumb.obj members were found for this cluster.</p>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  PAYLOAD.items.forEach(item => {
+    const card = document.createElement('article');
+    card.className = 'cluster-card';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.addEventListener('click', () => handleClick(item.thumb_obj));
+    const img = document.createElement('img');
+    let src = '';
+    if (item.thumb_scene){
+      src = 'thumbs/' + encodePath(item.thumb_scene);
+      img.dataset.previewKind = 'scene';
+    } else if (item.thumb_obj){
+      src = 'thumbs_obj/' + encodePath(item.thumb_obj);
+      img.dataset.previewKind = 'object';
+    }
+    if (src){
+      img.src = src;
+      img.alt = item.thumb_scene || item.thumb_obj || 'Cluster thumbnail';
+    } else {
+      img.alt = 'Missing thumbnail';
+    }
+    button.appendChild(img);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const title = document.createElement('div');
+    title.innerHTML = '<strong>' + (item.json_file || '') + '</strong>';
+    meta.appendChild(title);
+    const info = document.createElement('div');
+    info.textContent = 'Event #' + (item.event_index ?? '');
+    meta.appendChild(info);
+    if (item.dataIdx === null){
+      const warn = document.createElement('div');
+      warn.className = 'status';
+      warn.textContent = 'Not present in atlas dataset';
+      meta.appendChild(warn);
+    }
+    button.appendChild(meta);
+    card.appendChild(button);
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+})();
+<\/script>
+</body>
+</html>`;
+                win.document.open();
+                win.document.write(html);
+                win.document.close();
+            } catch (err) {
+                console.error('cluster window error', err);
+                if (win && !win.closed) {
+                    win.document.open();
+                    win.document.write("<!doctype html><title>Error</title><body style='background:#0b0d12;color:#e7eaf0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Failed to load cluster view.</body>");
+                    win.document.close();
+                }
+            }
+        }
+
+        function renderCodebookSidebar(clusters) {
+            const sidebar = document.getElementById("codebookSidebar");
+            if (!sidebar) return;
+            const body = sidebar.querySelector(".sidebar-body");
+            if (!body) return;
+            if (!Array.isArray(clusters) || !clusters.length) {
+                body.innerHTML = '<div class="sidebar-empty">Codebook unavailable.</div>';
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            clusters.forEach(cluster => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "codebook-entry";
+                btn.dataset.cluster = String(cluster.cluster_id ?? "");
+                const clusterThumb = normalizeThumbName(cluster.thumb_obj);
+                if (clusterThumb) {
+                    btn.dataset.thumbObj = clusterThumb;
+                }
+
+                const previewWrap = document.createElement("span");
+                previewWrap.className = "preview";
+                if (clusterThumb) {
+                    const info = bestPreviewForThumbObj(clusterThumb);
+                    if (info.src) {
+                        const img = document.createElement("img");
+                        img.loading = "lazy";
+                        img.decoding = "async";
+                        img.alt = `Cluster ${cluster.cluster_id ?? "?"} preview`;
+                        img.dataset.role = "cluster-preview";
+                        img.dataset.clusterPreviewSrc = info.src;
+                        img.dataset.previewKind = info.kind;
+                        img.src = info.src;
+                        previewWrap.appendChild(img);
+                    } else {
+                        const missing = document.createElement("span");
+                        missing.className = "missing-thumb";
+                        missing.textContent = "No thumb";
+                        previewWrap.appendChild(missing);
+                    }
+                } else {
+                    const missing = document.createElement("span");
+                    missing.className = "missing-thumb";
+                    missing.textContent = "No thumb";
+                    previewWrap.appendChild(missing);
+                }
+
+                const infoWrap = document.createElement("span");
+                infoWrap.className = "info";
+                const strong = document.createElement("strong");
+                strong.textContent = `${cluster.token ? `${cluster.token} • ` : ""}Cluster ${cluster.cluster_id ?? "?"}`;
+                const small = document.createElement("small");
+                small.textContent = cluster.count ? `${cluster.count} items` : "Open cluster";
+                infoWrap.appendChild(strong);
+                infoWrap.appendChild(small);
+
+                btn.appendChild(previewWrap);
+                btn.appendChild(infoWrap);
+
+                btn.addEventListener("click", () => {
+                    const w = window.open("", `codebook_cluster_${cluster.cluster_id}`, CLUSTER_WINDOW_FEATURES);
+                    if (!w) { toast("Please allow pop-ups for cluster viewer."); return; }
+                    w.document.write("<!doctype html><title>Loading…</title><body style='background:#0b0d12;color:#c9d3e5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Loading cluster…</body>");
+                    w.document.close();
+                    btn.classList.add("busy");
+                    openClusterWindow(cluster, w).finally(() => btn.classList.remove("busy"));
+                });
+                frag.appendChild(btn);
+            });
+            body.innerHTML = "";
+            body.appendChild(frag);
+            refreshCodebookSidebarPreviews();
+        }
+
+        function wireCodebookChrome() {
+            const sidebar = document.getElementById("codebookSidebar");
+            const drop = document.getElementById("codebookDrop");
+            const toggle = document.getElementById("codebookToggle");
+            if (drop && sidebar) {
+                drop.addEventListener("click", () => {
+                    sidebar.classList.add("collapsed");
+                    if (toggle) toggle.focus();
+                });
+            }
+            if (toggle && sidebar) {
+                toggle.addEventListener("click", () => {
+                    sidebar.classList.remove("collapsed");
+                    sidebar.focus();
+                });
+            }
+        }
+
+        wireCodebookChrome();
+        CODEBOOK_PROMISE.then(renderCodebookSidebar).catch(() => {
+            const body = document.querySelector("#codebookSidebar .sidebar-body");
+            if (body) body.innerHTML = '<div class="sidebar-empty">Failed to load codebook.</div>';
+        });
         
         let DATA = [], CURRENT = [], CURRENT_IDX = [];
         let sortAsc = true, groupMode = "none", sortMode = "hue", thumbMode = "object", svgStyle = "default";
@@ -709,6 +1246,63 @@
         const isAbsoluteURL = (p) =>
             /^https?:\/\//i.test(p || "") || /^data:/i.test(p || "") || (p || "").startsWith("/");
 
+        const normalizeThumbName = (name) => {
+            if (!name) return "";
+            const clean = String(name).replace(/\\/g, "/").trim();
+            if (!clean) return "";
+            const parts = clean.split("/").filter(Boolean);
+            return (parts.length ? parts[parts.length - 1] : clean).trim();
+        };
+
+        const sanitizeRelativePath = (name) => {
+            if (!name) return "";
+            const clean = String(name).replace(/\\/g, "/").trim();
+            if (!clean) return "";
+            const parts = clean.split("/").filter(part => part && part !== "." && part !== "..");
+            return parts.join("/");
+        };
+
+        const encodeThumbPath = (name) =>
+            name ? name.split("/").map(part => encodeURIComponent(part)).join("/") : "";
+
+        function bestPreviewForThumbObj(thumbObjName) {
+            const normalized = normalizeThumbName(thumbObjName);
+            if (!normalized) {
+                return { src: "", kind: "none" };
+            }
+            const fallback = `thumbs_obj/${encodeThumbPath(normalized)}`;
+            const idx = THUMB_TO_INDEX.get(normalized);
+            if (typeof idx === "number" && DATA[idx]) {
+                const row = DATA[idx];
+                const scenePath = sanitizeRelativePath(row.thumb);
+                if (scenePath) {
+                    return { src: `thumbs/${encodeThumbPath(scenePath)}`, kind: "scene", fallback };
+                }
+                const objectPath = sanitizeRelativePath(row.thumb_obj);
+                if (objectPath) {
+                    return { src: `thumbs_obj/${encodeThumbPath(objectPath)}`, kind: "object", fallback };
+                }
+            }
+            return { src: fallback, kind: "object", fallback };
+        }
+
+        function refreshCodebookSidebarPreviews() {
+            const entries = document.querySelectorAll(".codebook-entry");
+            entries.forEach(entry => {
+                const thumbObj = entry.dataset.thumbObj;
+                if (!thumbObj) return;
+                const img = entry.querySelector("img[data-role='cluster-preview']");
+                if (!img) return;
+                const info = bestPreviewForThumbObj(thumbObj);
+                if (!info.src) return;
+                if (img.dataset.clusterPreviewSrc !== info.src) {
+                    img.dataset.clusterPreviewSrc = info.src;
+                    img.src = info.src;
+                }
+                img.dataset.previewKind = info.kind;
+            });
+        }
+
 
         /* ========== CSV NORMALIZATION (revised) ========== */
         function normalizeRow(r, i) {
@@ -724,7 +1318,7 @@
             );
 
             // sanitize: normalize slashes + trim
-            const clean = (s) => (typeof s === "string" ? s.replace(/\\/g, "/").trim() : "");
+            const clean = (s) => (typeof s === "string" ? sanitizeRelativePath(s) : "");
 
             return {
                 _i: i,
@@ -981,16 +1575,32 @@
             });
             return seq;
         }
+        function hasThumbMedia(it) {
+            return Boolean((it.thumb_obj && it.thumb_obj.trim()) || (it.thumb && it.thumb.trim()));
+        }
+
         function rasterUrlFor(it) {
-            const useObj = (thumbMode === "object" && it.thumb_obj);
-            const src = useObj ? it.thumb_obj : it.thumb;
-            if (!src) return ""; // no image available
+            const objSrc = (it.thumb_obj || "").trim();
+            const sceneSrc = (it.thumb || "").trim();
+
+            let chosen = "";
+            let isObj = false;
+
+            if (thumbMode === "object") {
+                if (objSrc) { chosen = objSrc; isObj = true; }
+                else if (sceneSrc) { chosen = sceneSrc; }
+            } else {
+                if (sceneSrc) { chosen = sceneSrc; }
+                else if (objSrc) { chosen = objSrc; isObj = true; }
+            }
+
+            if (!chosen) return ""; // no image available
 
             // Absolute (http/https/data:/leading slash) — use as-is
-            if (isAbsoluteURL(src)) return src;
+            if (isAbsoluteURL(chosen)) return chosen;
 
             // Relative — keep your existing folders
-            return useObj ? `thumbs_obj/${src}` : `thumbs/${src}`;
+            return isObj ? `thumbs_obj/${chosen}` : `thumbs/${chosen}`;
         }
 
         /* ===== Permissive SVG candidate list (roots + .SVG) ===== */
@@ -1170,6 +1780,20 @@
                 else if (ev.key.toLowerCase() === "v") { ev.preventDefault(); setSvgMode(!MODAL.svg); }
             };
         }
+
+        window.handleCodebookSelection = function(thumbName) {
+            const key = normalizeThumbName(thumbName);
+            if (!key) {
+                toast("No thumbnail specified for this cluster item.");
+                return;
+            }
+            const idx = THUMB_TO_INDEX.get(key);
+            if (typeof idx !== "number") {
+                toast("Cluster item is not present in the current atlas view.");
+                return;
+            }
+            openModalByGlobalIndex(idx);
+        };
 
         function openSVGByGlobalIndex(gi) {
             if (!allowDownload("svg")) return; // soft gate
@@ -1479,6 +2103,9 @@
                     }
                     try { dedupeByVideoClusters(); } catch {}
                     refresh(); updateHueRange();
+                    rebuildThumbIndex();
+                    refreshCodebookSidebarPreviews();
+                    if (resolveDataReady) { resolveDataReady(); resolveDataReady = null; }
                 }
             }
             Papa.parse(CSV_URL, {
@@ -1541,9 +2168,13 @@
             // simple similarity metric (hue, s, v, circ, area + shape boost)
             const TH = hueOf(tgt), TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0), TC = num(tgt.circ, 0), TA = num(tgt.area_norm, 0);
             const tShape = tgt.shape;
+            const requireImage = document.getElementById("imgOnly")?.checked ?? false;
+            const hideDuplicates = document.getElementById("hideDup")?.checked ?? false;
             const sim = [];
             DATA.forEach((it, i) => {
                 if (i === gi) return;
+                if (requireImage && !hasThumbMedia(it)) return;
+                if (hideDuplicates && it.isDuplicate) return;
                 let d = 0; const H = hueOf(it);
                 if (Number.isFinite(TH) && Number.isFinite(H)) { let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180); } else d += 1;
                 d += Math.abs(num(it.s_norm, 0) - TS); d += Math.abs(num(it.v_norm, 0) - TV);
@@ -1552,7 +2183,11 @@
                 sim.push({ i, d });
             });
             sim.sort((a, b) => a.d - b.d);
-            const top = sim.slice(0, 30).map(s => s.i);
+            const top = [];
+            for (const s of sim) {
+                top.push(s.i);
+                if (top.length >= 30) break;
+            }
             CURRENT = [tgt, ...top.map(i => DATA[i])];
             CURRENT_IDX = [gi, ...top];
             currentView = "similar";

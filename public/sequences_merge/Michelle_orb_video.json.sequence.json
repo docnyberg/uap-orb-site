@@ -344,7 +344,7 @@
     }
   },
   "symbol_seq": "VQLLDADUUUKSWSAPIHWWEISAASBTRHVREADWLIESSSRKMEADADNNWPOSWCADLEV",
-  "symbol_seq_enhanced": "Pink/Magenta↑ Unknown↓ Unknown↓ Unknown Blue↑ Yellow↑ Yellow↓ Yellow↑ Yellow Unknown↑ Unknown Yellow Unknown↓ Unknown Yellow Unknown Yellow↑ Yellow↑ Unknown↓ Yellow↑ Pink/Magenta↓ Pink/Magenta Unknown↓ Unknown↓ Yellow↓ Yellow Pink/Magenta↓ Yellow↓ Unknown↓ Yellow↑ Yellow↑ Unknown↑ Yellow↓ Unknown Unknown↓ Unknown Unknown Yellow↓ Unknown Blue↑ Unknown↑ Yellow↑ Yellow↑ Blue Blue Yellow Yellow Blue↑ Unknown Yellow Blue↑ Yellow↓ Unknown Unknown Pink/Magenta↓",
+  "symbol_seq_enhanced": "Pink/Magenta↑ V0 Unknown↓ V0 Unknown↓ V0 Unknown V0 Blue↑ V0 Yellow↑ V0 Yellow↓ V0 Yellow↑ V0 Yellow V0 Unknown↑ V0 Unknown V0 Yellow V0 Unknown↓ V0 Unknown V0 Yellow V0 Unknown V0 Yellow↑ V0 Yellow↑ V0 Unknown↓ V0 Yellow↑ V0 Pink/Magenta↓ V0 Pink/Magenta V0 Unknown↓ V0 Unknown↓ V0 Yellow↓ V0 Yellow V0 Pink/Magenta↓ V0 Yellow↓ V0 Unknown↓ V0 Yellow↑ V0 Yellow↑ V0 Unknown↑ V0 Yellow↓ V0 Unknown V0 Unknown↓ V0 Unknown V0 Unknown V0 Yellow↓ V0 Unknown V0 Blue↑ V0 Unknown↑ V0 Yellow↑ V0 Yellow↑ V0 Blue V0 Blue V0 Yellow V0 Yellow V0 Blue↑ V0 Unknown V0 Yellow V0 Blue↑ V0 Yellow↓ V0 Unknown V0 Unknown V0 Pink/Magenta↓ V0",
   "binary_seq": "1110000001101000000011110010000100111000100000001000001",
   "v_threshold": 0.454,
   "events": [
@@ -358,7 +358,15 @@
       "flash": false,
       "color_label": "Pink/Magenta",
       "cluster_id": 15,
-      "thumb_obj": "Michelle_orb_video_e000_000250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e000_000250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Pink/Magenta↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 1,
@@ -370,7 +378,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 46,
-      "thumb_obj": "Michelle_orb_video_e001_000750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e001_000750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 2,
@@ -382,7 +398,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 71,
-      "thumb_obj": "Michelle_orb_video_e002_001250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e002_001250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 3,
@@ -394,7 +418,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 71,
-      "thumb_obj": "Michelle_orb_video_e003_001750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e003_001750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 4,
@@ -406,7 +437,15 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 51,
-      "thumb_obj": "Michelle_orb_video_e004_002250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e004_002250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 5,
@@ -418,7 +457,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 5,
-      "thumb_obj": "Michelle_orb_video_e005_002750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e005_002750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 6,
@@ -430,7 +477,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 28,
-      "thumb_obj": "Michelle_orb_video_e006_003250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e006_003250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 7,
@@ -442,7 +497,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 28,
-      "thumb_obj": "Michelle_orb_video_e007_003750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e007_003750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 8,
@@ -454,7 +517,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 28,
-      "thumb_obj": "Michelle_orb_video_e008_004250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e008_004250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 9,
@@ -466,7 +536,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 13,
-      "thumb_obj": "Michelle_orb_video_e009_004750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e009_004750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 10,
@@ -478,7 +556,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e010_005250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e010_005250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 11,
@@ -490,7 +575,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 4,
-      "thumb_obj": "Michelle_orb_video_e011_005750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e011_005750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 12,
@@ -502,7 +594,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e012_006250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e012_006250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 13,
@@ -514,7 +614,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 9,
-      "thumb_obj": "Michelle_orb_video_e013_006750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e013_006750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 14,
@@ -526,7 +633,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 12,
-      "thumb_obj": "Michelle_orb_video_e014_007250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e014_007250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 15,
@@ -538,7 +652,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 0,
-      "thumb_obj": "Michelle_orb_video_e015_007750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e015_007750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 16,
@@ -550,7 +671,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 4,
-      "thumb_obj": "Michelle_orb_video_e016_008250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e016_008250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 17,
@@ -562,7 +691,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 4,
-      "thumb_obj": "Michelle_orb_video_e017_008750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e017_008750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 18,
@@ -574,7 +711,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 8,
-      "thumb_obj": "Michelle_orb_video_e018_009250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e018_009250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 19,
@@ -586,7 +731,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 12,
-      "thumb_obj": "Michelle_orb_video_e019_009750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e019_009750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 20,
@@ -598,7 +751,15 @@
       "flash": false,
       "color_label": "Pink/Magenta",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e020_010250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e020_010250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Pink/Magenta↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 21,
@@ -610,7 +771,14 @@
       "flash": false,
       "color_label": "Pink/Magenta",
       "cluster_id": 70,
-      "thumb_obj": "Michelle_orb_video_e021_010750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e021_010750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Pink/Magenta V0"
     },
     {
       "event_index": 22,
@@ -622,7 +790,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e022_011250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e022_011250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 23,
@@ -634,7 +810,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 72,
-      "thumb_obj": "Michelle_orb_video_e023_011750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e023_011750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 24,
@@ -646,7 +830,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 30,
-      "thumb_obj": "Michelle_orb_video_e024_012250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e024_012250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 25,
@@ -658,7 +850,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 0,
-      "thumb_obj": "Michelle_orb_video_e025_012750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e025_012750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 26,
@@ -670,7 +869,15 @@
       "flash": false,
       "color_label": "Pink/Magenta",
       "cluster_id": 15,
-      "thumb_obj": "Michelle_orb_video_e026_013250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e026_013250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Pink/Magenta↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 27,
@@ -682,7 +889,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 30,
-      "thumb_obj": "Michelle_orb_video_e027_013750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e027_013750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 28,
@@ -694,7 +909,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 8,
-      "thumb_obj": "Michelle_orb_video_e028_014250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e028_014250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 29,
@@ -706,7 +929,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 5,
-      "thumb_obj": "Michelle_orb_video_e029_014750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e029_014750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 30,
@@ -718,7 +949,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 4,
-      "thumb_obj": "Michelle_orb_video_e030_015250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e030_015250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 31,
@@ -730,7 +969,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 71,
-      "thumb_obj": "Michelle_orb_video_e031_015750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e031_015750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 32,
@@ -742,7 +989,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 12,
-      "thumb_obj": "Michelle_orb_video_e032_016250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e032_016250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 33,
@@ -754,7 +1009,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 8,
-      "thumb_obj": "Michelle_orb_video_e033_016750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e033_016750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 34,
@@ -766,7 +1028,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e034_017250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e034_017250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 35,
@@ -778,7 +1048,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e035_017750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e035_017750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 36,
@@ -790,7 +1067,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e036_018250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e036_018250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 37,
@@ -802,7 +1086,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 30,
-      "thumb_obj": "Michelle_orb_video_e037_018750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e037_018750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 38,
@@ -814,7 +1106,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 13,
-      "thumb_obj": "Michelle_orb_video_e038_019250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e038_019250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 39,
@@ -826,7 +1125,15 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 19,
-      "thumb_obj": "Michelle_orb_video_e039_019750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e039_019750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 40,
@@ -838,7 +1145,15 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 8,
-      "thumb_obj": "Michelle_orb_video_e040_020250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e040_020250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 41,
@@ -850,7 +1165,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 5,
-      "thumb_obj": "Michelle_orb_video_e041_020750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e041_020750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 42,
@@ -862,7 +1185,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 5,
-      "thumb_obj": "Michelle_orb_video_e042_021250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e042_021250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 43,
@@ -874,7 +1205,14 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 17,
-      "thumb_obj": "Michelle_orb_video_e043_021750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e043_021750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue V0"
     },
     {
       "event_index": 44,
@@ -886,7 +1224,14 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 17,
-      "thumb_obj": "Michelle_orb_video_e044_022250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e044_022250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue V0"
     },
     {
       "event_index": 45,
@@ -898,7 +1243,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 4,
-      "thumb_obj": "Michelle_orb_video_e045_022750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e045_022750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 46,
@@ -910,7 +1262,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 20,
-      "thumb_obj": "Michelle_orb_video_e046_023250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e046_023250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 47,
@@ -922,7 +1281,15 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 35,
-      "thumb_obj": "Michelle_orb_video_e047_023750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e047_023750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 48,
@@ -934,7 +1301,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 63,
-      "thumb_obj": "Michelle_orb_video_e048_024250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e048_024250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 49,
@@ -946,7 +1320,14 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 4,
-      "thumb_obj": "Michelle_orb_video_e049_024750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e049_024750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow V0"
     },
     {
       "event_index": 50,
@@ -958,7 +1339,15 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 3,
-      "thumb_obj": "Michelle_orb_video_e050_025250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e050_025250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 51,
@@ -970,7 +1359,15 @@
       "flash": false,
       "color_label": "Yellow",
       "cluster_id": 5,
-      "thumb_obj": "Michelle_orb_video_e051_025750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e051_025750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Yellow↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 52,
@@ -982,7 +1379,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 71,
-      "thumb_obj": "Michelle_orb_video_e052_026250_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e052_026250_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 53,
@@ -994,7 +1398,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 8,
-      "thumb_obj": "Michelle_orb_video_e053_026750_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e053_026750_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 54,
@@ -1006,11 +1417,19 @@
       "flash": false,
       "color_label": "Pink/Magenta",
       "cluster_id": 15,
-      "thumb_obj": "Michelle_orb_video_e054_027150_obj.jpg"
+      "thumb_obj": "Michelle_orb_video_e054_027150_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Pink/Magenta↓ V0",
+      "arrow": "↓"
     }
   ],
   "cycles": [
-    "Pink/Magenta↑ Unknown↓ Unknown↓ Unknown Blue↑ Yellow↑ Yellow↓ Yellow↑ Yellow Unknown↑ Unknown Yellow Unknown↓ Unknown Yellow Unknown Yellow↑ Yellow↑ Unknown↓ Yellow↑ Pink/Magenta↓ Pink/Magenta Unknown↓ Unknown↓ Yellow↓ Yellow Pink/Magenta↓ Yellow↓ Unknown↓ Yellow↑ Yellow↑ Unknown↑ Yellow↓ Unknown Unknown↓ Unknown Unknown Yellow↓ Unknown Blue↑ Unknown↑ Yellow↑ Yellow↑ Blue Blue Yellow Yellow Blue↑ Unknown Yellow Blue↑ Yellow↓ Unknown Unknown Pink/Magenta↓"
+    "Pink/Magenta↑ V0 Unknown↓ V0 Unknown↓ V0 Unknown V0 Blue↑ V0 Yellow↑ V0 Yellow↓ V0 Yellow↑ V0 Yellow V0 Unknown↑ V0 Unknown V0 Yellow V0 Unknown↓ V0 Unknown V0 Yellow V0 Unknown V0 Yellow↑ V0 Yellow↑ V0 Unknown↓ V0 Yellow↑ V0 Pink/Magenta↓ V0 Pink/Magenta V0 Unknown↓ V0 Unknown↓ V0 Yellow↓ V0 Yellow V0 Pink/Magenta↓ V0 Yellow↓ V0 Unknown↓ V0 Yellow↑ V0 Yellow↑ V0 Unknown↑ V0 Yellow↓ V0 Unknown V0 Unknown↓ V0 Unknown V0 Unknown V0 Yellow↓ V0 Unknown V0 Blue↑ V0 Unknown↑ V0 Yellow↑ V0 Yellow↑ V0 Blue V0 Blue V0 Yellow V0 Yellow V0 Blue↑ V0 Unknown V0 Yellow V0 Blue↑ V0 Yellow↓ V0 Unknown V0 Unknown V0 Pink/Magenta↓ V0"
   ],
   "clustering": {
     "eps": 0.34,

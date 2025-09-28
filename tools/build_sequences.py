@@ -481,7 +481,14 @@ class StrictGatedMetric:
         """
         # Hard gates
         # Hue
-        dh = circ_hue_delta(a['h'], b['h'], scale=180.0)
+        # Our hue values are expressed in full 0-360° space (either read directly
+        # from the atlas or backfilled from OpenCV by multiplying the 0-180°
+        # channel by two).  Using the 180° OpenCV scale here caused
+        # `circ_hue_delta` to wrap after 90° and even return negative distances
+        # for >180° separations, effectively disabling the hue gate for
+        # complementary colors.  Use the correct 360° scale so we measure the
+        # true angular difference in degrees.
+        dh = circ_hue_delta(a['h'], b['h'], scale=360.0)
         if not np.isnan(dh) and dh > self.hue_gate_deg:
             return 1.0
 
@@ -800,11 +807,17 @@ def cluster_records_strict(recs, args):
         ar_mu=np.nanmean(arr_ar),         ar_sd=np.nanstd(arr_ar),
     )
 
-    metric = StrictGatedMetric(
-        w_phash=args.w_phash, w_hue=args.w_hue, w_feat=args.w_feat,
-        hue_gate_deg=args.gate_hue_deg, area_ratio_gate=args.gate_area_ratio,
-        solidity_gate=args.gate_solidity, ecc_gate=args.gate_ecc, ar_gate=args.gate_ar
-    )
+    metric_kwargs = {
+        "w_phash": args.w_phash,
+        "w_hue": args.w_hue,
+        "w_feat": args.w_feat,
+        "hue_gate_deg": args.gate_hue_deg,
+        "area_ratio_gate": args.gate_area_ratio,
+        "solidity_gate": args.gate_solidity,
+        "ecc_gate": args.gate_ecc,
+        "ar_gate": args.gate_ar,
+    }
+    metric = StrictGatedMetric(**metric_kwargs)
 
     # Hue buckets
     hue_bins = defaultdict(list)
@@ -950,23 +963,11 @@ def extract_event_attributes_with_radial(
     s_min_for_color: float = 0.12,
     v_min_for_color: float = 0.08,
 ):
-     """
-    Aggregate detections per (json_file, e_idx) and compute:
-      - majority cluster token
-      - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
-      - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
-  
-  Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
-  computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
-  true. Hue-based color inference respects the provided S/V guard rails.
-
-  Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}    
     """
     Aggregate detections per (json_file, e_idx) and compute:
         - majority cluster token
         - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
         - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
-
     Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
     computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
     true. Hue-based color inference respects the provided S/V guard rails.
@@ -974,15 +975,14 @@ def extract_event_attributes_with_radial(
     Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...} 
     """
     by_event = defaultdict(list)
-        for r in recs:
-            jf = r.get("json_file")
-            ei = r.get("e_idx")
-            if jf is None or pd.isna(jf) or ei is None:
-                continue
-            by_event[(jf, int(ei))].append(r)
+    for r in recs:
+        jf = r.get("json_file")
+        ei = r.get("e_idx")
+        if jf is None or pd.isna(jf) or ei is None:
+            continue
+        by_event[(jf, int(ei))].append(r)
 
     out = {}
-
 
     # Cache expensive thumbnail analyses so repeated thumbs only pay the cost once
     process_sig = (
@@ -999,7 +999,6 @@ def extract_event_attributes_with_radial(
     thumb_feature_cache = {}
 
     def analyze_thumb(thumb_name: str):
-        """Return cached radial/vacuole features for a thumbnail."""
         key = (thumb_name, process_sig)
         if key in thumb_feature_cache:
             return thumb_feature_cache[key]
