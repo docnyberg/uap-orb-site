@@ -974,12 +974,12 @@ def extract_event_attributes_with_radial(
     Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...} 
   """
     by_event = defaultdict(list)
-        for r in recs:
-            jf = r.get("json_file")
-            ei = r.get("e_idx")
-            if jf is None or pd.isna(jf) or ei is None:
-                continue
-            by_event[(jf, int(ei))].append(r)
+    for r in recs:
+        jf = r.get("json_file")
+        ei = r.get("e_idx")
+        if jf is None or pd.isna(jf) or ei is None:
+            continue
+        by_event[(jf, int(ei))].append(r)
 
     out = {}
 
