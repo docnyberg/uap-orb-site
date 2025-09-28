@@ -1087,19 +1087,19 @@ def extract_event_attributes_with_radial(
                 if not np.isnan(v_val) and v_val < v_min_for_color:
                     continue
                 valid_hues.append(h_val)
-          color_label = "Unknown"
-          if valid_hues:
             color_label = "Unknown"
             if valid_hues:
-                hmed = float(np.median(valid_hues))
-                if 35.0 <= hmed < 70.0:
-                    color_label = "Yellow"
-                elif 80.0 <= hmed < 160.0:
-                    color_label = "Green"
-                elif 200.0 <= hmed < 260.0:
-                    color_label = "Blue"
-                elif hmed >= 300.0 or hmed < 10.0:
-                    color_label = "Pink/Magenta"
+              color_label = "Unknown"
+              if valid_hues:
+                  hmed = float(np.median(valid_hues))
+                  if 35.0 <= hmed < 70.0:
+                      color_label = "Yellow"
+                  elif 80.0 <= hmed < 160.0:
+                      color_label = "Green"
+                  elif 200.0 <= hmed < 260.0:
+                      color_label = "Blue"
+                  elif hmed >= 300.0 or hmed < 10.0:
+                      color_label = "Pink/Magenta"
 
         thumbs = [rr.get("thumb") for rr in rows if rr.get("thumb")]
         thumb = Counter(thumbs).most_common(1)[0][0] if thumbs else None
