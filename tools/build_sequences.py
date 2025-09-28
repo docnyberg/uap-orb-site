@@ -950,18 +950,18 @@ def extract_event_attributes_with_radial(
     s_min_for_color: float = 0.12,
     v_min_for_color: float = 0.08,
 ):
-     """
+    """
     Aggregate detections per (json_file, e_idx) and compute:
-      - majority cluster token
-      - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
-      - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
-  
-  Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
-  computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
-  true. Hue-based color inference respects the provided S/V guard rails.
+        - majority cluster token
+        - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
+        - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
 
-  Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}    
-  """
+    Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
+    computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
+    true. Hue-based color inference respects the provided S/V guard rails.
+
+    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}
+    """
     by_event = defaultdict(list)
     for r in recs:
         jf = r.get("json_file")
@@ -1076,8 +1076,8 @@ def extract_event_attributes_with_radial(
                 if not np.isnan(v_val) and v_val < v_min_for_color:
                     continue
                 valid_hues.append(h_val)
-          color_label = "Unknown"
-          if valid_hues:
+            color_label = "Unknown"
+            if valid_hues:
                 hmed = float(np.median(valid_hues))
                 if 35.0 <= hmed < 70.0:
                     color_label = "Yellow"
