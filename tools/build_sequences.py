@@ -481,7 +481,14 @@ class StrictGatedMetric:
         """
         # Hard gates
         # Hue
-        dh = circ_hue_delta(a['h'], b['h'], scale=180.0)
+        # Our hue values are expressed in full 0-360° space (either read directly
+        # from the atlas or backfilled from OpenCV by multiplying the 0-180°
+        # channel by two).  Using the 180° OpenCV scale here caused
+        # `circ_hue_delta` to wrap after 90° and even return negative distances
+        # for >180° separations, effectively disabling the hue gate for
+        # complementary colors.  Use the correct 360° scale so we measure the
+        # true angular difference in degrees.
+        dh = circ_hue_delta(a['h'], b['h'], scale=360.0)
         if not np.isnan(dh) and dh > self.hue_gate_deg:
             return 1.0
 
