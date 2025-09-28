@@ -969,10 +969,6 @@ def extract_event_attributes_with_radial(
         - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
         - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
 
-    Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
-    computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
-    true. Hue-based color inference respects the provided S/V guard rails.
-
     Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}
     """
     by_event = defaultdict(list)
@@ -984,7 +980,6 @@ def extract_event_attributes_with_radial(
         by_event[(jf, int(ei))].append(r)
 
     out = {}
-
 
     # Cache expensive thumbnail analyses so repeated thumbs only pay the cost once
     process_sig = (
