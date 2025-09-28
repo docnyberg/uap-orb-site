@@ -38,7 +38,7 @@
     }
   },
   "symbol_seq": "AJ",
-  "symbol_seq_enhanced": "Green↑",
+  "symbol_seq_enhanced": "Green↑ V0",
   "binary_seq": "1",
   "v_threshold": 0.41,
   "events": [
@@ -52,11 +52,19 @@
       "flash": false,
       "color_label": "Green",
       "cluster_id": 24,
-      "thumb_obj": "20250812_034409000_iOS2_e000_050000_obj.jpg"
+      "thumb_obj": "20250812_034409000_iOS2_e000_050000_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Green↑ V0",
+      "arrow": "↑"
     }
   ],
   "cycles": [
-    "Green↑"
+    "Green↑ V0"
   ],
   "clustering": {
     "eps": 0.34,
