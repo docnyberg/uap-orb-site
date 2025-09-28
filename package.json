@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "deploy": "npx netlify deploy --prod",
-    "serve": "netlify dev",
+    "serve": "node tools/dev-server.mjs",
     "test": "playwright test -c playwright.config.ts",
     "test:local": "npx serve public -p 5173 & playwright test -c playwright.config.ts"
   },
