@@ -966,8 +966,8 @@ def extract_event_attributes_with_radial(
     computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
     true. Hue-based color inference respects the provided S/V guard rails.
 
-    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...} 
-  """
+    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}
+    """
     by_event = defaultdict(list)
     for r in recs:
         jf = r.get("json_file")
