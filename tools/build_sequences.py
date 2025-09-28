@@ -961,6 +961,17 @@ def extract_event_attributes_with_radial(
   true. Hue-based color inference respects the provided S/V guard rails.
 
   Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}    
+    """
+    Aggregate detections per (json_file, e_idx) and compute:
+        - majority cluster token
+        - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
+        - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
+
+    Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
+    computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
+    true. Hue-based color inference respects the provided S/V guard rails.
+
+    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...} 
   """
     by_event = defaultdict(list)
     for r in recs:
@@ -1078,6 +1089,8 @@ def extract_event_attributes_with_radial(
                 valid_hues.append(h_val)
           color_label = "Unknown"
           if valid_hues:
+            color_label = "Unknown"
+            if valid_hues:
                 hmed = float(np.median(valid_hues))
                 if 35.0 <= hmed < 70.0:
                     color_label = "Yellow"
