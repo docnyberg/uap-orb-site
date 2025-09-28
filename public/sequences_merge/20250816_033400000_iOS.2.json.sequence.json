@@ -106,7 +106,7 @@
     }
   },
   "symbol_seq": "MDASCG",
-  "symbol_seq_enhanced": "Blue↓ Blue↑ Unknown Blue Blue↓",
+  "symbol_seq_enhanced": "Blue↓ V0 Blue↑ V0 Unknown V0 Blue V0 Blue↓ V0",
   "binary_seq": "00001",
   "v_threshold": 0.618,
   "events": [
@@ -120,7 +120,15 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 19,
-      "thumb_obj": "20250816_033400000_iOS.2_e000_002000_obj.jpg"
+      "thumb_obj": "20250816_033400000_iOS.2_e000_002000_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↓ V0",
+      "arrow": "↓"
     },
     {
       "event_index": 1,
@@ -132,7 +140,15 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 51,
-      "thumb_obj": "20250816_033400000_iOS.2_e001_006550_obj.jpg"
+      "thumb_obj": "20250816_033400000_iOS.2_e001_006550_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↑ V0",
+      "arrow": "↑"
     },
     {
       "event_index": 2,
@@ -144,7 +160,14 @@
       "flash": false,
       "color_label": "Unknown",
       "cluster_id": 64,
-      "thumb_obj": "20250816_033400000_iOS.2_e002_014050_obj.jpg"
+      "thumb_obj": "20250816_033400000_iOS.2_e002_014050_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Unknown V0"
     },
     {
       "event_index": 3,
@@ -156,7 +179,14 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 3,
-      "thumb_obj": "20250816_033400000_iOS.2_e003_026050_obj.jpg"
+      "thumb_obj": "20250816_033400000_iOS.2_e003_026050_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue V0"
     },
     {
       "event_index": 4,
@@ -168,15 +198,23 @@
       "flash": false,
       "color_label": "Blue",
       "cluster_id": 39,
-      "thumb_obj": "20250816_033400000_iOS.2_e004_048849_obj.jpg"
+      "thumb_obj": "20250816_033400000_iOS.2_e004_048849_obj.jpg",
+      "orientation8": null,
+      "sector8": null,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "vacuole_count": 0,
+      "enhanced_token": "Blue↓ V0",
+      "arrow": "↓"
     }
   ],
   "cycles": [
-    "Blue↓",
-    "Blue↑",
-    "Unknown",
-    "Blue",
-    "Blue↓"
+    "Blue↓ V0",
+    "Blue↑ V0",
+    "Unknown V0",
+    "Blue V0",
+    "Blue↓ V0"
   ],
   "clustering": {
     "eps": 0.34,
