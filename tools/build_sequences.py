@@ -800,11 +800,17 @@ def cluster_records_strict(recs, args):
         ar_mu=np.nanmean(arr_ar),         ar_sd=np.nanstd(arr_ar),
     )
 
-    metric = StrictGatedMetric(
-        w_phash=args.w_phash, w_hue=args.w_hue, w_feat=args.w_feat,
-        hue_gate_deg=args.gate_hue_deg, area_ratio_gate=args.gate_area_ratio,
-        solidity_gate=args.gate_solidity, ecc_gate=args.gate_ecc, ar_gate=args.gate_ar
-    )
+    metric_kwargs = {
+        "w_phash": args.w_phash,
+        "w_hue": args.w_hue,
+        "w_feat": args.w_feat,
+        "hue_gate_deg": args.gate_hue_deg,
+        "area_ratio_gate": args.gate_area_ratio,
+        "solidity_gate": args.gate_solidity,
+        "ecc_gate": args.gate_ecc,
+        "ar_gate": args.gate_ar,
+    }
+    metric = StrictGatedMetric(**metric_kwargs)
 
     # Hue buckets
     hue_bins = defaultdict(list)
