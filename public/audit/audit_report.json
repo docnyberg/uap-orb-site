@@ -9,15 +9,15 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Identical black image."
+          "notes": "Dark instance of the orb, matches prototype's unlit state."
         },
         {
           "sample_name": "20250815_204153000_iOS3_e019_017850_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 0.9,
+          "color_delta": "moderate",
+          "shape_delta": "small",
+          "notes": "Lit blue/purple orb, consistent with the inferred symbol."
         },
         {
           "sample_name": "20250812_034218000_iOS2.6_e012_008250_obj.jpg",
@@ -25,63 +25,63 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Identical black image."
+          "notes": "Dark instance of the orb, matches prototype's unlit state."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v2hbfog65ppj42d540_e005_002750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.4,
           "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible red orb; prototype is black."
+          "shape_delta": "small",
+          "notes": "Different dominant hue (red) from the inferred blue/purple symbol."
         },
         {
           "sample_name": "20250816_033400000_iOS_conv_e083_083500_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 0.9,
+          "color_delta": "moderate",
+          "shape_delta": "small",
+          "notes": "Lit blue orb, consistent with the inferred symbol."
         },
         {
           "sample_name": "20250816_033400000_iOS_conv_e036_036500_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 0.9,
+          "color_delta": "moderate",
+          "shape_delta": "small",
+          "notes": "Lit blue orb, consistent with the inferred symbol."
         },
         {
           "sample_name": "20250816_033400000_iOS_e089_023200_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 0.85,
+          "color_delta": "moderate",
+          "shape_delta": "small",
+          "notes": "Faint lit blue/purple orb, consistent with the inferred symbol."
         },
         {
           "sample_name": "20250815_204153000_iOS3_e052_042050_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 0.9,
+          "color_delta": "moderate",
+          "shape_delta": "small",
+          "notes": "Lit blue/purple orb, consistent with the inferred symbol."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2usptnog65pe6f8a68g_e004_002250_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 0.9,
+          "color_delta": "moderate",
+          "shape_delta": "small",
+          "notes": "Lit blue orb, consistent with the inferred symbol."
         },
         {
           "sample_name": "20250815_204153000_iOS3_e009_009200_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Visible blue orb; prototype is black."
+          "same_symbol": true,
+          "similarity": 1.0,
+          "color_delta": "small",
+          "shape_delta": "small",
+          "notes": "Dark instance of the orb, matches prototype's unlit state."
         },
         {
           "sample_name": "v15044gf0000d2js9uvog65r8b9dc63g_e026_013250_obj.jpg",
@@ -89,7 +89,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Identical black image."
+          "notes": "Dark instance of the orb, matches prototype's unlit state."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e093_093500_obj.jpg",
@@ -97,10 +97,10 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Identical black image."
+          "notes": "Dark instance of the orb, matches prototype's unlit state."
         }
       ],
-      "summary": "The prototype is a completely black image; only other black images are considered the same symbol.",
+      "summary": "The prototype is a dark instance of a blue/purple glowing orb, with most samples matching this symbol, except for one red orb.",
       "count": 239
     },
     "B": {
@@ -109,101 +109,101 @@
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v2hbfog65ppj42d540_e030_015250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a bright blue, irregular light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "20250816_033400000_iOS_e010_007400_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a bright blue, horizontal light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e002_000483_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a bright blue, hexagonal light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e066_066500_obj.jpg",
           "same_symbol": true,
-          "similarity": 1.0,
+          "similarity": 0.9,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both prototype and sample are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "v12044gd0000d2hlm8fog65pe6sb3vm0_e051_025750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a dark blue/teal, oval light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "v12044gd0000d2hlm8fog65pe6sb3vm0_e012_006250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a dark blue/teal, oval light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "v12044gd0000d2hlm8fog65pe6sb3vm0_e000_000250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a dark blue/teal, oval light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "20250816_033400000_iOS_conv_e000_000500_obj.jpg",
           "same_symbol": true,
-          "similarity": 1.0,
+          "similarity": 0.9,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both prototype and sample are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e065_065500_obj.jpg",
           "same_symbol": true,
-          "similarity": 1.0,
+          "similarity": 0.9,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both prototype and sample are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "20250816_033400000_iOS.2_e001_006550_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a bright blue, horizontal light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e009_004750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a bright blue/purple, vertical light."
+          "notes": "Prototype is black; sample shows a distinct blue light blob."
         },
         {
           "sample_name": "v15044gf0000d2js9uvog65r8b9dc63g_e022_011250_obj.jpg",
-          "same_symbol": true,
-          "similarity": 1.0,
-          "color_delta": "small",
-          "shape_delta": "small",
-          "notes": "Both prototype and sample are completely black."
+          "same_symbol": false,
+          "similarity": 0.1,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Prototype is black; sample shows multiple distinct light blobs."
         }
       ],
-      "summary": "The prototype is a black image, so only samples that are also completely black are considered the same symbol.",
+      "summary": "The prototype is a black image, and only samples that are also completely black are considered the same symbol.",
       "count": 212
     },
     "C": {
@@ -215,47 +215,47 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both prototype and sample are solid black images."
+          "notes": "Both images are entirely black, depicting no discernible symbol."
         },
         {
           "sample_name": "20250815_204153000_iOS3_e021_019550_obj.jpg",
-          "same_symbol": true,
-          "similarity": 1.0,
-          "color_delta": "small",
-          "shape_delta": "small",
-          "notes": "Both prototype and sample are solid black images."
+          "same_symbol": false,
+          "similarity": 0.0,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Sample shows a blue glowing object; prototype is black."
         },
         {
           "sample_name": "20250812_034218000_iOS2.5_e030_024750_obj.jpg",
-          "same_symbol": true,
-          "similarity": 1.0,
-          "color_delta": "small",
-          "shape_delta": "small",
-          "notes": "Both prototype and sample are solid black images."
+          "same_symbol": false,
+          "similarity": 0.0,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Sample shows a blue glowing object; prototype is black."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg.mp4_e353_176750_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blue glowing shape."
-        },
-        {
-          "sample_name": "v12044gd0000d2husv7og65snaorfbcg_e119_119500_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blue glowing shape."
-        },
-        {
-          "sample_name": "20250816_033400000_iOS_conv_e096_096500_obj.jpg",
           "same_symbol": true,
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both prototype and sample are solid black images."
+          "notes": "Both images are entirely black, depicting no discernible symbol."
+        },
+        {
+          "sample_name": "v12044gd0000d2husv7og65snaorfbcg_e119_119500_obj.jpg",
+          "same_symbol": true,
+          "similarity": 1.0,
+          "color_delta": "small",
+          "shape_delta": "small",
+          "notes": "Both images are entirely black, depicting no discernible symbol."
+        },
+        {
+          "sample_name": "20250816_033400000_iOS_conv_e096_096500_obj.jpg",
+          "same_symbol": false,
+          "similarity": 0.0,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Sample shows a blue glowing object; prototype is black."
         },
         {
           "sample_name": "20250815_204153000_iOS4_e018_014068_obj.jpg",
@@ -263,7 +263,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blue glowing shape."
+          "notes": "Sample shows a purple glowing object; prototype is black."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e101_006883_obj.jpg",
@@ -271,23 +271,23 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a purple/blue glowing shape."
+          "notes": "Sample shows a blue glowing object; prototype is black."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e021_021500_obj.jpg",
-          "same_symbol": false,
-          "similarity": 0.0,
-          "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blue glowing shape."
-        },
-        {
-          "sample_name": "v15044gf0000d2jt6u7og65s1kh4jhq0_e048_024250_obj.jpg",
           "same_symbol": true,
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both prototype and sample are solid black images."
+          "notes": "Both images are entirely black, depicting no discernible symbol."
+        },
+        {
+          "sample_name": "v15044gf0000d2jt6u7og65s1kh4jhq0_e048_024250_obj.jpg",
+          "same_symbol": false,
+          "similarity": 0.0,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Sample shows a blue glowing object; prototype is black."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e084_005750_obj.jpg",
@@ -295,7 +295,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blue glowing shape."
+          "notes": "Sample shows a purple glowing object; prototype is black."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e864_013500_obj.jpg",
@@ -303,10 +303,10 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a purple/pink glowing shape."
+          "notes": "Sample shows a pink/purple glowing object; prototype is black."
         }
       ],
-      "summary": "The prototype is a solid black image, and samples are judged as 'same symbol' if they are also solid black, or 'different symbol' if they contain any visible glowing shape.",
+      "summary": "The prototype is a black image, so only samples that are also entirely black are considered the same symbol.",
       "count": 182
     },
     "D": {
@@ -318,7 +318,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "20250812_034218000_iOS2.5_e001_000550_obj.jpg",
@@ -326,7 +326,15 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black, sample has a blue glow."
+          "notes": "Prototype is black, sample is a distinct blue glowing blob."
+        },
+        {
+          "sample_name": "20250812_034218000_iOS2.5_e001_000550_obj.jpg",
+          "same_symbol": false,
+          "similarity": 0.0,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Prototype is black, sample is a distinct blue glowing blob."
         },
         {
           "sample_name": "v15044gf0000d2gk20nog65g267kppig_e002_001250_obj.jpg",
@@ -334,7 +342,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black, sample has a blue glow."
+          "notes": "Prototype is black, sample is a distinct purple/white glowing object."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg3.mp4_e041_020750_obj.jpg",
@@ -342,7 +350,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg.mp4_e234_117250_obj.jpg",
@@ -350,7 +358,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "20250816_033400000_iOS_e050_015400_obj.jpg",
@@ -358,7 +366,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black, sample has a blue glow."
+          "notes": "Prototype is black, sample is a distinct blue glowing blob."
         },
         {
           "sample_name": "20250815_204153000_iOS3_e023_020900_obj.jpg",
@@ -366,7 +374,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black, sample has a blue glow."
+          "notes": "Prototype is black, sample is a distinct purple/white glowing object."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2uavtfog65qu5s54ok0_e004_002250_obj.jpg",
@@ -374,7 +382,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e034_002416_obj.jpg",
@@ -382,7 +390,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black, sample has a blue glow."
+          "notes": "Prototype is black, sample is a distinct blue glowing blob."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e042_021250_obj.jpg",
@@ -390,26 +398,26 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both are completely black."
+          "notes": "Both prototype and sample are completely black images."
         },
         {
           "sample_name": "v15044gf0000d2iifsnog65r86tlmk0g_e081_081500_obj.jpg",
-          "same_symbol": true,
-          "similarity": 1.0,
-          "color_delta": "small",
-          "shape_delta": "small",
-          "notes": "Both are completely black."
-        },
-        {
-          "sample_name": "20250812_034218000_iOS2.5_e031_024950_obj.jpg",
           "same_symbol": false,
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black, sample has a blue glow."
+          "notes": "Prototype is black, sample is a distinct blue glowing blob."
+        },
+        {
+          "sample_name": "20250812_034218000_iOS2.5_e031_024950_obj.jpg",
+          "same_symbol": true,
+          "similarity": 1.0,
+          "color_delta": "small",
+          "shape_delta": "small",
+          "notes": "Both prototype and sample are completely black images."
         }
       ],
-      "summary": "The prototype is a completely black image; samples are judged as 'same symbol' if they are also black, and 'different symbol' if they contain a distinct blue/purple glow.",
+      "summary": "The prototype is a completely black image; only other black images are considered the same symbol.",
       "count": 163
     },
     "E": {
@@ -421,7 +429,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible symbol."
+          "notes": "Both images are completely black."
         },
         {
           "sample_name": "20250815_204153000_iOS4_e054_039201_obj.jpg",
@@ -429,7 +437,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows blue light and partial logo."
+          "notes": "Sample shows light and logo; prototype is black."
         },
         {
           "sample_name": "20250812_034218000_iOS2.6_e045_028250_obj.jpg",
@@ -437,7 +445,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a vertical blue light streak."
+          "notes": "Sample shows blue light streak; prototype is black."
         },
         {
           "sample_name": "v15044gf0000d29l69nog65hkej1drug_e011_005750_obj.jpg",
@@ -445,7 +453,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible symbol."
+          "notes": "Both images are completely black."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg3.mp4_e007_003750_obj.jpg",
@@ -453,7 +461,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blurry white/blue light."
+          "notes": "Sample shows blurry light; prototype is black."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg_e096_096500_obj.jpg",
@@ -461,7 +469,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible symbol."
+          "notes": "Both images are completely black."
         },
         {
           "sample_name": "20250816_033400000_iOS_e037_012800_obj.jpg",
@@ -469,7 +477,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a pixelated blue shape."
+          "notes": "Sample shows blue geometric light; prototype is black."
         },
         {
           "sample_name": "20250815_204153000_iOS4_e045_033284_obj.jpg",
@@ -477,7 +485,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible symbol."
+          "notes": "Both images are completely black."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e119_119500_obj.jpg",
@@ -485,7 +493,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible symbol."
+          "notes": "Both images are completely black."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v2hbfog65ppj42d540_e014_007250_obj.jpg",
@@ -493,7 +501,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blurry blue light."
+          "notes": "Sample shows blurry blue light; prototype is black."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e116_007883_obj.jpg",
@@ -501,7 +509,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a blurry blue light."
+          "notes": "Sample shows blurry blue light; prototype is black."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e011_005750_obj.jpg",
@@ -509,10 +517,10 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Prototype is black; sample shows a pixelated blue shape."
+          "notes": "Sample shows hexagonal blue light; prototype is black."
         }
       ],
-      "summary": "The prototype is a completely black image; only samples that are also entirely black are considered the same symbol.",
+      "summary": "The prototype is a completely black image, and samples are judged based on whether they also depict a completely black image or contain any visual content.",
       "count": 178
     },
     "F": {
@@ -524,47 +532,47 @@
           "similarity": 0.9,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Similar amorphous warm yellow light source."
+          "notes": "Similar blurry warm yellow light blob."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e092_006283_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.3,
-          "color_delta": "moderate",
+          "similarity": 0.16,
+          "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Distinct, complex shape with varied hues; not amorphous."
+          "notes": "Distinct shape and strong red/yellow hues, not a blurry blob."
         },
         {
           "sample_name": "v15044gf0000d2iiaufog65l626ia17g_e011_005750_obj.jpg",
           "same_symbol": true,
-          "similarity": 0.85,
+          "similarity": 0.88,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Similar blurry warm yellow light source, amorphous shape."
+          "notes": "Similar blurry warm yellow light, slightly more rectangular."
         },
         {
           "sample_name": "v15044gf0000d2flkovog65hjpqn71f0_e114_057250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.4,
+          "similarity": 0.63,
           "color_delta": "moderate",
           "shape_delta": "moderate",
-          "notes": "Dominant white/pinkish hue, multiple distinct light blobs."
+          "notes": "Dominant white/pink hue and multiple light sources."
         },
         {
           "sample_name": "v15044gf0000d2flkovog65hjpqn71f0_e080_040250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.4,
+          "similarity": 0.63,
           "color_delta": "moderate",
           "shape_delta": "moderate",
-          "notes": "Dominant white/pinkish hue, multiple distinct light blobs."
+          "notes": "Dominant white/pink hue and multiple light sources."
         },
         {
           "sample_name": "atlas_20250921_233737_v12044gd0000d2v2ad7og65qedn7062g_e084_042250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.35,
-          "color_delta": "small",
+          "similarity": 0.41,
+          "color_delta": "moderate",
           "shape_delta": "large",
-          "notes": "Two distinct, defined light sources; not a single amorphous blob."
+          "notes": "Two distinct, more geometric lights with strong red component."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg.mp4_e351_175750_obj.jpg",
@@ -572,15 +580,15 @@
           "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Grey/brown gradient, lacks distinct warm hue and blob shape."
+          "notes": "Grey/brown gradient, no distinct warm yellow light source."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e104_052250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.3,
-          "color_delta": "moderate",
+          "similarity": 0.16,
+          "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Distinct, complex shape with varied hues; not amorphous."
+          "notes": "Distinct shape and strong red/yellow hues, not a blurry blob."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg.mp4_e300_150250_obj.jpg",
@@ -588,34 +596,34 @@
           "similarity": 0.9,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Similar amorphous warm yellow light source."
+          "notes": "Similar blurry warm yellow light blob."
         },
         {
           "sample_name": "v24044gl0000d2het8fog65gpmg3gr4g_e069_069500_obj.jpg",
           "same_symbol": true,
-          "similarity": 0.85,
+          "similarity": 0.88,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Similar blurry warm yellow light source, amorphous shape."
+          "notes": "Similar blurry warm yellow light, slightly more rectangular."
         },
         {
           "sample_name": "v15044gf0000d2jt9vfog65vjgteco5g_e030_015250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.3,
-          "color_delta": "small",
+          "similarity": 0.24,
+          "color_delta": "moderate",
           "shape_delta": "large",
-          "notes": "Structured, pixelated shape with distinct internal pattern; not amorphous."
+          "notes": "Geometric shape with intricate internal pattern, not a blurry blob."
         },
         {
           "sample_name": "20250816_033400000_iOS_conv_e054_054500_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.3,
-          "color_delta": "moderate",
+          "similarity": 0.16,
+          "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Distinct, complex shape with varied hues; not amorphous."
+          "notes": "Distinct shape and strong red/yellow hues, not a blurry blob."
         }
       ],
-      "summary": "The prototype depicts an amorphous, warm yellow/orange blurry light, and only samples with similar characteristics are considered the same symbol.",
+      "summary": "The prototype is a blurry, warm yellow/orange light blob; samples matching this amorphous light are considered the same symbol, while those with distinct shapes, different dominant hues, or multiple light sources are not.",
       "count": 164
     },
     "G": {
@@ -635,7 +643,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible object."
+          "notes": "Both prototype and sample are completely black, depicting no visible symbol."
         },
         {
           "sample_name": "v15044gf0000d2gld7vog65leghdunsg_e003_003450_obj.jpg",
@@ -643,7 +651,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible dark purple blob; prototype is completely black."
+          "notes": "Visible dark purple shape; prototype is completely black."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg4.mp4_e051_025750_obj.jpg",
@@ -651,7 +659,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible orange/red glowing blob; prototype is completely black."
+          "notes": "Visible glowing orange object; prototype is completely black."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg3.mp4_e047_023750_obj.jpg",
@@ -659,7 +667,7 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible object."
+          "notes": "Both prototype and sample are completely black, depicting no visible symbol."
         },
         {
           "sample_name": "20250816_033400000_iOS_e064_018200_obj.jpg",
@@ -667,7 +675,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible purple glowing object; prototype is completely black."
+          "notes": "Visible glowing blue object; prototype is completely black."
         },
         {
           "sample_name": "20250815_204153000_iOS3_e024_021400_obj.jpg",
@@ -683,7 +691,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible white/light blue object; prototype is completely black."
+          "notes": "Visible glowing white object; prototype is completely black."
         },
         {
           "sample_name": "20250815_204153000_iOS2_e033_002350_obj.jpg",
@@ -691,7 +699,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible purple glowing object; prototype is completely black."
+          "notes": "Visible glowing blue object; prototype is completely black."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e043_043500_obj.jpg",
@@ -699,7 +707,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible pink/red glowing blob; prototype is completely black."
+          "notes": "Visible glowing pink object; prototype is completely black."
         },
         {
           "sample_name": "v15044gf0000d2js9uvog65r8b9dc63g_e133_066750_obj.jpg",
@@ -707,7 +715,7 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Visible blue glowing blob; prototype is completely black."
+          "notes": "Visible glowing blue object; prototype is completely black."
         },
         {
           "sample_name": "20250812_034218000_iOS2.5_e048_035650_obj.jpg",
@@ -715,10 +723,10 @@
           "similarity": 1.0,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Both images are completely black, depicting no visible object."
+          "notes": "Both prototype and sample are completely black, depicting no visible symbol."
         }
       ],
-      "summary": "The prototype is a completely black image, and only samples that are also entirely black are considered the same symbol.",
+      "summary": "The prototype is a completely black image, so only samples that are also entirely black are considered the same symbol.",
       "count": 155
     },
     "H": {
@@ -727,66 +735,66 @@
         {
           "sample_name": "v24044gl0000d2het8fog65gpmg3gr4g_e117_117500_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different color and shape; appears as an oval light blob."
+          "notes": "Different color (orange/brown) and shape (oval)."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg3.mp4_e103_051750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different color and abstract cloud-like shape."
+          "notes": "Different color (light brown/beige) and shape (cloud-like)."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg_e062_062500_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.4,
-          "color_delta": "moderate",
-          "shape_delta": "moderate",
-          "notes": "Different yellow hue and rectangular shape."
+          "similarity": 0.1,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Different color (yellow/orange) and shape (rectangular blob)."
         },
         {
           "sample_name": "v15044gf0000d2js9uvog65r8b9dc63g_e055_027750_obj.jpg",
           "same_symbol": true,
-          "similarity": 1.0,
+          "similarity": 0.9,
           "color_delta": "small",
           "shape_delta": "small",
-          "notes": "Matches prototype's red color and irregular blob shape."
+          "notes": "Very similar red color and irregular blob shape with bright spot."
         },
         {
           "sample_name": "v15044gf0000d2iijmvog65i9etndc70_e018_009250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.3,
           "color_delta": "large",
-          "shape_delta": "large",
-          "notes": "Different light pink color and rounded rectangular shape."
+          "shape_delta": "moderate",
+          "notes": "Different color (pink/beige) and different overall shape."
         },
         {
           "sample_name": "v15044gf0000d2iiaufog65l626ia17g_e066_033250_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.2,
-          "color_delta": "moderate",
+          "similarity": 0.1,
+          "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different orange hue and distinct rounded, possibly character-like shape."
+          "notes": "Different color (orange/red) and shape (head-like)."
         },
         {
           "sample_name": "v15044gf0000d2flkovog65hjpqn71f0_e101_050750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different light yellow color and flame-like shape."
+          "notes": "Different color (white/yellow) and shape (flame-like)."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg3.mp4_e075_037750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different light beige color and L-shaped blob."
+          "notes": "Different color (light brown/beige) and shape (L-shaped)."
         },
         {
           "sample_name": "atlas_20250921_233737_v24044gl0000d2u5smvog65t88m5gt2g_e131_131500_obj.jpg",
@@ -794,34 +802,34 @@
           "similarity": 0.0,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Completely black image with no discernible symbol."
+          "notes": "Image is completely black, no symbol visible."
         },
         {
           "sample_name": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e085_042750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.4,
-          "color_delta": "moderate",
-          "shape_delta": "moderate",
-          "notes": "Different orange-yellow hue and rectangular shape."
+          "similarity": 0.1,
+          "color_delta": "large",
+          "shape_delta": "large",
+          "notes": "Different color (orange/yellow) and shape (rectangular blob)."
         },
         {
           "sample_name": "v12044gd0000d2husv7og65snaorfbcg.mp4_e323_161750_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different grey/brownish color and abstract streak shape."
+          "notes": "Different color (brown/grey) and shape (cloud-like)."
         },
         {
           "sample_name": "v24044gl0000d2het8fog65gpmg3gr4g_e002_002500_obj.jpg",
           "same_symbol": false,
-          "similarity": 0.0,
+          "similarity": 0.1,
           "color_delta": "large",
           "shape_delta": "large",
-          "notes": "Different light orange color and rounded rectangular shape."
+          "notes": "Different color (orange/brown) and shape (rectangular blob)."
         }
       ],
-      "summary": "Only one sample (S4) depicts the same red, irregular blob symbol as the prototype, while all others show different colors and shapes.",
+      "summary": "Only one sample depicts the same red, irregular blob symbol; all others differ significantly in color and/or shape.",
       "count": 176
     }
   },
@@ -895,7 +903,7 @@
         "E": 0.0,
         "F": 1.0,
         "G": 0.0,
-        "H": 0.46
+        "H": 0.54
       },
       "G": {
         "A": 1.0,
@@ -913,7 +921,7 @@
         "C": 0.0,
         "D": 0.0,
         "E": 0.0,
-        "F": 0.46,
+        "F": 0.54,
         "G": 0.0,
         "H": 1.0
       }
@@ -955,6 +963,16 @@
         "similarity": 1.0
       },
       {
+        "a": "B",
+        "b": "E",
+        "similarity": 1.0
+      },
+      {
+        "a": "B",
+        "b": "G",
+        "similarity": 1.0
+      },
+      {
         "a": "C",
         "b": "D",
         "similarity": 1.0
@@ -962,7 +980,7 @@
       {
         "a": "F",
         "b": "H",
-        "similarity": 0.46
+        "similarity": 0.54
       }
     ],
     "pairs_detailed": [
@@ -1153,7 +1171,7 @@
         "cluster_id_a": 7,
         "token_b": "H",
         "cluster_id_b": 70,
-        "similarity": 0.46
+        "similarity": 0.54
       },
       {
         "token_a": "G",

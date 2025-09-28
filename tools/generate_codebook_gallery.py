@@ -15,16 +15,12 @@ from string import Template
 from typing import Iterable, List, Mapping
 
 
-DEFAULT_CANONICAL_CODEBOOK = Path("public/sequences/symbol_codebook_canon.json")
-DEFAULT_MERGED_CODEBOOK = Path("public/sequences_merge/symbol_codebook.json")
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--codebook",
         type=Path,
-        default=DEFAULT_CANONICAL_CODEBOOK,
+        default=Path("public/sequences/symbol_codebook_canon.json"),
         help=(
             "Path to the symbol codebook JSON file. Defaults to the canonical "
             "codebook produced by tools/canonicalize_prototypes.py."
@@ -46,30 +42,19 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_codebook(codebook_path: Path) -> Mapping[str, object]:
-    search_paths = [codebook_path]
-    if codebook_path == DEFAULT_CANONICAL_CODEBOOK:
-        search_paths.append(DEFAULT_MERGED_CODEBOOK)
-
-    for candidate in search_paths:
-        if candidate.exists():
-            with candidate.open("r", encoding="utf-8") as fh:
-                return json.load(fh)
-
-    search_str = ", ".join(str(p) for p in search_paths)
-    raise FileNotFoundError(
-        f"Codebook file not found. Looked for: {search_str}. "
-        "Pass --codebook to point at the correct file."
-    )
+    if not codebook_path.exists():
+        raise FileNotFoundError(
+            f"Codebook file not found: {codebook_path}. "
+            "Pass --codebook to point at the correct file."
+        )
+    with codebook_path.open("r", encoding="utf-8") as fh:
+        return json.load(fh)
 
 
 def normalise_clusters(raw_clusters: Iterable[Mapping[str, object]]) -> List[Mapping[str, object]]:
     clusters: List[Mapping[str, object]] = []
     for cluster in raw_clusters:
-        if not isinstance(cluster, Mapping):
-            continue
         prototype = cluster.get("prototype", {})
-        if not isinstance(prototype, Mapping):
-            prototype = {}
         clusters.append(
             {
                 "cluster_id": cluster.get("cluster_id"),
@@ -78,33 +63,11 @@ def normalise_clusters(raw_clusters: Iterable[Mapping[str, object]]) -> List[Map
                 "thumb_obj": prototype.get("thumb_obj"),
             }
         )
-    clusters.sort(key=lambda c: (c.get("cluster_id"), str(c.get("token"))))
+    clusters.sort(key=lambda c: (c.get("cluster_id"), c.get("token")))
     return clusters
 
 
-def extract_clusters(codebook: Mapping[str, object]) -> List[Mapping[str, object]]:
-    clusters = codebook.get("clusters")
-    if isinstance(clusters, list):
-        return normalise_clusters(clusters)
-
-    legend = codebook.get("legend")
-    if isinstance(legend, Mapping):
-        converted = []
-        for token, entry in legend.items():
-            if not isinstance(entry, Mapping):
-                continue
-            cluster_payload = dict(entry)
-            cluster_payload.setdefault("token", token)
-            converted.append(cluster_payload)
-        return normalise_clusters(converted)
-
-    raise ValueError(
-        "Unexpected codebook format: expected a 'clusters' list or 'legend' mapping."
-    )
-
-
 def build_html(clusters: Iterable[Mapping[str, object]], thumbs_dir: Path) -> str:
-    thumbs_dir = thumbs_dir.resolve()
     thumbs_rel = thumbs_dir.name
     rows: List[str] = []
     for cluster in clusters:
@@ -257,7 +220,13 @@ def main() -> None:
     args = parse_args()
     codebook = load_codebook(args.codebook)
 
-    normalised = extract_clusters(codebook)
+    clusters = codebook.get("clusters")
+    if not isinstance(clusters, list):
+        raise ValueError(
+            "Unexpected codebook format: 'clusters' key is missing or not a list"
+        )
+
+    normalised = normalise_clusters(clusters)
     html_content = build_html(normalised, args.thumbs_dir)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -267,4 +236,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
