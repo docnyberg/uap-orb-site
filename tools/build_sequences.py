@@ -968,8 +968,11 @@ def extract_event_attributes_with_radial(
         - majority cluster token
         - color label (prefer existing 'color_label'; else HSV->name; else Unknown)
         - arrow (↑/↓) if present in recs, optional radial/vacuole enrichments.
+    Radial/vacuole enrichment (orientation, sector, vacuole_* fields) is only
+    computed when the corresponding `enable_radial`/`enable_vacuoles` flags are
+    true. Hue-based color inference respects the provided S/V guard rails.
 
-    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...}
+    Returns dict: (jf, e_idx) -> {token, color_label, arrow, orientation8?, ...} 
     """
     by_event = defaultdict(list)
     for r in recs:
@@ -996,7 +999,6 @@ def extract_event_attributes_with_radial(
     thumb_feature_cache = {}
 
     def analyze_thumb(thumb_name: str):
-        """Return cached radial/vacuole features for a thumbnail."""
         key = (thumb_name, process_sig)
         if key in thumb_feature_cache:
             return thumb_feature_cache[key]
@@ -1086,15 +1088,17 @@ def extract_event_attributes_with_radial(
                 valid_hues.append(h_val)
             color_label = "Unknown"
             if valid_hues:
-                hmed = float(np.median(valid_hues))
-                if 35.0 <= hmed < 70.0:
-                    color_label = "Yellow"
-                elif 80.0 <= hmed < 160.0:
-                    color_label = "Green"
-                elif 200.0 <= hmed < 260.0:
-                    color_label = "Blue"
-                elif hmed >= 300.0 or hmed < 10.0:
-                    color_label = "Pink/Magenta"
+              color_label = "Unknown"
+              if valid_hues:
+                  hmed = float(np.median(valid_hues))
+                  if 35.0 <= hmed < 70.0:
+                      color_label = "Yellow"
+                  elif 80.0 <= hmed < 160.0:
+                      color_label = "Green"
+                  elif 200.0 <= hmed < 260.0:
+                      color_label = "Blue"
+                  elif hmed >= 300.0 or hmed < 10.0:
+                      color_label = "Pink/Magenta"
 
         thumbs = [rr.get("thumb") for rr in rows if rr.get("thumb")]
         thumb = Counter(thumbs).most_common(1)[0][0] if thumbs else None
