@@ -981,16 +981,32 @@
             });
             return seq;
         }
+        function hasThumbMedia(it) {
+            return Boolean((it.thumb_obj && it.thumb_obj.trim()) || (it.thumb && it.thumb.trim()));
+        }
+
         function rasterUrlFor(it) {
-            const useObj = (thumbMode === "object" && it.thumb_obj);
-            const src = useObj ? it.thumb_obj : it.thumb;
-            if (!src) return ""; // no image available
+            const objSrc = (it.thumb_obj || "").trim();
+            const sceneSrc = (it.thumb || "").trim();
+
+            let chosen = "";
+            let isObj = false;
+
+            if (thumbMode === "object") {
+                if (objSrc) { chosen = objSrc; isObj = true; }
+                else if (sceneSrc) { chosen = sceneSrc; }
+            } else {
+                if (sceneSrc) { chosen = sceneSrc; }
+                else if (objSrc) { chosen = objSrc; isObj = true; }
+            }
+
+            if (!chosen) return ""; // no image available
 
             // Absolute (http/https/data:/leading slash) — use as-is
-            if (isAbsoluteURL(src)) return src;
+            if (isAbsoluteURL(chosen)) return chosen;
 
             // Relative — keep your existing folders
-            return useObj ? `thumbs_obj/${src}` : `thumbs/${src}`;
+            return isObj ? `thumbs_obj/${chosen}` : `thumbs/${chosen}`;
         }
 
         /* ===== Permissive SVG candidate list (roots + .SVG) ===== */
@@ -1541,9 +1557,13 @@
             // simple similarity metric (hue, s, v, circ, area + shape boost)
             const TH = hueOf(tgt), TS = num(tgt.s_norm, 0), TV = num(tgt.v_norm, 0), TC = num(tgt.circ, 0), TA = num(tgt.area_norm, 0);
             const tShape = tgt.shape;
+            const requireImage = document.getElementById("imgOnly")?.checked ?? false;
+            const hideDuplicates = document.getElementById("hideDup")?.checked ?? false;
             const sim = [];
             DATA.forEach((it, i) => {
                 if (i === gi) return;
+                if (requireImage && !hasThumbMedia(it)) return;
+                if (hideDuplicates && it.isDuplicate) return;
                 let d = 0; const H = hueOf(it);
                 if (Number.isFinite(TH) && Number.isFinite(H)) { let dh = Math.abs(H - TH); dh = Math.min(dh, 360 - dh); d += (dh / 180); } else d += 1;
                 d += Math.abs(num(it.s_norm, 0) - TS); d += Math.abs(num(it.v_norm, 0) - TV);
@@ -1552,7 +1572,11 @@
                 sim.push({ i, d });
             });
             sim.sort((a, b) => a.d - b.d);
-            const top = sim.slice(0, 30).map(s => s.i);
+            const top = [];
+            for (const s of sim) {
+                top.push(s.i);
+                if (top.length >= 30) break;
+            }
             CURRENT = [tgt, ...top.map(i => DATA[i])];
             CURRENT_IDX = [gi, ...top];
             currentView = "similar";
