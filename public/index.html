@@ -1024,13 +1024,22 @@
                     win.document.close();
                 }
                 const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
+                const baseHref = (() => {
+                    try { return new URL('.', document.baseURI).href; }
+                    catch (err) {
+                        try { return new URL('.', location.href).href; }
+                        catch { return '/'; }
+                    }
+                })();
+                const safeBaseHref = String(baseHref || '/').replace(/"/g, '&quot;');
                 if (win.closed) return;
-                const html = `<!doctype html>
+                    const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${clusterTitle}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<base href="${safeBaseHref}">
 <style>
 :root { color-scheme: dark; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b0d12; color:#e7eaf0; }
 body { margin:0; background:#0b0d12; color:#e7eaf0; }
@@ -1084,11 +1093,11 @@ function normalizeName(name){
   const parts = normalized.split('/').filter(Boolean);
   return parts.length ? parts[parts.length - 1].toLowerCase() : normalized.toLowerCase();
 }
-function itemKey(item){
-  const thumb = normalizeName(item.thumb_scene || item.thumb_obj);
-  const json = (item.json_file || '').toLowerCase();
-  const idx = item.event_index === undefined || item.event_index === null ? '' : String(item.event_index);
-  return `${thumb}|${json}|${idx}`;
+  function itemKey(item){
+    const thumb = normalizeName(item.thumb_scene || item.thumb_obj);
+    const json = (item.json_file || '').toLowerCase();
+    const idx = item.event_index === undefined || item.event_index === null ? '' : String(item.event_index);
+    return thumb + '|' + json + '|' + idx;
 }
 function sortItems(a, b){
   const aj = (a.json_file || '').toLowerCase();
@@ -1173,16 +1182,16 @@ function updateStatus(){
   let text = '';
   if (!state.done){
     if (!loaded) text = 'Loading members…';
-    else if (state.expected){
-      const capped = Math.min(loaded, state.expected);
-      text = `Loading members… (${capped} of ${state.expected})`;
+      else if (state.expected){
+        const capped = Math.min(loaded, state.expected);
+        text = 'Loading members… (' + capped + ' of ' + state.expected + ')';
+      } else {
+        text = 'Loading members… (' + loaded + ')';
+      }
     } else {
-      text = `Loading members… (${loaded})`;
-    }
-  } else {
-    if (!loaded) text = 'No thumb.obj members were found for this cluster.';
-    else if (state.expected && loaded < state.expected) text = `Loaded ${loaded} of ${state.expected} members.`;
-    else text = '';
+      if (!loaded) text = 'No thumb.obj members were found for this cluster.';
+      else if (state.expected && loaded < state.expected) text = 'Loaded ' + loaded + ' of ' + state.expected + ' members.';
+      else text = '';
   }
   statusEl.textContent = text;
   statusEl.classList.toggle('hidden', !text);
@@ -1211,12 +1220,12 @@ window.renderClusterInit = function(payload){
   const cluster = payload && payload.cluster;
   if (cluster){
     const titleEl = document.getElementById('clusterTitle');
-    if (titleEl){
-      titleEl.textContent = cluster.title || `Cluster ${cluster.id}`;
-    }
-    if (metaEl){
-      metaEl.textContent = cluster.count ? `${cluster.count} total members` : '';
-    }
+      if (titleEl){
+        titleEl.textContent = cluster.title || ('Cluster ' + cluster.id);
+      }
+      if (metaEl){
+        metaEl.textContent = cluster.count ? (cluster.count + ' total members') : '';
+      }
     if (typeof cluster.count === 'number'){
       state.expected = cluster.count;
     }
@@ -1749,8 +1758,23 @@ updateStatus();
 
         /* Robust CSV URL */
         const CSV_URL = (() => {
-            try { return new URL('atlas.csv', document.baseURI || location.href).href; }
-            catch { return 'atlas.csv'; }  // fallback
+            const FALLBACK = 'atlas.csv';
+            const pickBase = () => {
+                const base = document.baseURI && document.baseURI !== 'about:blank'
+                    ? document.baseURI
+                    : (typeof location !== 'undefined' ? location.href : '');
+                if (!base) throw new Error('no base URL');
+                return base;
+            };
+            try {
+                return new URL('atlas.csv', pickBase()).href;
+            } catch (err) {
+                try {
+                    return new URL('atlas.csv', location.href).href;
+                } catch {
+                    return FALLBACK;
+                }
+            }
         })();
 
         /* ===== Modal sequence helpers (from your file) ===== */
@@ -2087,6 +2111,96 @@ updateStatus();
             return u8;
         }
 
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function supportsCanvasRecording() {
+            return typeof MediaRecorder !== "undefined" &&
+                typeof HTMLCanvasElement !== "undefined" &&
+                typeof HTMLCanvasElement.prototype?.captureStream === "function";
+        }
+
+        async function frameSourceForSequenceItem(it) {
+            if (!it) return "";
+            if (MODAL.svg) {
+                const url = await resolveSvgURL(svgTriesFor(it));
+                return EMBED_SVG_IN_MODAL ? (await fetchSvgAsDataURL(url)) : url;
+            }
+            return rasterUrlFor(it);
+        }
+
+        async function loadSequenceFrameImage(it) {
+            const src = await frameSourceForSequenceItem(it);
+            if (!src) throw new Error("No frame source available");
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.decoding = "async";
+            img.loading = "eager";
+            img.src = src;
+            await new Promise((resolve, reject) => {
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error("Frame load failed"));
+            });
+            return img;
+        }
+
+        function pickCanvasMimeType() {
+            if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
+            const candidates = [
+                "video/webm;codecs=vp9",
+                "video/webm;codecs=vp8",
+                "video/webm;codecs=vp9,opus",
+                "video/webm"
+            ];
+            return candidates.find(type => {
+                try { return MediaRecorder.isTypeSupported(type); }
+                catch { return false; }
+            }) || "";
+        }
+
+        async function encodeWebMFromSequence(seq, fps = 12) {
+            if (!supportsCanvasRecording()) throw new Error("MediaRecorder not supported");
+            if (!Array.isArray(seq) || !seq.length) throw new Error("empty sequence");
+            const firstImg = await loadSequenceFrameImage(DATA[seq[0]]);
+            const width = firstImg.naturalWidth || firstImg.width || 640;
+            const height = firstImg.naturalHeight || firstImg.height || 480;
+            const canvas = document.createElement("canvas");
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            const mimeType = pickCanvasMimeType();
+            const stream = canvas.captureStream(fps);
+            const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            const chunks = [];
+            recorder.ondataavailable = (evt) => { if (evt.data && evt.data.size) chunks.push(evt.data); };
+            const stopPromise = new Promise((resolve, reject) => {
+                recorder.onstop = () => resolve();
+                recorder.onerror = (evt) => reject(evt?.error || evt || new Error("Recording failed"));
+            });
+            const drawImage = (img) => {
+                ctx.clearRect(0, 0, width, height);
+                const naturalW = img.naturalWidth || img.width || width;
+                const naturalH = img.naturalHeight || img.height || height;
+                const ratio = Math.min(width / naturalW, height / naturalH) || 1;
+                const dw = Math.round(naturalW * ratio);
+                const dh = Math.round(naturalH * ratio);
+                const dx = Math.floor((width - dw) / 2);
+                const dy = Math.floor((height - dh) / 2);
+                ctx.drawImage(img, dx, dy, dw, dh);
+            };
+            recorder.start();
+            drawImage(firstImg);
+            await sleep(1000 / fps);
+            for (let i = 1; i < seq.length; i++) {
+                const img = await loadSequenceFrameImage(DATA[seq[i]]);
+                drawImage(img);
+                await sleep(1000 / fps);
+            }
+            recorder.stop();
+            await stopPromise;
+            stream.getTracks().forEach(track => { try { track.stop(); } catch { } });
+            const blob = new Blob(chunks, { type: mimeType || "video/webm" });
+            return { blob, mimeType: mimeType || blob.type || "video/webm", extension: "webm" };
+        }
+
         // Build frame PNGs from the current modal sequence (raster or SVG)
         // Returns { ff, count, outName }
         async function buildFramesForCurrentSequence(ff, fps = 12) {
@@ -2159,6 +2273,18 @@ updateStatus();
             return new Blob([data.buffer], { type: "video/mp4" });
         }
 
+        function downloadBlob(blob, baseName, extension) {
+            const safeName = (baseName || "sequence").replace(/\s+/g, "_").replace(/[\/:*?"<>|]+/g, "-") || "sequence";
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${safeName}.${extension}`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => { try { URL.revokeObjectURL(url); } catch { } }, 4000);
+        }
+
         // Click handler: try R2 full video first; if not available, encode the current sequence.
         async function onDownloadVideoClick() {
             try {
@@ -2171,15 +2297,25 @@ updateStatus();
                     } catch (e) { console.warn("R2 presign failed, falling back to encode:", e); }
                 }
 
+                const baseName = it && it.video_file ? it.video_file.replace(/\.[^.]+$/, "") : "sequence";
+                if (supportsCanvasRecording()) {
+                    try {
+                        toast("Building WebM from frames…");
+                        const { blob, extension } = await encodeWebMFromSequence(MODAL.seq, 12);
+                        downloadBlob(blob, baseName, extension);
+                        toast("Video ready.");
+                        return;
+                    } catch (err) {
+                        console.warn("Canvas recording fallback failed", err);
+                    }
+                }
+
                 // Fallback: build MP4 from current sequence
                 toast("Building MP4 from frames… (this may take 20–60s)");
                 const ff = await loadFFmpeg();
                 const { outName } = await buildFramesForCurrentSequence(ff, 12);
                 const blob = await encodeMp4FromFrames(ff, 12, outName);
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = (it && it.video_file ? it.video_file.replace(/\.[^.]+$/, "") : "sequence") + ".mp4";
-                document.body.appendChild(a); a.click(); a.remove();
+                downloadBlob(blob, baseName, "mp4");
                 toast("MP4 ready.");
             } catch (e) {
                 console.error(e);
