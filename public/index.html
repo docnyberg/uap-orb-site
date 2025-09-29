@@ -1749,8 +1749,23 @@ updateStatus();
 
         /* Robust CSV URL */
         const CSV_URL = (() => {
-            try { return new URL('atlas.csv', document.baseURI || location.href).href; }
-            catch { return 'atlas.csv'; }  // fallback
+            const FALLBACK = 'atlas.csv';
+            const pickBase = () => {
+                const base = document.baseURI && document.baseURI !== 'about:blank'
+                    ? document.baseURI
+                    : (typeof location !== 'undefined' ? location.href : '');
+                if (!base) throw new Error('no base URL');
+                return base;
+            };
+            try {
+                return new URL('atlas.csv', pickBase()).href;
+            } catch (err) {
+                try {
+                    return new URL('atlas.csv', location.href).href;
+                } catch {
+                    return FALLBACK;
+                }
+            }
         })();
 
         /* ===== Modal sequence helpers (from your file) ===== */
