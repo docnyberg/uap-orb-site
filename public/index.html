@@ -937,23 +937,78 @@
             return prom;
         }
 
-        async function fetchClusterMembers(clusterId) {
+        function clusterMemberKey(entry) {
+            if (!entry) return "";
+            const thumb = normalizeThumbName(entry.thumb_obj || entry.thumb_scene || "");
+            const json = (entry.json_file || "").toLowerCase();
+            const idx = entry.event_index === undefined || entry.event_index === null ? "" : String(entry.event_index);
+            return `${thumb}|${json}|${idx}`;
+        }
+
+        function enrichClusterMemberEntry(entry) {
+            if (!entry) return null;
+            const normalized = normalizeThumbName(entry.thumb_obj || entry.thumb_scene || "");
+            const idx = normalized ? THUMB_TO_INDEX.get(normalized) : undefined;
+            const hasIdx = typeof idx === "number";
+            const row = hasIdx ? DATA[idx] : null;
+            const scenePath = row ? sanitizeRelativePath(row.thumb) : "";
+            const objPathSource = row ? row.thumb_obj : (entry.thumb_obj || entry.thumb_scene || "");
+            const objectPath = sanitizeRelativePath(objPathSource) || normalized;
+            return {
+                thumb_obj: objectPath,
+                thumb_scene: scenePath,
+                json_file: entry.json_file || (row ? row.json_file : ""),
+                event_index: entry.event_index ?? (row ? row.event_index : ""),
+                dataIdx: hasIdx ? idx : null
+            };
+        }
+
+        async function streamClusterMembers(clusterId, onBatch) {
             await dataReady;
             const files = Array.from(new Set(DATA.map(it => it.json_file).filter(Boolean)));
-            if (files.length) {
-                await Promise.all(files.map(ensureSequenceClusters));
+            const seen = new Set();
+
+            const emitFresh = (done = false) => {
+                const base = CLUSTER_MEMBERS.get(clusterId) || [];
+                const fresh = [];
+                for (const item of base) {
+                    const key = clusterMemberKey(item);
+                    if (!key || seen.has(key)) continue;
+                    seen.add(key);
+                    const enriched = enrichClusterMemberEntry(item);
+                    if (enriched) fresh.push(enriched);
+                }
+                if (!fresh.length && !done) return;
+                if (typeof onBatch === "function") {
+                    onBatch({ items: fresh, done });
+                }
+            };
+
+            emitFresh(false);
+
+            const tasks = files.map(file =>
+                ensureSequenceClusters(file)
+                    .then(() => emitFresh(false))
+                    .catch(() => emitFresh(false))
+            );
+
+            if (tasks.length) {
+                await Promise.allSettled(tasks);
             }
-            const entries = (CLUSTER_MEMBERS.get(clusterId) || []).map(item => ({ ...item }));
-            entries.sort((a, b) => {
-                const aj = (a.json_file || "").toLowerCase();
-                const bj = (b.json_file || "").toLowerCase();
-                if (aj !== bj) return aj < bj ? -1 : 1;
-                const ai = Number(a.event_index);
-                const bi = Number(b.event_index);
-                if (Number.isFinite(ai) && Number.isFinite(bi)) return ai - bi;
-                return String(a.event_index).localeCompare(String(b.event_index));
-            });
-            return entries;
+
+            emitFresh(true);
+        }
+
+        async function waitForClusterWindowReady(win, timeoutMs = 5000) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+                if (!win || win.closed) return false;
+                if (typeof win.renderClusterInit === "function" && typeof win.renderClusterBatch === "function") {
+                    return true;
+                }
+                await new Promise(resolve => setTimeout(resolve, 30));
+            }
+            return typeof win?.renderClusterInit === "function" && typeof win?.renderClusterBatch === "function";
         }
 
         async function openClusterWindow(cluster, preOpenedWindow) {
@@ -968,32 +1023,7 @@
                     win.document.write("<!doctype html><title>Loading…</title><body style='background:#0b0d12;color:#c9d3e5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Loading cluster…</body>");
                     win.document.close();
                 }
-                await dataReady;
-                const members = await fetchClusterMembers(cluster.cluster_id);
-                const enriched = members.map(item => {
-                    const idx = THUMB_TO_INDEX.get(item.thumb_obj);
-                    const row = (typeof idx === "number") ? DATA[idx] : null;
-                    const scenePath = row ? sanitizeRelativePath(row.thumb) : "";
-                    const objectPath = row ? sanitizeRelativePath(row.thumb_obj) : sanitizeRelativePath(item.thumb_obj);
-                    return {
-                        thumb_obj: objectPath || item.thumb_obj,
-                        thumb_scene: scenePath,
-                        json_file: item.json_file,
-                        event_index: item.event_index,
-                        dataIdx: (typeof idx === "number") ? idx : null
-                    };
-                });
-                const payload = {
-                    cluster: {
-                        id: cluster.cluster_id,
-                        token: cluster.token || "",
-                        count: cluster.count || enriched.length
-                    },
-                    items: enriched
-                };
-                const payloadStr = JSON.stringify(payload).replace(/</g, "\\u003c");
                 const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
-                const memberCount = payload.cluster.count;
                 if (win.closed) return;
                 const html = `<!doctype html>
 <html lang="en">
@@ -1017,23 +1047,30 @@ main { padding:18px; }
 .cluster-card img { width:100%; aspect-ratio:1/1; object-fit:cover; background:#000; }
 .cluster-card .meta { padding:10px 12px; font-size:12px; line-height:1.4; color:#c9d3e5; display:flex; flex-direction:column; gap:4px; }
 .cluster-card .status { font-size:11px; color:#9aa3b2; }
-.empty { padding:40px 0; text-align:center; color:#9aa3b2; font-size:13px; }
+.cluster-card .chip { display:inline-block; padding:2px 6px; border-radius:999px; background:#1c2330; color:#9aa3b2; font-size:10px; letter-spacing:.04em; text-transform:uppercase; }
+.status-line { margin-top:16px; font-size:12px; color:#9aa3b2; }
+.hidden { display:none !important; }
 </style>
 </head>
 <body>
 <header>
-  <h1>${clusterTitle}</h1>
-  <span>${memberCount} total members</span>
+  <h1 id="clusterTitle">${clusterTitle}</h1>
+  <span id="clusterMeta"></span>
   <button id="focusMain" type="button">Focus main viewer</button>
 </header>
 <main>
-  <div id="clusterGrid" class="grid"></div>
+  <div id="clusterStatus" class="status-line">Loading members…</div>
+  <div id="clusterGrid" class="grid hidden" aria-live="polite"></div>
 </main>
 <script>
-const PAYLOAD = ${payloadStr};
+const state = { map: new Map(), expected: 0, done: false };
+const gridEl = document.getElementById('clusterGrid');
+const statusEl = document.getElementById('clusterStatus');
+const metaEl = document.getElementById('clusterMeta');
 function encodePath(name){ return name ? name.split('/').map(encodeURIComponent).join('/') : ''; }
 function focusMain(){ if (window.opener && !window.opener.closed){ window.opener.focus(); } }
 function handleClick(name){
+  if (!name) return;
   if (window.opener && !window.opener.closed && typeof window.opener.handleCodebookSelection === 'function'){
     window.opener.focus();
     window.opener.handleCodebookSelection(name);
@@ -1041,22 +1078,49 @@ function handleClick(name){
     alert('Main viewer not available.');
   }
 }
-document.getElementById('focusMain').addEventListener('click', focusMain);
-(function render(){
-  const grid = document.getElementById('clusterGrid');
-  if (!grid) return;
-  if (!PAYLOAD.items.length){
-    grid.outerHTML = '<p class="empty">No thumb.obj members were found for this cluster.</p>';
-    return;
-  }
+function normalizeName(name){
+  if (!name) return '';
+  const normalized = String(name).replace(/\\/g, '/');
+  const parts = normalized.split('/').filter(Boolean);
+  return parts.length ? parts[parts.length - 1].toLowerCase() : normalized.toLowerCase();
+}
+function itemKey(item){
+  const thumb = normalizeName(item.thumb_scene || item.thumb_obj);
+  const json = (item.json_file || '').toLowerCase();
+  const idx = item.event_index === undefined || item.event_index === null ? '' : String(item.event_index);
+  return `${thumb}|${json}|${idx}`;
+}
+function sortItems(a, b){
+  const aj = (a.json_file || '').toLowerCase();
+  const bj = (b.json_file || '').toLowerCase();
+  if (aj && bj && aj !== bj) return aj < bj ? -1 : 1;
+  if (aj && !bj) return -1;
+  if (bj && !aj) return 1;
+  const ai = Number(a.event_index);
+  const bi = Number(b.event_index);
+  const aFinite = Number.isFinite(ai);
+  const bFinite = Number.isFinite(bi);
+  if (aFinite && bFinite && ai !== bi) return ai - bi;
+  if (aFinite && !bFinite) return -1;
+  if (!aFinite && bFinite) return 1;
+  const at = (a.thumb_obj || a.thumb_scene || '').toLowerCase();
+  const bt = (b.thumb_obj || b.thumb_scene || '').toLowerCase();
+  if (at !== bt) return at < bt ? -1 : 1;
+  return 0;
+}
+function renderGrid(){
+  if (!gridEl) return;
+  const items = Array.from(state.map.values()).sort(sortItems);
   const frag = document.createDocumentFragment();
-  PAYLOAD.items.forEach(item => {
+  items.forEach(item => {
     const card = document.createElement('article');
     card.className = 'cluster-card';
     const button = document.createElement('button');
     button.type = 'button';
     button.addEventListener('click', () => handleClick(item.thumb_obj));
     const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
     let src = '';
     if (item.thumb_scene){
       src = 'thumbs/' + encodePath(item.thumb_scene);
@@ -1074,37 +1138,154 @@ document.getElementById('focusMain').addEventListener('click', focusMain);
     button.appendChild(img);
     const meta = document.createElement('div');
     meta.className = 'meta';
-    const title = document.createElement('div');
-    title.innerHTML = '<strong>' + (item.json_file || '') + '</strong>';
-    meta.appendChild(title);
-    const info = document.createElement('div');
-    info.textContent = 'Event #' + (item.event_index ?? '');
-    meta.appendChild(info);
+    if (item.json_file){
+      const title = document.createElement('div');
+      title.innerHTML = '<strong>' + item.json_file + '</strong>';
+      meta.appendChild(title);
+    }
+    if (item.event_index !== undefined && item.event_index !== null && item.event_index !== ''){
+      const info = document.createElement('div');
+      info.textContent = 'Event #' + item.event_index;
+      meta.appendChild(info);
+    }
     if (item.dataIdx === null){
       const warn = document.createElement('div');
       warn.className = 'status';
       warn.textContent = 'Not present in atlas dataset';
       meta.appendChild(warn);
     }
+    if (item.isPrototype){
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = 'Codebook prototype';
+      meta.appendChild(chip);
+    }
     button.appendChild(meta);
     card.appendChild(button);
     frag.appendChild(card);
   });
-  grid.appendChild(frag);
-})();
+  gridEl.replaceChildren(frag);
+  gridEl.classList.toggle('hidden', !items.length);
+}
+function updateStatus(){
+  if (!statusEl) return;
+  const loaded = state.map.size;
+  let text = '';
+  if (!state.done){
+    if (!loaded) text = 'Loading members…';
+    else if (state.expected){
+      const capped = Math.min(loaded, state.expected);
+      text = `Loading members… (${capped} of ${state.expected})`;
+    } else {
+      text = `Loading members… (${loaded})`;
+    }
+  } else {
+    if (!loaded) text = 'No thumb.obj members were found for this cluster.';
+    else if (state.expected && loaded < state.expected) text = `Loaded ${loaded} of ${state.expected} members.`;
+    else text = '';
+  }
+  statusEl.textContent = text;
+  statusEl.classList.toggle('hidden', !text);
+}
+function mergeItems(items){
+  let changed = false;
+  items.forEach(item => {
+    if (!item) return;
+    const key = itemKey(item);
+    if (!key) return;
+    const existing = state.map.get(key);
+    if (existing){
+      const merged = Object.assign({}, existing, item);
+      merged.isPrototype = Boolean(existing.isPrototype || item.isPrototype);
+      state.map.set(key, merged);
+    } else {
+      state.map.set(key, Object.assign({}, item));
+    }
+    changed = true;
+  });
+  if (changed){
+    renderGrid();
+  }
+}
+window.renderClusterInit = function(payload){
+  const cluster = payload && payload.cluster;
+  if (cluster){
+    const titleEl = document.getElementById('clusterTitle');
+    if (titleEl){
+      titleEl.textContent = cluster.title || `Cluster ${cluster.id}`;
+    }
+    if (metaEl){
+      metaEl.textContent = cluster.count ? `${cluster.count} total members` : '';
+    }
+    if (typeof cluster.count === 'number'){
+      state.expected = cluster.count;
+    }
+  }
+  if (Array.isArray(payload?.items) && payload.items.length){
+    mergeItems(payload.items);
+  }
+  updateStatus();
+};
+window.renderClusterBatch = function(items, meta){
+  if (meta && typeof meta.expectedCount === 'number'){
+    state.expected = meta.expectedCount;
+  }
+  if (Array.isArray(items) && items.length){
+    mergeItems(items);
+  }
+  if (meta && meta.done){
+    state.done = true;
+  }
+  updateStatus();
+};
+window.renderClusterDone = function(meta){
+  if (meta && typeof meta.expectedCount === 'number'){
+    state.expected = meta.expectedCount;
+  }
+  state.done = true;
+  updateStatus();
+};
+document.getElementById('focusMain').addEventListener('click', focusMain);
+updateStatus();
 <\/script>
 </body>
 </html>`;
                 win.document.open();
                 win.document.write(html);
                 win.document.close();
-            } catch (err) {
-                console.error('cluster window error', err);
-                if (win && !win.closed) {
-                    win.document.open();
-                    win.document.write("<!doctype html><title>Error</title><body style='background:#0b0d12;color:#e7eaf0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Failed to load cluster view.</body>");
-                    win.document.close();
+
+                const ready = await waitForClusterWindowReady(win);
+                if (!ready || win.closed) return;
+
+                const headerPayload = {
+                    cluster: {
+                        id: cluster.cluster_id,
+                        title: clusterTitle,
+                        token: cluster.token || "",
+                        count: cluster.count || 0
+                    },
+                    items: []
+                };
+                if (typeof win.renderClusterInit === "function") {
+                    win.renderClusterInit(headerPayload);
                 }
+
+                await streamClusterMembers(cluster.cluster_id, ({ items, done }) => {
+                    if (!win || win.closed) return;
+                    if (typeof win.renderClusterBatch === "function") {
+                        win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
+                    }
+                });
+
+                if (!win.closed && typeof win.renderClusterDone === "function") {
+                    win.renderClusterDone({ expectedCount: cluster.count || 0 });
+                }
+            } catch (err) {
+                console.error(err);
+                if (!win || win.closed) return;
+                win.document.open();
+                win.document.write(`<!doctype html><title>Error</title><body style="background:#0b0d12;color:#e7eaf0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;">Failed to load cluster members.<br><br><code>${String(err)}</code></body>`);
+                win.document.close();
             }
         }
 
