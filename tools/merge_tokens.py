@@ -27,9 +27,10 @@ Outputs:
 No third-party deps required (standard library only).
 """
 
-import argparse, json, os, sys
+import argparse
+import json
+from copy import deepcopy
 from pathlib import Path
-from collections import defaultdict
 
 # ---------- IO helpers ----------
 
@@ -265,90 +266,202 @@ def plan_merges(cb_counts: dict,
 # ---------- Apply mapping ----------
 
 def apply_mapping_to_codebook(cb, model, mapping: dict):
-    """
-    Return updated codebook and set of present tokens after merges.
-    """
-    if not mapping:
-        return cb, set()
+    """Return updated codebook plus helper maps for downstream updates."""
 
     def final(tok):
         while tok in mapping:
             tok = mapping[tok]
         return tok
 
-    present = set()
-
+    # Collect original entries so we can build canonical cluster information.
     if model == "clusters":
-        merged = {}
-        for c in cb["clusters"]:
-            tok = c.get("token")
-            if not tok:
-                continue
-            new_tok = final(tok)
-            c["token"] = new_tok
-            if new_tok not in merged:
-                merged[new_tok] = c
-            else:
-                # sum counts if present
-                try:
-                    merged[new_tok]["count"] = int(merged[new_tok].get("count", 0)) + int(c.get("count", 0))
-                except Exception:
-                    pass
-        cb["clusters"] = list(merged.values())
-        present = {c["token"] for c in cb["clusters"]}
-
+        original_entries = [deepcopy(c) for c in cb.get("clusters", []) if isinstance(c, dict)]
     elif model == "legend":
-        merged = {}
-        for tok, meta in cb["legend"].items():
-            new_tok = final(tok)
-            if new_tok not in merged:
-                merged[new_tok] = meta
-                merged[new_tok]["token"] = new_tok
-            else:
-                try:
-                    merged[new_tok]["count"] = int(merged[new_tok].get("count", 0)) + int(meta.get("count", 0))
-                except Exception:
-                    pass
-        cb["legend"] = merged
-        present = set(cb["legend"].keys())
+        original_entries = []
+        for tok, meta in cb.get("legend", {}).items():
+            if not isinstance(meta, dict):
+                continue
+            entry = deepcopy(meta)
+            entry.setdefault("token", tok)
+            original_entries.append(entry)
+    else:
+        return cb, set(), {}, {}, {}
 
-    if "n_clusters" in cb:
+    token_groups: dict[str, dict[str, list[dict]]] = {}
+    for entry in original_entries:
+        tok = entry.get("token")
+        if not tok:
+            continue
+        entry["_orig_token"] = tok
+        final_tok = final(tok)
+        entry["_final_token"] = final_tok
+        grp = token_groups.setdefault(final_tok, {"base": None, "extras": []})
+        if tok == final_tok and grp["base"] is None:
+            grp["base"] = entry
+        else:
+            grp["extras"].append(entry)
+
+    final_entries = []
+    token_to_cluster: dict[str, int | None] = {}
+
+    for final_tok, grp in token_groups.items():
+        base = grp["base"] or (grp["extras"][0] if grp["extras"] else None)
+        if base is None:
+            continue
+        base = deepcopy(base)
+        base["token"] = final_tok
+        base.pop("_orig_token", None)
+        base.pop("_final_token", None)
+
+        # Prefer cluster_id from canonical (winner) entry.
+        cluster_id = base.get("cluster_id")
+        if cluster_id is None:
+            for extra in grp["extras"]:
+                cid = extra.get("cluster_id")
+                if cid is not None:
+                    cluster_id = cid
+                    break
+        if cluster_id is not None:
+            try:
+                cluster_id = int(cluster_id)
+            except Exception:
+                pass
+            base["cluster_id"] = cluster_id
+
+        # Sum counts across merged entries.
+        total_count = 0
+        for src in [base] + grp["extras"]:
+            cnt = src.get("count")
+            if isinstance(cnt, (int, float)):
+                total_count += int(cnt)
+        if total_count:
+            base["count"] = total_count
+
+        token_to_cluster[final_tok] = cluster_id
+        final_entries.append(base)
+
+    present = set(token_to_cluster.keys())
+
+    # Build updated codebook structure matching original layout.
+    if model == "clusters":
+        cb_out = deepcopy(cb)
+        cb_out["clusters"] = final_entries
+    else:  # legend
+        cb_out = deepcopy(cb)
+        legend = {}
+        for entry in final_entries:
+            tok = entry.get("token")
+            if tok:
+                legend[tok] = entry
+        cb_out["legend"] = legend
+
+    if "n_clusters" in cb_out:
         try:
-            cb["n_clusters"] = len(present)
+            cb_out["n_clusters"] = len(present)
         except Exception:
             pass
 
-    return cb, present
+    # Build helper lookups for downstream files.
+    all_tokens = set()
+    for entry in original_entries:
+        orig_tok = entry.get("_orig_token") or entry.get("token")
+        final_tok = entry.get("_final_token") or final(orig_tok)
+        if orig_tok:
+            all_tokens.add(orig_tok)
+        if final_tok:
+            all_tokens.add(final_tok)
+    all_tokens.update(mapping.keys())
+    all_tokens.update(mapping.values())
 
-def update_symbol_seq(seq_obj: dict, mapping: dict) -> None:
+    token_final_map = {tok: final(tok) for tok in all_tokens if tok}
+
+    cluster_id_map: dict[int, int] = {}
+    for entry in original_entries:
+        tok = entry.get("_orig_token") or entry.get("token")
+        if not tok:
+            continue
+        orig_cid = entry.get("cluster_id")
+        if orig_cid is None:
+            continue
+        try:
+            orig_cid_int = int(orig_cid)
+        except Exception:
+            continue
+        final_tok = token_final_map.get(tok, tok)
+        final_cid = token_to_cluster.get(final_tok)
+        if final_cid is None:
+            continue
+        try:
+            cluster_id_map[orig_cid_int] = int(final_cid)
+        except Exception:
+            continue
+
+    # Ensure identity mappings for canonical cluster IDs so downstream code
+    # can safely call cluster_id_map.get(cid, cid).
+    for final_cid in token_to_cluster.values():
+        if isinstance(final_cid, int) and final_cid not in cluster_id_map:
+            cluster_id_map[final_cid] = final_cid
+
+    return cb_out, present, cluster_id_map, token_final_map, token_to_cluster
+
+
+def update_symbol_seq(seq_obj: dict,
+                      token_map: dict,
+                      cluster_id_map: dict,
+                      final_token_to_cluster: dict) -> None:
     """
     Update per-sequence JSON in-place:
       - legend keys
       - events[].token if present
       - symbol_seq (best-effort: from events if present, else 1-char translate)
     """
-    if not mapping:
+    if not token_map and not cluster_id_map:
         return
 
-    def final(tok):
-        while tok in mapping:
-            tok = mapping[tok]
+    def final(tok: str):
+        if not tok:
+            return tok
+        seen = set()
+        while tok in token_map and tok not in seen:
+            seen.add(tok)
+            tok = token_map[tok]
         return tok
 
     # legend
     if isinstance(seq_obj.get("legend"), dict):
-        new_leg = {}
+        new_leg: dict[str, dict] = {}
         for tok, meta in seq_obj["legend"].items():
+            if not isinstance(meta, dict):
+                continue
             new_tok = final(tok)
             if new_tok not in new_leg:
-                new_leg[new_tok] = meta
-                if isinstance(new_leg[new_tok], dict):
-                    new_leg[new_tok]["token"] = new_tok
+                base_meta = {k: deepcopy(v) for k, v in meta.items() if k not in {"token", "cluster_id", "count"}}
+                base_meta["token"] = new_tok
+                merged = new_leg[new_tok] = base_meta
             else:
+                merged = new_leg[new_tok]
+            # Merge cluster metadata while keeping canonical cluster id.
+            cid = meta.get("cluster_id")
+            if cid is not None:
                 try:
-                    new_leg[new_tok]["count"] = int(new_leg[new_tok].get("count",0)) + int(meta.get("count",0))
+                    cid_int = int(cid)
                 except Exception:
-                    pass
+                    cid_int = None
+                if cid_int is not None and cid_int in cluster_id_map:
+                    merged["cluster_id"] = cluster_id_map[cid_int]
+            if "cluster_id" not in merged:
+                final_cid = final_token_to_cluster.get(new_tok)
+                if final_cid is not None:
+                    merged["cluster_id"] = final_cid
+            # Sum counts.
+            cnt = meta.get("count")
+            if isinstance(cnt, (int, float)):
+                merged["count"] = int(merged.get("count", 0)) + int(cnt)
+            # Carry over any additional metadata.
+            for key, value in meta.items():
+                if key in {"token", "cluster_id", "count"}:
+                    continue
+                merged.setdefault(key, value)
         seq_obj["legend"] = new_leg
 
     # events
@@ -356,6 +469,11 @@ def update_symbol_seq(seq_obj: dict, mapping: dict) -> None:
         for ev in seq_obj["events"]:
             if isinstance(ev.get("token"), str):
                 ev["token"] = final(ev["token"])
+            cid = ev.get("cluster_id")
+            if isinstance(cid, (int, float)):
+                cid_int = int(cid)
+                if cid_int in cluster_id_map:
+                    ev["cluster_id"] = cluster_id_map[cid_int]
         # rebuild symbol_seq from events if timestamps/indices exist
         try:
             evs = seq_obj["events"]
@@ -374,17 +492,26 @@ def update_symbol_seq(seq_obj: dict, mapping: dict) -> None:
     if isinstance(sym, str) and sym and isinstance(seq_obj.get("legend"), dict):
         keys = list(seq_obj["legend"].keys())
         if keys and all(isinstance(k, str) and len(k) == 1 for k in keys):
-            trans = {ord(s): ord(final(s)) for s in mapping.keys() if isinstance(s,str) and len(s)==1 and isinstance(final(s),str) and len(final(s))==1}
-            seq_obj["symbol_seq"] = sym.translate(trans)
+            trans = {}
+            for src, dst in token_map.items():
+                if isinstance(src, str) and len(src) == 1 and isinstance(dst, str) and len(dst) == 1:
+                    trans[ord(src)] = ord(dst)
+            if trans:
+                seq_obj["symbol_seq"] = sym.translate(trans)
 
-def apply_mapping_to_sequences(sequences_dir: Path, out_dir: Path, mapping: dict):
+
+def apply_mapping_to_sequences(sequences_dir: Path,
+                               out_dir: Path,
+                               token_map: dict,
+                               cluster_id_map: dict,
+                               final_token_to_cluster: dict):
     changed = []
     for p in sequences_dir.glob("*.sequence.json"):
         try:
             obj = load_json(p)
         except Exception:
             continue
-        update_symbol_seq(obj, mapping)
+        update_symbol_seq(obj, token_map, cluster_id_map, final_token_to_cluster)
         out_p = out_dir / p.name
         save_json(out_p, obj)
         changed.append(p.name)
@@ -455,9 +582,19 @@ def main():
         return
 
     # Apply mapping
-    new_cb, present = apply_mapping_to_codebook(codebook, model, mapping)
+    (new_cb,
+     present,
+     cluster_id_map,
+     token_final_map,
+     token_to_cluster) = apply_mapping_to_codebook(codebook, model, mapping)
     save_json(out_dir / "symbol_codebook.json", new_cb)
-    files_changed = apply_mapping_to_sequences(seq_dir, out_dir, mapping)
+    files_changed = apply_mapping_to_sequences(
+        seq_dir,
+        out_dir,
+        token_final_map,
+        cluster_id_map,
+        token_to_cluster,
+    )
 
     print(f"[ok] codebook → {out_dir / 'symbol_codebook.json'}")
     print(f"[ok] sequences updated → {len(files_changed)} files")
