@@ -578,7 +578,7 @@
 <body>
     <header style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <h1>UAP / Orb Atlas Viewer</h1>
-        <span id="countBadge" class="badge">0 items</span>
+        <span id="countBadge" class="badge" data-count="0">0 items</span>
         <span id="visitorsBadge" class="badge">— visitors</span>
         <span id="note" class="badge">View: All • Sort: Hue ↑</span>
         <!-- NEW: monetization buttons -->
@@ -1394,6 +1394,13 @@ updateStatus();
         const $ = sel => document.querySelector(sel);
         const gridEl = $("#grid"), note = $("#note"), countBadge = $("#countBadge"), sentinel = $("#sentinel");
 
+        function setCountBadge(total) {
+            if (!countBadge) return;
+            const value = Number.isFinite(total) ? total : 0;
+            countBadge.dataset.count = String(value);
+            countBadge.textContent = `${value.toLocaleString()} items`;
+        }
+
         const STYLE_ALIASES = {
             default: ["", "_outline", "_smooth", "_bezier", "_skeleton", "_rings", "_hull", "_edges", "_ellipse", "_contour", "_convex"],
             outline: ["_outline", "_contour"], smooth: ["_smooth"], bezier: ["_bezier"], skeleton: ["_skeleton"], rings: ["_rings"],
@@ -1681,7 +1688,7 @@ updateStatus();
             gridEl.insertAdjacentHTML("beforeend", frag);
             wireTileClicks(start, end);
             stream.i = end;
-            countBadge.textContent = `${CURRENT.length} items`;
+            setCountBadge(CURRENT.length);
             if (stream.i >= CURRENT.length && stream.observer) { stream.observer.disconnect(); stream.observer = null; }
         }
 
@@ -1735,7 +1742,7 @@ updateStatus();
                 });
             });
             wireTileClicks(0, gridEl.querySelectorAll(".card").length);
-            countBadge.textContent = `${total} items`;
+            setCountBadge(total);
             currentView = "grouped"; updateNote();
             const sEl = document.getElementById("status"); if (sEl) sEl.textContent = "";
         }
