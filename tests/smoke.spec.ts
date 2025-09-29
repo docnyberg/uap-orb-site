@@ -13,8 +13,9 @@ test.describe('Orb Atlas Viewer – smoke', () => {
         await page.getByRole('button', { name: 'Reset' }).click();
 
         // Count badge repopulates (> 0)
-        const count = await page.locator('#countBadge').innerText();
-        expect(Number(count)).toBeGreaterThan(0);
+        const countAttr = await page.locator('#countBadge').getAttribute('data-count');
+        const count = Number(countAttr ?? '0');
+        expect(count).toBeGreaterThan(0);
 
         // Defaults
         await expect(page.locator('#groupSelect')).toHaveValue('video');
@@ -41,7 +42,7 @@ test.describe('Orb Atlas Viewer – smoke', () => {
             throw error;
         }
 
-        const initialCount = Number(await page.locator('#countBadge').innerText());
+        const initialCount = Number(await page.locator('#countBadge').getAttribute('data-count') ?? '0');
         expect(initialCount).toBeGreaterThan(0);
 
         // Click first card's Similar button
@@ -49,8 +50,12 @@ test.describe('Orb Atlas Viewer – smoke', () => {
         await firstSim.click();
 
         // After similar view, count should be <= 31 (1 + top 30)
-        await page.waitForFunction(() => Number(document.querySelector('#countBadge')?.textContent || '0') > 0);
-        const afterCount = Number(await page.locator('#countBadge').innerText());
+        await page.waitForFunction(() => {
+            const el = document.querySelector('#countBadge');
+            const raw = el?.getAttribute('data-count') ?? '0';
+            return Number(raw) > 0;
+        });
+        const afterCount = Number(await page.locator('#countBadge').getAttribute('data-count') ?? '0');
         expect(afterCount).toBeLessThanOrEqual(31);
     });
 
