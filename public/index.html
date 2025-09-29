@@ -1025,7 +1025,7 @@
                 }
                 const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
                 if (win.closed) return;
-                const html = `<!doctype html>
+                    const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1084,11 +1084,11 @@ function normalizeName(name){
   const parts = normalized.split('/').filter(Boolean);
   return parts.length ? parts[parts.length - 1].toLowerCase() : normalized.toLowerCase();
 }
-function itemKey(item){
-  const thumb = normalizeName(item.thumb_scene || item.thumb_obj);
-  const json = (item.json_file || '').toLowerCase();
-  const idx = item.event_index === undefined || item.event_index === null ? '' : String(item.event_index);
-  return `${thumb}|${json}|${idx}`;
+  function itemKey(item){
+    const thumb = normalizeName(item.thumb_scene || item.thumb_obj);
+    const json = (item.json_file || '').toLowerCase();
+    const idx = item.event_index === undefined || item.event_index === null ? '' : String(item.event_index);
+    return thumb + '|' + json + '|' + idx;
 }
 function sortItems(a, b){
   const aj = (a.json_file || '').toLowerCase();
@@ -1173,16 +1173,16 @@ function updateStatus(){
   let text = '';
   if (!state.done){
     if (!loaded) text = 'Loading members…';
-    else if (state.expected){
-      const capped = Math.min(loaded, state.expected);
-      text = `Loading members… (${capped} of ${state.expected})`;
+      else if (state.expected){
+        const capped = Math.min(loaded, state.expected);
+        text = 'Loading members… (' + capped + ' of ' + state.expected + ')';
+      } else {
+        text = 'Loading members… (' + loaded + ')';
+      }
     } else {
-      text = `Loading members… (${loaded})`;
-    }
-  } else {
-    if (!loaded) text = 'No thumb.obj members were found for this cluster.';
-    else if (state.expected && loaded < state.expected) text = `Loaded ${loaded} of ${state.expected} members.`;
-    else text = '';
+      if (!loaded) text = 'No thumb.obj members were found for this cluster.';
+      else if (state.expected && loaded < state.expected) text = 'Loaded ' + loaded + ' of ' + state.expected + ' members.';
+      else text = '';
   }
   statusEl.textContent = text;
   statusEl.classList.toggle('hidden', !text);
@@ -1211,12 +1211,12 @@ window.renderClusterInit = function(payload){
   const cluster = payload && payload.cluster;
   if (cluster){
     const titleEl = document.getElementById('clusterTitle');
-    if (titleEl){
-      titleEl.textContent = cluster.title || `Cluster ${cluster.id}`;
-    }
-    if (metaEl){
-      metaEl.textContent = cluster.count ? `${cluster.count} total members` : '';
-    }
+      if (titleEl){
+        titleEl.textContent = cluster.title || ('Cluster ' + cluster.id);
+      }
+      if (metaEl){
+        metaEl.textContent = cluster.count ? (cluster.count + ' total members') : '';
+      }
     if (typeof cluster.count === 'number'){
       state.expected = cluster.count;
     }
@@ -1749,8 +1749,23 @@ updateStatus();
 
         /* Robust CSV URL */
         const CSV_URL = (() => {
-            try { return new URL('atlas.csv', document.baseURI || location.href).href; }
-            catch { return 'atlas.csv'; }  // fallback
+            const FALLBACK = 'atlas.csv';
+            const pickBase = () => {
+                const base = document.baseURI && document.baseURI !== 'about:blank'
+                    ? document.baseURI
+                    : (typeof location !== 'undefined' ? location.href : '');
+                if (!base) throw new Error('no base URL');
+                return base;
+            };
+            try {
+                return new URL('atlas.csv', pickBase()).href;
+            } catch (err) {
+                try {
+                    return new URL('atlas.csv', location.href).href;
+                } catch {
+                    return FALLBACK;
+                }
+            }
         })();
 
         /* ===== Modal sequence helpers (from your file) ===== */
