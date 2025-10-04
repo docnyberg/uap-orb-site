@@ -1032,7 +1032,6 @@
                     }
                 })();
                 const safeAssetBaseAttr = String(assetBase || '/').replace(/"/g, '&quot;');
-                const assetBaseLiteral = JSON.stringify(assetBase || '/');
                 if (win.closed) return;
                     const html = `<!doctype html>
 <html lang="en">
@@ -1073,7 +1072,7 @@ main { padding:18px; }
   <div id="clusterGrid" class="grid hidden" aria-live="polite"></div>
 </main>
 <script>
-const ASSET_BASE = ${assetBaseLiteral};
+const ASSET_BASE = ${JSON.stringify(assetBase || '/')};
 const state = { map: new Map(), expected: 0, done: false };
 const gridEl = document.getElementById('clusterGrid');
 const statusEl = document.getElementById('clusterStatus');
