@@ -1024,14 +1024,15 @@
                     win.document.close();
                 }
                 const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
-                const baseHref = (() => {
-                    try { return new URL('.', document.baseURI).href; }
+                const assetBase = (() => {
+                    try { return new URL('.', window.location.href).href; }
                     catch (err) {
-                        try { return new URL('.', location.href).href; }
+                        try { return new URL('.', document.baseURI).href; }
                         catch { return '/'; }
                     }
                 })();
-                const safeBaseHref = String(baseHref || '/').replace(/"/g, '&quot;');
+                const safeAssetBaseAttr = String(assetBase || '/').replace(/"/g, '&quot;');
+                const assetBaseLiteral = JSON.stringify(assetBase || '/');
                 if (win.closed) return;
                     const html = `<!doctype html>
 <html lang="en">
@@ -1039,7 +1040,7 @@
 <meta charset="utf-8">
 <title>${clusterTitle}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<base href="${safeBaseHref}">
+<base href="${safeAssetBaseAttr}">
 <style>
 :root { color-scheme: dark; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b0d12; color:#e7eaf0; }
 body { margin:0; background:#0b0d12; color:#e7eaf0; }
@@ -1072,11 +1073,21 @@ main { padding:18px; }
   <div id="clusterGrid" class="grid hidden" aria-live="polite"></div>
 </main>
 <script>
+const ASSET_BASE = ${assetBaseLiteral};
 const state = { map: new Map(), expected: 0, done: false };
 const gridEl = document.getElementById('clusterGrid');
 const statusEl = document.getElementById('clusterStatus');
 const metaEl = document.getElementById('clusterMeta');
 function encodePath(name){ return name ? name.split('/').map(encodeURIComponent).join('/') : ''; }
+function assetUrl(path){
+  try {
+    return new URL(path, ASSET_BASE).href;
+  } catch (err) {
+    const base = String(ASSET_BASE || '/');
+    const ensured = base.endsWith('/') ? base : base + '/';
+    return ensured + String(path || '').replace(/^\/+/, '');
+  }
+}
 function focusMain(){ if (window.opener && !window.opener.closed){ window.opener.focus(); } }
 function handleClick(name){
   if (!name) return;
@@ -1132,10 +1143,10 @@ function renderGrid(){
     img.decoding = 'async';
     let src = '';
     if (item.thumb_scene){
-      src = 'thumbs/' + encodePath(item.thumb_scene);
+      src = assetUrl('thumbs/' + encodePath(item.thumb_scene));
       img.dataset.previewKind = 'scene';
     } else if (item.thumb_obj){
-      src = 'thumbs_obj/' + encodePath(item.thumb_obj);
+      src = assetUrl('thumbs_obj/' + encodePath(item.thumb_obj));
       img.dataset.previewKind = 'object';
     }
     if (src){
@@ -1516,6 +1527,18 @@ updateStatus();
 
             // sanitize: normalize slashes + trim
             const clean = (s) => (typeof s === "string" ? sanitizeRelativePath(s) : "");
+            const normShape = (() => {
+                const raw = r.shape ?? r.shape_class;
+                if (raw === undefined || raw === null) return "other";
+                const txt = String(raw).trim();
+                return txt.length ? txt : "other";
+            })();
+            const normMotion = (() => {
+                const raw = r.motion ?? r.motion_class;
+                if (raw === undefined || raw === null) return "unknown";
+                const txt = String(raw).trim();
+                return txt.length ? txt : "unknown";
+            })();
 
             return {
                 _i: i,
@@ -1538,8 +1561,8 @@ updateStatus();
 
                 svg: r.svg || r.svg_path || r.svg_file || "",
 
-                shape: r.shape || r.shape_class || "other",
-                motion: r.motion || r.motion_class || "unknown",
+                shape: normShape,
+                motion: normMotion,
                 sharpness: num(r.sharpness, NaN),
                 area_norm: num(r.area_norm, NaN),
                 circ: num(r.circ, NaN),
@@ -1565,6 +1588,7 @@ updateStatus();
 
             const scb = [...document.querySelectorAll('#shapeBox input[type=checkbox]')];
             const enabledShapes = new Set(scb.filter(cb => cb.checked).map(cb => cb.dataset.shape));
+            const availableShapeFilters = new Set(scb.map(cb => cb.dataset.shape));
             const chips = [...document.querySelectorAll('#colorChips .chip.sel')];
             const colorSel = new Set(chips.map(c => c.dataset.color));
             const tier = $("#motionTier").value;
@@ -1580,8 +1604,9 @@ updateStatus();
                     const inRange = (hmin <= hmax) ? (h >= hmin && h <= hmax) : (h >= hmin || h <= hmax);
                     if (!inRange) continue;
                 }
-                if (document.querySelector('#shapeBox input')) {
-                    if (!enabledShapes.has(it.shape)) continue;
+                const shapeKey = it.shape || "other";
+                if (scb.length && availableShapeFilters.has(shapeKey) && !enabledShapes.has(shapeKey)) {
+                    continue;
                 }
                 if (colorSel.size && !colorSel.has(colorGroup(it))) continue;
                 if (tier !== "any" && it.motionTier !== tier) continue;
@@ -1618,14 +1643,32 @@ updateStatus();
         }
 
         function buildShapeCheckboxes() {
-            const box = $("#shapeBox"); box.innerHTML = "";
-            const counts = new Map(); DATA.forEach(it => counts.set(it.shape, (counts.get(it.shape) || 0) + 1));
-            const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
-            const shapes = new Set(top.concat(["other"]));
+            const box = $("#shapeBox");
+            if (!box) return;
+            const prev = [...box.querySelectorAll('input[type=checkbox]')];
+            const prevSelected = new Set(prev.filter(cb => cb.checked).map(cb => cb.dataset.shape));
+            const hadPrevSelection = prevSelected.size > 0;
+            box.innerHTML = "";
+            const counts = new Map();
+            DATA.forEach(it => {
+                const key = (typeof it.shape === "string" && it.shape.trim().length) ? it.shape : "other";
+                counts.set(key, (counts.get(key) || 0) + 1);
+            });
+            if (!counts.has("other")) counts.set("other", 0);
+            const shapes = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([shape]) => shape);
             shapes.forEach(sh => {
-                const id = "shape-" + sh.replace(/\s+/g, "_");
-                const cb = document.createElement("input"); cb.type = "checkbox"; cb.id = id; cb.checked = true; cb.dataset.shape = sh; cb.addEventListener("change", refresh);
-                const lbl = document.createElement("label"); lbl.htmlFor = id; lbl.style.marginRight = "10px"; lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" " + sh));
+                const id = "shape-" + (sh.replace(/[^a-z0-9]+/gi, "_") || "other");
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.id = id;
+                cb.dataset.shape = sh;
+                cb.checked = !hadPrevSelection || prevSelected.has(sh);
+                cb.addEventListener("change", refresh);
+                const lbl = document.createElement("label");
+                lbl.htmlFor = id;
+                lbl.style.marginRight = "10px";
+                lbl.appendChild(cb);
+                lbl.appendChild(document.createTextNode(` ${sh} (${counts.get(sh)})`));
                 box.appendChild(lbl);
             });
         }
@@ -2083,6 +2126,7 @@ updateStatus();
             const a = document.createElement("a");
             a.href = url; a.target = "_blank"; a.rel = "noopener";
             document.body.appendChild(a); a.click(); a.remove();
+            return true;
         }
 
         // Lazy loader for FFmpeg UMD build (no <script> tag needed in HTML)
@@ -2292,9 +2336,29 @@ updateStatus();
                 // Attempt R2 "full source" video if we have a filename
                 if (it && it.video_file) {
                     try {
-                        await downloadFullVideoFromR2(it.video_file);
-                        return; // success path
-                    } catch (e) { console.warn("R2 presign failed, falling back to encode:", e); }
+                        toast("Opening original MP4…");
+                        const opened = await downloadFullVideoFromR2(it.video_file);
+                        if (opened) {
+                            toast("Original MP4 opened in a new tab.");
+                            return; // success path
+                        }
+                    } catch (e) {
+                        console.warn("R2 presign failed, falling back to encode:", e);
+                        toast("Original MP4 unavailable, building fallback…");
+                    }
+                }
+
+                const baseName = it && it.video_file ? it.video_file.replace(/\.[^.]+$/, "") : "sequence";
+                if (supportsCanvasRecording()) {
+                    try {
+                        toast("Building WebM from frames…");
+                        const { blob, extension } = await encodeWebMFromSequence(MODAL.seq, 12);
+                        downloadBlob(blob, baseName, extension);
+                        toast("Video ready.");
+                        return;
+                    } catch (err) {
+                        console.warn("Canvas recording fallback failed", err);
+                    }
                 }
 
                 const baseName = it && it.video_file ? it.video_file.replace(/\.[^.]+$/, "") : "sequence";
@@ -2426,6 +2490,8 @@ updateStatus();
                         });
                     }
                     try { dedupeByVideoClusters(); } catch {}
+                    buildShapeCheckboxes();
+                    buildColorChips();
                     refresh(); updateHueRange();
                     rebuildThumbIndex();
                     refreshCodebookSidebarPreviews();
