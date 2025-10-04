@@ -742,6 +742,35 @@
     </div>
 
     <script>
+        /* ===== Asset helpers ===== */
+        const ASSET_BASE = (() => {
+            try { return new URL('.', window.location.href).href; }
+            catch (err) {
+                try { return new URL('.', document.baseURI).href; }
+                catch { return '/'; }
+            }
+        })();
+
+        function assetUrl(path) {
+            try {
+                return new URL(path, ASSET_BASE).href;
+            } catch (err) {
+                const base = String(ASSET_BASE || '/');
+                const ensured = base.endsWith('/') ? base : base + '/';
+                const raw = String(path || '');
+                let offset = 0;
+                while (offset < raw.length && raw.charCodeAt(offset) === 47) offset++;
+                return ensured + raw.slice(offset);
+            }
+        }
+
+        document.addEventListener('error', (event) => {
+            const target = event && event.target;
+            if (target && target.tagName === 'IMG' && target.dataset && target.dataset.thumbSrc) {
+                console.error('Thumbnail failed to load', target.dataset.thumbSrc, target.dataset.previewKind || target.dataset.role || '');
+            }
+        }, true);
+
         /* ===== Monetization config ===== */
         const UPGRADE_URL = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=K338CMZAT6YD6"; // $1.99
         const DONATE_URL = "https://venmo.com/code?user_id=3930194146494448567&created=1756688818.684348&printed=1"; // any amount
@@ -838,10 +867,18 @@
         const svgCache = {}; // key -> resolved successful URL
         const SEQ_CACHE = new Map();
 
-        const CODEBOOK_URL = "sequences_merge/symbol_codebook.json";
+        const CODEBOOK_URL = (() => {
+            try {
+                return new URL('sequences_merge/symbol_codebook.json', ASSET_BASE).href;
+            } catch (err) {
+                console.error('Failed to resolve CODEBOOK_URL base', err);
+                return assetUrl('sequences_merge/symbol_codebook.json');
+            }
+        })();
         let CODEBOOK_CLUSTERS = [];
         const CODEBOOK_PROMISE = loadCodebookData().then(clusters => {
             CODEBOOK_CLUSTERS = clusters;
+            seedClusterSourcesFromCodebook();
             return clusters;
         });
 
@@ -851,12 +888,30 @@
 
         const sequenceClusterPromises = new Map();
         const CLUSTER_MEMBERS = new Map();
+        const CLUSTER_SOURCES = new Map();
         const CLUSTER_WINDOW_FEATURES = "width=980,height=720,resizable=yes,scrollbars=yes";
+
+        function recordClusterSource(clusterId, jsonFile) {
+            if (!Number.isFinite(clusterId) || !jsonFile) return;
+            const file = String(jsonFile).trim();
+            if (!file) return;
+            let sources = CLUSTER_SOURCES.get(clusterId);
+            if (!sources) {
+                sources = new Set();
+                CLUSTER_SOURCES.set(clusterId, sources);
+            }
+            sources.add(file);
+        }
 
         function sequenceJsonURL(jsonFile) {
             if (!jsonFile) return null;
             const safe = String(jsonFile).split('/').map(part => encodeURIComponent(part)).join('/');
-            return `sequences_merge/${safe}.sequence.json`;
+            try {
+                return new URL(`sequences_merge/${safe}.sequence.json`, ASSET_BASE).href;
+            } catch (err) {
+                console.error('Failed to resolve sequence JSON URL base', jsonFile, err);
+                return assetUrl(`sequences_merge/${safe}.sequence.json`);
+            }
         }
 
         async function loadSequenceMetadata(jsonFile) {
@@ -867,10 +922,17 @@
                     const url = sequenceJsonURL(jsonFile);
                     if (!url) return null;
                     const res = await fetch(url, { cache: "force-cache" });
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return await res.json();
+                    if (!res.ok) {
+                        console.error('Failed to fetch sequence metadata', url, res.status);
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+                    const text = await res.text();
+                    const safe = text
+                        .replace(/\bNaN\b/g, "null")
+                        .replace(/\b-?Infinity\b/g, "null");
+                    return JSON.parse(safe);
                 } catch (err) {
-                    console.warn('sequence fetch failed', err);
+                    console.error('Sequence fetch failed', jsonFile, err);
                     return null;
                 }
             })();
@@ -881,7 +943,10 @@
         async function loadCodebookData() {
             try {
                 const res = await fetch(CODEBOOK_URL, { cache: "force-cache" });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                if (!res.ok) {
+                    console.error('Failed to fetch codebook', CODEBOOK_URL, res.status);
+                    throw new Error(`HTTP ${res.status}`);
+                }
                 const text = await res.text();
                 const safe = text.replace(/\bNaN\b/g, "null");
                 const data = JSON.parse(safe);
@@ -893,7 +958,7 @@
                     thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || "")
                 }));
             } catch (err) {
-                console.warn('codebook fetch failed', err);
+                console.error('Codebook fetch failed', CODEBOOK_URL, err);
                 return [];
             }
         }
@@ -922,6 +987,7 @@
                         arr = [];
                         CLUSTER_MEMBERS.set(cid, arr);
                     }
+                    recordClusterSource(cid, jsonFile);
                     if (!arr.some(item => item.thumb_obj === thumb)) {
                         arr.push({
                             thumb_obj: thumb,
@@ -963,9 +1029,11 @@
             };
         }
 
-        async function streamClusterMembers(clusterId, onBatch) {
+        async function streamClusterMembers(clusterId, onBatch, opts = {}) {
             await dataReady;
+            const expected = Number(opts?.expectedCount) || 0;
             const files = Array.from(new Set(DATA.map(it => it.json_file).filter(Boolean)));
+            const allFileSet = new Set(files);
             const seen = new Set();
 
             const emitFresh = (done = false) => {
@@ -984,16 +1052,49 @@
                 }
             };
 
+            const hasMetExpected = () => {
+                if (!expected) return false;
+                const current = CLUSTER_MEMBERS.get(clusterId);
+                return Array.isArray(current) && current.length >= expected;
+            };
+
+            const sources = CLUSTER_SOURCES.get(clusterId);
+            const prioritized = (() => {
+                if (!sources || !sources.size) return files;
+                const out = [];
+                const used = new Set();
+                for (const file of sources) {
+                    if (allFileSet.has(file) && !used.has(file)) {
+                        out.push(file);
+                        used.add(file);
+                    }
+                }
+                for (const file of files) {
+                    if (!used.has(file)) {
+                        out.push(file);
+                        used.add(file);
+                    }
+                }
+                return out;
+            })();
+
             emitFresh(false);
+            if (hasMetExpected()) {
+                emitFresh(true);
+                return;
+            }
 
-            const tasks = files.map(file =>
-                ensureSequenceClusters(file)
-                    .then(() => emitFresh(false))
-                    .catch(() => emitFresh(false))
-            );
-
-            if (tasks.length) {
-                await Promise.allSettled(tasks);
+            for (const file of prioritized) {
+                try {
+                    await ensureSequenceClusters(file);
+                } catch (err) {
+                    // already logged in ensureSequenceClusters
+                }
+                emitFresh(false);
+                if (hasMetExpected()) {
+                    emitFresh(true);
+                    return;
+                }
             }
 
             emitFresh(true);
@@ -1032,7 +1133,6 @@
                     }
                 })();
                 const safeAssetBaseAttr = String(assetBase || '/').replace(/"/g, '&quot;');
-                const assetBaseLiteral = JSON.stringify(assetBase || '/');
                 if (win.closed) return;
                     const html = `<!doctype html>
 <html lang="en">
@@ -1073,7 +1173,7 @@ main { padding:18px; }
   <div id="clusterGrid" class="grid hidden" aria-live="polite"></div>
 </main>
 <script>
-const ASSET_BASE = ${assetBaseLiteral};
+const ASSET_BASE = ${JSON.stringify(assetBase || '/')};
 const state = { map: new Map(), expected: 0, done: false };
 const gridEl = document.getElementById('clusterGrid');
 const statusEl = document.getElementById('clusterStatus');
@@ -1091,6 +1191,12 @@ function assetUrl(path){
     return ensured + raw.slice(offset);
   }
 }
+document.addEventListener('error', (event) => {
+  const target = event && event.target;
+  if (target && target.tagName === 'IMG' && target.dataset && target.dataset.thumbSrc) {
+    console.error('Cluster thumbnail failed to load', target.dataset.thumbSrc);
+  }
+}, true);
 function focusMain(){ if (window.opener && !window.opener.closed){ window.opener.focus(); } }
 function handleClick(name){
   if (!name) return;
@@ -1153,6 +1259,7 @@ function renderGrid(){
       img.dataset.previewKind = 'object';
     }
     if (src){
+      img.dataset.thumbSrc = src;
       img.src = src;
       img.alt = item.thumb_scene || item.thumb_obj || 'Cluster thumbnail';
     } else {
@@ -1298,7 +1405,7 @@ updateStatus();
                     if (typeof win.renderClusterBatch === "function") {
                         win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
                     }
-                });
+                }, { expectedCount: cluster.count || 0 });
 
                 if (!win.closed && typeof win.renderClusterDone === "function") {
                     win.renderClusterDone({ expectedCount: cluster.count || 0 });
@@ -1343,6 +1450,7 @@ updateStatus();
                         img.alt = `Cluster ${cluster.cluster_id ?? "?"} preview`;
                         img.dataset.role = "cluster-preview";
                         img.dataset.clusterPreviewSrc = info.src;
+                        img.dataset.thumbSrc = info.src;
                         img.dataset.previewKind = info.kind;
                         img.src = info.src;
                         previewWrap.appendChild(img);
@@ -1481,17 +1589,18 @@ updateStatus();
             if (!normalized) {
                 return { src: "", kind: "none" };
             }
-            const fallback = `thumbs_obj/${encodeThumbPath(normalized)}`;
+            const fallbackPath = `thumbs_obj/${encodeThumbPath(normalized)}`;
+            const fallback = assetUrl(fallbackPath);
             const idx = THUMB_TO_INDEX.get(normalized);
             if (typeof idx === "number" && DATA[idx]) {
                 const row = DATA[idx];
                 const scenePath = sanitizeRelativePath(row.thumb);
                 if (scenePath) {
-                    return { src: `thumbs/${encodeThumbPath(scenePath)}`, kind: "scene", fallback };
+                    return { src: assetUrl(`thumbs/${encodeThumbPath(scenePath)}`), kind: "scene", fallback };
                 }
                 const objectPath = sanitizeRelativePath(row.thumb_obj);
                 if (objectPath) {
-                    return { src: `thumbs_obj/${encodeThumbPath(objectPath)}`, kind: "object", fallback };
+                    return { src: assetUrl(`thumbs_obj/${encodeThumbPath(objectPath)}`), kind: "object", fallback };
                 }
             }
             return { src: fallback, kind: "object", fallback };
@@ -1510,7 +1619,29 @@ updateStatus();
                     img.dataset.clusterPreviewSrc = info.src;
                     img.src = info.src;
                 }
+                img.dataset.thumbSrc = info.src;
                 img.dataset.previewKind = info.kind;
+                if (!img.dataset.thumbErrorHooked) {
+                    img.dataset.thumbErrorHooked = "1";
+                    img.addEventListener("error", () => {
+                        console.error('Sidebar preview thumbnail failed to load', img.dataset.thumbSrc || info.src, thumbObj);
+                    });
+                }
+            });
+        }
+
+        function seedClusterSourcesFromCodebook() {
+            if (!CODEBOOK_CLUSTERS.length || !THUMB_TO_INDEX.size) return;
+            CODEBOOK_CLUSTERS.forEach(cluster => {
+                const cid = Number(cluster?.cluster_id);
+                if (!Number.isFinite(cid)) return;
+                const normalized = normalizeThumbName(cluster?.thumb_obj);
+                if (!normalized) return;
+                const idx = THUMB_TO_INDEX.get(normalized);
+                if (typeof idx !== "number") return;
+                const row = DATA[idx];
+                if (!row || !row.json_file) return;
+                recordClusterSource(cid, row.json_file);
             });
         }
 
@@ -1691,10 +1822,11 @@ updateStatus();
         function cardHTML(it, globalIdx) {
             const src = rasterUrlFor(it);
             const h = hueOf(it); const hueLbl = Number.isFinite(h) ? `${h.toFixed(1)}°` : "–";
+            const thumbAttrs = src ? `src="${src}" data-thumb-src="${src}"` : `data-thumb-src=""`;
             return `
             <div class="card" data-idx="${globalIdx}">
               <div class="swatch" style="background:${it.hex_img || '#222'}"></div>
-              <div class="thumb-wrap"><img class="${it.hasWatermark ? 'thumb watermark' : 'thumb'}" src="${src}" alt="" loading="lazy" decoding="async" fetchpriority="low"></div>
+              <div class="thumb-wrap"><img class="${it.hasWatermark ? 'thumb watermark' : 'thumb'}" ${thumbAttrs} alt="" loading="lazy" decoding="async" fetchpriority="low"></div>
               <div class="actions">
                 <button class="btn-mini" data-action="svg" title="Open SVG (${svgStyle})">SVG</button>
                 <button class="btn-mini" data-action="sim" title="Find similar">Similar</button>
@@ -1858,7 +1990,7 @@ updateStatus();
             if (isAbsoluteURL(chosen)) return chosen;
 
             // Relative — keep your existing folders
-            return isObj ? `thumbs_obj/${chosen}` : `thumbs/${chosen}`;
+            return assetUrl(isObj ? `thumbs_obj/${chosen}` : `thumbs/${chosen}`);
         }
 
         /* ===== Permissive SVG candidate list (roots + .SVG) ===== */
@@ -1894,8 +2026,8 @@ updateStatus();
             for (const root of roots) {
                 for (const suf of styles) {
                     const name = (suf === "") ? root : (root + suf);
-                    tries.push(`svgs/${encodeURIComponent(name)}.svg`);
-                    tries.push(`svgs/${encodeURIComponent(name)}.SVG`);
+                    tries.push(assetUrl(`svgs/${encodeURIComponent(name)}.svg`));
+                    tries.push(assetUrl(`svgs/${encodeURIComponent(name)}.SVG`));
                 }
             }
             return tries;
@@ -1925,7 +2057,13 @@ updateStatus();
                 const gi = seq[k], it = DATA[gi]; const img = new Image();
                 img.loading = "lazy"; img.decoding="async";
                 img.className = "carousel-thumb" + (it.hasWatermark ? " wm" : ""); img.dataset.gi = String(gi);
-                if (MODAL.svg) { setModalSvg(img, svgTriesFor(it)); } else { img.onerror = null; img.src = rasterUrlFor(it); }
+                if (MODAL.svg) { setModalSvg(img, svgTriesFor(it)); }
+                else {
+                    img.onerror = null;
+                    const thumbSrc = rasterUrlFor(it);
+                    img.dataset.thumbSrc = thumbSrc;
+                    img.src = thumbSrc;
+                }
                 if (k === pos) img.classList.add("selected");
                 img.addEventListener("click", (e) => { e.stopPropagation(); selectSequenceIndex(k); });
                 cont.appendChild(img);
@@ -1934,11 +2072,18 @@ updateStatus();
         }
         function updateModalMain() {
             const gi = MODAL.seq[MODAL.pos], it = DATA[gi], img = document.getElementById("modalImg");
-            if (MODAL.svg) { setModalSvg(img, svgTriesFor(it)); } else { img.src = rasterUrlFor(it); }
+            let rasterSrc = "";
+            if (MODAL.svg) { setModalSvg(img, svgTriesFor(it)); }
+            else {
+                rasterSrc = rasterUrlFor(it);
+                img.dataset.thumbSrc = rasterSrc;
+                img.src = rasterSrc;
+            }
             // set download href (gated)
             const dl = document.getElementById("dlImg");
             if (dl) {
-                dl.href = rasterUrlFor(it);
+                const linkSrc = rasterSrc || rasterUrlFor(it);
+                dl.href = linkSrc;
                 dl.onclick = (e) => { if (!allowDownload("image")) { e.preventDefault(); } };
             }
             document.getElementById("modalMeta").innerHTML = `
@@ -2182,10 +2327,14 @@ updateStatus();
             img.crossOrigin = "anonymous";
             img.decoding = "async";
             img.loading = "eager";
+            img.dataset.thumbSrc = src;
             img.src = src;
             await new Promise((resolve, reject) => {
                 img.onload = () => resolve(img);
-                img.onerror = () => reject(new Error("Frame load failed"));
+                img.onerror = () => {
+                    console.error('Sequence frame thumbnail failed to load', src);
+                    reject(new Error("Frame load failed"));
+                };
             });
             return img;
         }
@@ -2364,19 +2513,6 @@ updateStatus();
                     }
                 }
 
-                const baseName = it && it.video_file ? it.video_file.replace(/\.[^.]+$/, "") : "sequence";
-                if (supportsCanvasRecording()) {
-                    try {
-                        toast("Building WebM from frames…");
-                        const { blob, extension } = await encodeWebMFromSequence(MODAL.seq, 12);
-                        downloadBlob(blob, baseName, extension);
-                        toast("Video ready.");
-                        return;
-                    } catch (err) {
-                        console.warn("Canvas recording fallback failed", err);
-                    }
-                }
-
                 // Fallback: build MP4 from current sequence
                 toast("Building MP4 from frames… (this may take 20–60s)");
                 const ff = await loadFFmpeg();
@@ -2497,6 +2633,7 @@ updateStatus();
                     buildColorChips();
                     refresh(); updateHueRange();
                     rebuildThumbIndex();
+                    seedClusterSourcesFromCodebook();
                     refreshCodebookSidebarPreviews();
                     if (resolveDataReady) { resolveDataReady(); resolveDataReady = null; }
                 }
