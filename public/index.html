@@ -878,6 +878,7 @@
         let CODEBOOK_CLUSTERS = [];
         const CODEBOOK_PROMISE = loadCodebookData().then(clusters => {
             CODEBOOK_CLUSTERS = clusters;
+            seedClusterSourcesFromCodebook();
             return clusters;
         });
 
@@ -887,7 +888,20 @@
 
         const sequenceClusterPromises = new Map();
         const CLUSTER_MEMBERS = new Map();
+        const CLUSTER_SOURCES = new Map();
         const CLUSTER_WINDOW_FEATURES = "width=980,height=720,resizable=yes,scrollbars=yes";
+
+        function recordClusterSource(clusterId, jsonFile) {
+            if (!Number.isFinite(clusterId) || !jsonFile) return;
+            const file = String(jsonFile).trim();
+            if (!file) return;
+            let sources = CLUSTER_SOURCES.get(clusterId);
+            if (!sources) {
+                sources = new Set();
+                CLUSTER_SOURCES.set(clusterId, sources);
+            }
+            sources.add(file);
+        }
 
         function sequenceJsonURL(jsonFile) {
             if (!jsonFile) return null;
@@ -912,7 +926,11 @@
                         console.error('Failed to fetch sequence metadata', url, res.status);
                         throw new Error(`HTTP ${res.status}`);
                     }
-                    return await res.json();
+                    const text = await res.text();
+                    const safe = text
+                        .replace(/\bNaN\b/g, "null")
+                        .replace(/\b-?Infinity\b/g, "null");
+                    return JSON.parse(safe);
                 } catch (err) {
                     console.error('Sequence fetch failed', jsonFile, err);
                     return null;
@@ -969,6 +987,7 @@
                         arr = [];
                         CLUSTER_MEMBERS.set(cid, arr);
                     }
+                    recordClusterSource(cid, jsonFile);
                     if (!arr.some(item => item.thumb_obj === thumb)) {
                         arr.push({
                             thumb_obj: thumb,
@@ -1010,9 +1029,11 @@
             };
         }
 
-        async function streamClusterMembers(clusterId, onBatch) {
+        async function streamClusterMembers(clusterId, onBatch, opts = {}) {
             await dataReady;
+            const expected = Number(opts?.expectedCount) || 0;
             const files = Array.from(new Set(DATA.map(it => it.json_file).filter(Boolean)));
+            const allFileSet = new Set(files);
             const seen = new Set();
 
             const emitFresh = (done = false) => {
@@ -1031,16 +1052,49 @@
                 }
             };
 
+            const hasMetExpected = () => {
+                if (!expected) return false;
+                const current = CLUSTER_MEMBERS.get(clusterId);
+                return Array.isArray(current) && current.length >= expected;
+            };
+
+            const sources = CLUSTER_SOURCES.get(clusterId);
+            const prioritized = (() => {
+                if (!sources || !sources.size) return files;
+                const out = [];
+                const used = new Set();
+                for (const file of sources) {
+                    if (allFileSet.has(file) && !used.has(file)) {
+                        out.push(file);
+                        used.add(file);
+                    }
+                }
+                for (const file of files) {
+                    if (!used.has(file)) {
+                        out.push(file);
+                        used.add(file);
+                    }
+                }
+                return out;
+            })();
+
             emitFresh(false);
+            if (hasMetExpected()) {
+                emitFresh(true);
+                return;
+            }
 
-            const tasks = files.map(file =>
-                ensureSequenceClusters(file)
-                    .then(() => emitFresh(false))
-                    .catch(() => emitFresh(false))
-            );
-
-            if (tasks.length) {
-                await Promise.allSettled(tasks);
+            for (const file of prioritized) {
+                try {
+                    await ensureSequenceClusters(file);
+                } catch (err) {
+                    // already logged in ensureSequenceClusters
+                }
+                emitFresh(false);
+                if (hasMetExpected()) {
+                    emitFresh(true);
+                    return;
+                }
             }
 
             emitFresh(true);
@@ -1351,7 +1405,7 @@ updateStatus();
                     if (typeof win.renderClusterBatch === "function") {
                         win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
                     }
-                });
+                }, { expectedCount: cluster.count || 0 });
 
                 if (!win.closed && typeof win.renderClusterDone === "function") {
                     win.renderClusterDone({ expectedCount: cluster.count || 0 });
@@ -1573,6 +1627,21 @@ updateStatus();
                         console.error('Sidebar preview thumbnail failed to load', img.dataset.thumbSrc || info.src, thumbObj);
                     });
                 }
+            });
+        }
+
+        function seedClusterSourcesFromCodebook() {
+            if (!CODEBOOK_CLUSTERS.length || !THUMB_TO_INDEX.size) return;
+            CODEBOOK_CLUSTERS.forEach(cluster => {
+                const cid = Number(cluster?.cluster_id);
+                if (!Number.isFinite(cid)) return;
+                const normalized = normalizeThumbName(cluster?.thumb_obj);
+                if (!normalized) return;
+                const idx = THUMB_TO_INDEX.get(normalized);
+                if (typeof idx !== "number") return;
+                const row = DATA[idx];
+                if (!row || !row.json_file) return;
+                recordClusterSource(cid, row.json_file);
             });
         }
 
@@ -2564,6 +2633,7 @@ updateStatus();
                     buildColorChips();
                     refresh(); updateHueRange();
                     rebuildThumbIndex();
+                    seedClusterSourcesFromCodebook();
                     refreshCodebookSidebarPreviews();
                     if (resolveDataReady) { resolveDataReady(); resolveDataReady = null; }
                 }
