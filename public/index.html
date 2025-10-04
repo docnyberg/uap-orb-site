@@ -889,6 +889,7 @@
         const sequenceClusterPromises = new Map();
         const CLUSTER_MEMBERS = new Map();
         const CLUSTER_SOURCES = new Map();
+        const CLUSTER_STREAM_STATUS = new Map();
         const CLUSTER_WINDOW_FEATURES = "width=980,height=720,resizable=yes,scrollbars=yes";
 
         function recordClusterSource(clusterId, jsonFile) {
@@ -1034,8 +1035,37 @@
             const expected = Number(opts?.expectedCount) || 0;
             const files = Array.from(new Set(DATA.map(it => it.json_file).filter(Boolean)));
             const allFileSet = new Set(files);
-            const seen = new Set();
+            const concurrency = Math.max(1, Math.min(8, Number(opts?.concurrency) || 5));
+            const maxFiles = Number.isFinite(opts?.maxFiles) && opts.maxFiles > 0 ? Math.floor(opts.maxFiles) : Infinity;
+            const reset = opts?.reset === true;
 
+            let status = CLUSTER_STREAM_STATUS.get(clusterId);
+            if (!status || reset) {
+                status = { processed: new Set(), seen: new Set(), done: false };
+                CLUSTER_STREAM_STATUS.set(clusterId, status);
+            }
+
+            const sources = CLUSTER_SOURCES.get(clusterId);
+            const prioritized = (() => {
+                if (!sources || !sources.size) return files;
+                const out = [];
+                const used = new Set();
+                for (const file of sources) {
+                    if (allFileSet.has(file) && !used.has(file)) {
+                        out.push(file);
+                        used.add(file);
+                    }
+                }
+                for (const file of files) {
+                    if (!used.has(file)) {
+                        out.push(file);
+                        used.add(file);
+                    }
+                }
+                return out;
+            })();
+
+            const seen = status.seen;
             const emitFresh = (done = false) => {
                 const base = CLUSTER_MEMBERS.get(clusterId) || [];
                 const fresh = [];
@@ -1058,46 +1088,61 @@
                 return Array.isArray(current) && current.length >= expected;
             };
 
-            const sources = CLUSTER_SOURCES.get(clusterId);
-            const prioritized = (() => {
-                if (!sources || !sources.size) return files;
-                const out = [];
-                const used = new Set();
-                for (const file of sources) {
-                    if (allFileSet.has(file) && !used.has(file)) {
-                        out.push(file);
-                        used.add(file);
-                    }
-                }
-                for (const file of files) {
-                    if (!used.has(file)) {
-                        out.push(file);
-                        used.add(file);
-                    }
-                }
-                return out;
-            })();
-
             emitFresh(false);
             if (hasMetExpected()) {
                 emitFresh(true);
-                return;
+                status.done = true;
+                status.processed = status.processed || new Set();
+                return { done: true, remaining: 0, total: prioritized.length };
             }
 
-            for (const file of prioritized) {
-                try {
-                    await ensureSequenceClusters(file);
-                } catch (err) {
-                    // already logged in ensureSequenceClusters
-                }
+            if (!prioritized.length) {
+                emitFresh(true);
+                status.done = true;
+                return { done: true, remaining: 0, total: 0 };
+            }
+
+            const processedFiles = status.processed || (status.processed = new Set());
+            const queue = prioritized.filter(file => !processedFiles.has(file));
+
+            if (!queue.length) {
+                emitFresh(true);
+                status.done = true;
+                return { done: true, remaining: 0, total: prioritized.length };
+            }
+
+            let cursor = 0;
+            let processed = 0;
+
+            while (cursor < queue.length && processed < maxFiles) {
+                if (hasMetExpected()) break;
+                const remaining = Math.min(concurrency, queue.length - cursor, maxFiles - processed);
+                const chunk = queue.slice(cursor, cursor + remaining);
+                processed += chunk.length;
+                cursor += chunk.length;
+                await Promise.all(chunk.map(file => ensureSequenceClusters(file).catch(() => { })));
+                chunk.forEach(file => processedFiles.add(file));
                 emitFresh(false);
                 if (hasMetExpected()) {
                     emitFresh(true);
-                    return;
+                    status.done = true;
+                    return { done: true, remaining: Math.max(0, queue.length - cursor), total: prioritized.length };
                 }
             }
 
+            if (cursor >= queue.length) {
+                emitFresh(true);
+                status.done = true;
+                return { done: true, remaining: 0, total: prioritized.length };
+            }
+
+            if (processed >= maxFiles) {
+                return { done: false, remaining: Math.max(0, queue.length - cursor), total: prioritized.length };
+            }
+
             emitFresh(true);
+            status.done = true;
+            return { done: true, remaining: Math.max(0, queue.length - cursor), total: prioritized.length };
         }
 
         async function waitForClusterWindowReady(win, timeoutMs = 5000) {
@@ -1400,17 +1445,41 @@ updateStatus();
                     win.renderClusterInit(headerPayload);
                 }
 
-                await streamClusterMembers(cluster.cluster_id, ({ items, done }) => {
-                    if (!win || win.closed) return;
-                    if (typeof win.renderClusterBatch === "function") {
-                        win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
+                let streamState = await streamClusterMembers(
+                    cluster.cluster_id,
+                    ({ items, done }) => {
+                        if (!win || win.closed) return;
+                        if (typeof win.renderClusterBatch === "function") {
+                            win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
+                        }
+                    },
+                    { expectedCount: cluster.count || 0, maxFiles: 5, concurrency: 5, reset: true }
+                );
+
+                while (streamState && !streamState.done) {
+                    if (!win || win.closed) break;
+                    streamState = await streamClusterMembers(
+                        cluster.cluster_id,
+                        ({ items, done }) => {
+                            if (!win || win.closed) return;
+                            if (typeof win.renderClusterBatch === "function") {
+                                win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
+                            }
+                        },
+                        { expectedCount: cluster.count || 0, maxFiles: 20, concurrency: 5 }
+                    );
+                    if (!streamState || streamState.done) {
+                        break;
                     }
-                }, { expectedCount: cluster.count || 0 });
+                    await new Promise(resolve => setTimeout(resolve, 16));
+                }
 
                 if (!win.closed && typeof win.renderClusterDone === "function") {
                     win.renderClusterDone({ expectedCount: cluster.count || 0 });
                 }
+                CLUSTER_STREAM_STATUS.delete(cluster.cluster_id);
             } catch (err) {
+                CLUSTER_STREAM_STATUS.delete(cluster?.cluster_id);
                 console.error(err);
                 if (!win || win.closed) return;
                 win.document.open();
