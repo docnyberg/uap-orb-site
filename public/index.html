@@ -1024,14 +1024,15 @@
                     win.document.close();
                 }
                 const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
-                const baseHref = (() => {
-                    try { return new URL('.', document.baseURI).href; }
+                const assetBase = (() => {
+                    try { return new URL('.', window.location.href).href; }
                     catch (err) {
-                        try { return new URL('.', location.href).href; }
+                        try { return new URL('.', document.baseURI).href; }
                         catch { return '/'; }
                     }
                 })();
-                const safeBaseHref = String(baseHref || '/').replace(/"/g, '&quot;');
+                const safeAssetBaseAttr = String(assetBase || '/').replace(/"/g, '&quot;');
+                const assetBaseLiteral = JSON.stringify(assetBase || '/');
                 if (win.closed) return;
                     const html = `<!doctype html>
 <html lang="en">
@@ -1039,7 +1040,7 @@
 <meta charset="utf-8">
 <title>${clusterTitle}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<base href="${safeBaseHref}">
+<base href="${safeAssetBaseAttr}">
 <style>
 :root { color-scheme: dark; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b0d12; color:#e7eaf0; }
 body { margin:0; background:#0b0d12; color:#e7eaf0; }
@@ -1072,11 +1073,24 @@ main { padding:18px; }
   <div id="clusterGrid" class="grid hidden" aria-live="polite"></div>
 </main>
 <script>
+const ASSET_BASE = ${assetBaseLiteral};
 const state = { map: new Map(), expected: 0, done: false };
 const gridEl = document.getElementById('clusterGrid');
 const statusEl = document.getElementById('clusterStatus');
 const metaEl = document.getElementById('clusterMeta');
 function encodePath(name){ return name ? name.split('/').map(encodeURIComponent).join('/') : ''; }
+function assetUrl(path){
+  try {
+    return new URL(path, ASSET_BASE).href;
+  } catch (err) {
+    const base = String(ASSET_BASE || '/');
+    const ensured = base.endsWith('/') ? base : base + '/';
+    const raw = String(path || '');
+    let offset = 0;
+    while (offset < raw.length && raw.charCodeAt(offset) === 47) offset++;
+    return ensured + raw.slice(offset);
+  }
+}
 function focusMain(){ if (window.opener && !window.opener.closed){ window.opener.focus(); } }
 function handleClick(name){
   if (!name) return;
@@ -1089,7 +1103,7 @@ function handleClick(name){
 }
 function normalizeName(name){
   if (!name) return '';
-  const normalized = String(name).replace(/\\/g, '/');
+  const normalized = Array.from(String(name), ch => (ch && ch.charCodeAt(0) === 92 ? '/' : ch)).join('');
   const parts = normalized.split('/').filter(Boolean);
   return parts.length ? parts[parts.length - 1].toLowerCase() : normalized.toLowerCase();
 }
@@ -1132,10 +1146,10 @@ function renderGrid(){
     img.decoding = 'async';
     let src = '';
     if (item.thumb_scene){
-      src = 'thumbs/' + encodePath(item.thumb_scene);
+      src = assetUrl('thumbs/' + encodePath(item.thumb_scene));
       img.dataset.previewKind = 'scene';
     } else if (item.thumb_obj){
-      src = 'thumbs_obj/' + encodePath(item.thumb_obj);
+      src = assetUrl('thumbs_obj/' + encodePath(item.thumb_obj));
       img.dataset.previewKind = 'object';
     }
     if (src){
