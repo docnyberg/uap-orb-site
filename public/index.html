@@ -2361,6 +2361,19 @@ updateStatus();
                     }
                 }
 
+                const baseName = it && it.video_file ? it.video_file.replace(/\.[^.]+$/, "") : "sequence";
+                if (supportsCanvasRecording()) {
+                    try {
+                        toast("Building WebM from frames…");
+                        const { blob, extension } = await encodeWebMFromSequence(MODAL.seq, 12);
+                        downloadBlob(blob, baseName, extension);
+                        toast("Video ready.");
+                        return;
+                    } catch (err) {
+                        console.warn("Canvas recording fallback failed", err);
+                    }
+                }
+
                 // Fallback: build MP4 from current sequence
                 toast("Building MP4 from frames… (this may take 20–60s)");
                 const ff = await loadFFmpeg();
