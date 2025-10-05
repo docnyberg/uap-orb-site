@@ -1020,9 +1020,10 @@
         const CLUSTER_SOURCES = new Map();
         const CLUSTER_STREAM_STATUS = new Map();
 
+        // recordClusterSource: normalize incoming key so it matches DATA keys
         function recordClusterSource(clusterId, jsonFile) {
             if (!Number.isFinite(clusterId) || !jsonFile) return;
-            const file = String(jsonFile).trim();
+            const file = normalizeJsonKey(jsonFile);
             if (!file) return;
             let sources = CLUSTER_SOURCES.get(clusterId);
             if (!sources) {
@@ -1032,13 +1033,15 @@
             sources.add(file);
         }
 
+        // Build absolute sequence URL robustly and log first few
         function sequenceJsonURL(jsonFile) {
             if (!jsonFile) return null;
-            const safe = String(jsonFile).split('/').map(part => encodeURIComponent(part)).join('/');
+            const key = normalizeJsonKey(jsonFile);
+            if (!key) return null;
+            const safe = key.split('/').map(part => encodeURIComponent(part)).join('/');
             try {
                 return new URL(`sequences_merge/${safe}.sequence.json`, ASSET_BASE).href;
             } catch (err) {
-                console.error('Failed to resolve sequence JSON URL base', jsonFile, err);
                 return assetUrl(`sequences_merge/${safe}.sequence.json`);
             }
         }
@@ -1049,6 +1052,10 @@
             const prom = (async () => {
                 try {
                     const url = sequenceJsonURL(jsonFile);
+                    // lightweight debug for first few requests
+                    if (!loadSequenceMetadata._logged) {
+                        console.debug('[seq] fetch', jsonFile, '->', url);
+                    }
                     if (!url) return null;
                     const res = await fetch(url, { cache: "force-cache" });
                     if (!res.ok) {
@@ -1063,6 +1070,8 @@
                 } catch (err) {
                     console.error('Sequence fetch failed', jsonFile, err);
                     return null;
+                } finally {
+                    loadSequenceMetadata._logged = true; // only log mapping once
                 }
             })();
             SEQ_CACHE.set(jsonFile, prom);
@@ -1109,9 +1118,10 @@
         }
 
         function ensureSequenceClusters(jsonFile) {
-            if (!jsonFile) return Promise.resolve();
-            if (sequenceClusterPromises.has(jsonFile)) return sequenceClusterPromises.get(jsonFile);
-            const prom = loadSequenceMetadata(jsonFile).then(seq => {
+            const key = normalizeJsonKey(jsonFile);
+            if (!key) return Promise.resolve();
+            if (sequenceClusterPromises.has(key)) return sequenceClusterPromises.get(key);
+            const prom = loadSequenceMetadata(key).then(seq => {
                 if (!seq || !Array.isArray(seq.events)) return;
                 seq.events.forEach(ev => {
                     const cid = Number(ev.cluster_id);
@@ -1122,19 +1132,19 @@
                         arr = [];
                         CLUSTER_MEMBERS.set(cid, arr);
                     }
-                    recordClusterSource(cid, jsonFile);
+                    recordClusterSource(cid, key);
                     if (!arr.some(item => item.thumb_obj === thumb)) {
                         arr.push({
                             thumb_obj: thumb,
-                            json_file: jsonFile,
+                            json_file: key,
                             event_index: ev.event_index
                         });
                     }
                 });
             }).catch(err => {
-                console.warn(`Cluster mapping failed for "${jsonFile}"`, err);
+                console.warn(`Cluster mapping failed for "${key}"`, err);
             });
-            sequenceClusterPromises.set(jsonFile, prom);
+            sequenceClusterPromises.set(key, prom);
             return prom;
         }
 
@@ -1167,7 +1177,9 @@
         async function streamClusterMembers(clusterId, onBatch, opts = {}) {
             await dataReady;
             const expected = Number(opts?.expectedCount) || 0;
-            const files = Array.from(new Set(DATA.map(it => it.json_file).filter(Boolean)));
+            const files = Array.from(new Set(
+                (DATA || []).map(it => normalizeJsonKey(it.json_file)).filter(Boolean)
+            ));
             const allFileSet = new Set(files);
             const concurrency = Math.max(1, Math.min(8, Number(opts?.concurrency) || 5));
             const maxFiles = Number.isFinite(opts?.maxFiles) && opts.maxFiles > 0 ? Math.floor(opts.maxFiles) : Infinity;
@@ -1186,7 +1198,8 @@
                 if (!sources || !sources.size) return files;
                 const out = [];
                 const used = new Set();
-                for (const file of sources) {
+                for (const src of sources) {
+                    const file = normalizeJsonKey(src);
                     if (allFileSet.has(file) && !used.has(file)) {
                         out.push(file);
                         used.add(file);
@@ -1200,6 +1213,11 @@
                 }
                 return out;
             })();
+
+            if (!streamClusterMembers._logged) {
+                console.debug('[stream] cluster', clusterId, 'files:', files.length, 'prioritized first 5:', prioritized.slice(0, 5));
+                streamClusterMembers._logged = true;
+            }
 
             const seen = status.seen;
             const emitFresh = (done = false) => {
@@ -1778,6 +1796,14 @@
             return (parts.length ? parts[parts.length - 1] : clean).trim();
         }
 
+        function normalizeJsonKey(f) {
+            if (!f) return "";
+            const s = String(f).trim().replace(/\\/g, "/");
+            // keep only the filename (last path segment)
+            const parts = s.split("/").filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : s;
+        }
+
         const sanitizeRelativePath = (name) => {
             if (!name) return "";
             const clean = String(name).replace(/\\/g, "/").trim();
@@ -1835,18 +1861,18 @@
             });
         }
 
+        // Prefer prototype’s json_file for prioritization; normalize before storing
         function seedClusterSourcesFromCodebook() {
-            if (!CODEBOOK_CLUSTERS.length) return;
-            const haveThumbIndex = THUMB_TO_INDEX.size > 0;
+            if (!CODEBOOK_CLUSTERS.length || !THUMB_TO_INDEX.size) return;
             CODEBOOK_CLUSTERS.forEach(cluster => {
                 const cid = Number(cluster?.cluster_id);
                 if (!Number.isFinite(cid)) return;
-                const pf = cluster?.prototype?.json_file;
-                if (pf && typeof pf === "string" && pf.trim().length) {
-                    recordClusterSource(cid, pf.trim());
+                const pf = normalizeJsonKey(cluster?.prototype?.json_file || "");
+                if (pf) {
+                    recordClusterSource(cid, pf);
                     return;
                 }
-                if (!haveThumbIndex) return;
+                // fallback via thumb index if prototype json_file missing
                 const normalized = normalizeThumbName(cluster?.thumb_obj);
                 if (!normalized) return;
                 const idx = THUMB_TO_INDEX.get(normalized);
