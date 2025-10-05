@@ -1,0 +1,32 @@
+name: Playwright smoke
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Install Playwright browsers + Linux dependencies
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      # Start a static server for /public (adjust if you already have webServer in playwright.config.ts)
+      - name: Start server
+        run: npx http-server public -p 4173 &
+      
+      - name: Wait for server
+        run: npx wait-on http://127.0.0.1:4173
+
+      - name: Run smoke tests (Chromium only)
+        run: npx playwright test --project=chromium
