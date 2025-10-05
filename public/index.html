@@ -1084,7 +1084,13 @@
                     cluster_id: Number(cluster.cluster_id),
                     token: cluster.token || "",
                     count: Number(cluster.count) || 0,
-                    thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || "")
+                    thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || ""),
+                    prototype: {
+                        thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || ""),
+                        thumb_scene: cluster?.prototype?.thumb_scene || "",
+                        json_file: cluster?.prototype?.json_file || "",
+                        event_index: Number(cluster?.prototype?.event_index ?? "")
+                    }
                 }));
             } catch (err) {
                 console.error('Codebook fetch failed', CODEBOOK_URL, err);
@@ -1561,9 +1567,28 @@
         async function openClusterPanel(cluster) {
             if (!cluster) return;
             const clusterId = cluster.cluster_id;
-            const expectedCount = cluster.count || 0;
+            const expectedCount = Number(cluster.count) || 0;
             const title = cluster.token ? `Cluster ${clusterId} • ${cluster.token}` : `Cluster ${clusterId}`;
-            renderClusterPanelInit({ cluster: { id: clusterId, title, count: expectedCount }, items: [] });
+            let initialItems = [];
+            try {
+                const c = CODEBOOK_CLUSTERS.find(c => Number(c.cluster_id) === Number(cluster.cluster_id));
+                const p = c?.prototype;
+                if (p && (p.thumb_obj || p.thumb_scene)) {
+                    initialItems.push({
+                        thumb_obj: p.thumb_obj || "",
+                        thumb_scene: p.thumb_scene || "",
+                        json_file: p.json_file || "",
+                        event_index: p.event_index ?? "",
+                        isPrototype: true,
+                        dataIdx: null
+                    });
+                    if (p.json_file) recordClusterSource(cluster.cluster_id, p.json_file);
+                }
+            } catch { }
+            renderClusterPanelInit({
+                cluster: { id: clusterId, title, count: expectedCount },
+                items: initialItems
+            });
             try {
                 history.replaceState(null, "", `#cluster=${encodeURIComponent(String(clusterId))}`);
             } catch { }
@@ -1590,6 +1615,14 @@
                 }
                 renderClusterPanelDone({ expectedCount, clusterId });
             } finally {
+                const state = CLUSTER_PANEL_STATE;
+                const streamStatus = CLUSTER_STREAM_STATUS.get(clusterId);
+                const alreadyWarned = Boolean(streamStatus?.warnedIncomplete);
+                if (!alreadyWarned && state && typeof state.map?.size === "number" && expectedCount > 0 && state.map.size < expectedCount) {
+                    console.warn(
+                        `Cluster ${cluster.cluster_id} complete: loaded ${state.map.size} of ${cluster.count} members (some sequences may be missing or incomplete).`
+                    );
+                }
                 updateClusterPanelStatus();
                 CLUSTER_STREAM_STATUS.delete(clusterId);
             }
@@ -1737,13 +1770,13 @@
         const isAbsoluteURL = (p) =>
             /^https?:\/\//i.test(p || "") || /^data:/i.test(p || "") || (p || "").startsWith("/");
 
-        const normalizeThumbName = (name) => {
+        function normalizeThumbName(name) {
             if (!name) return "";
             const clean = String(name).replace(/\\/g, "/").trim();
             if (!clean) return "";
             const parts = clean.split("/").filter(Boolean);
             return (parts.length ? parts[parts.length - 1] : clean).trim();
-        };
+        }
 
         const sanitizeRelativePath = (name) => {
             if (!name) return "";
@@ -1803,10 +1836,17 @@
         }
 
         function seedClusterSourcesFromCodebook() {
-            if (!CODEBOOK_CLUSTERS.length || !THUMB_TO_INDEX.size) return;
+            if (!CODEBOOK_CLUSTERS.length) return;
+            const haveThumbIndex = THUMB_TO_INDEX.size > 0;
             CODEBOOK_CLUSTERS.forEach(cluster => {
                 const cid = Number(cluster?.cluster_id);
                 if (!Number.isFinite(cid)) return;
+                const pf = cluster?.prototype?.json_file;
+                if (pf && typeof pf === "string" && pf.trim().length) {
+                    recordClusterSource(cid, pf.trim());
+                    return;
+                }
+                if (!haveThumbIndex) return;
                 const normalized = normalizeThumbName(cluster?.thumb_obj);
                 if (!normalized) return;
                 const idx = THUMB_TO_INDEX.get(normalized);
