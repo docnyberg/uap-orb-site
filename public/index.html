@@ -1472,6 +1472,7 @@
 
         function renderClusterPanelInit(payload) {
             const { cluster, items } = payload || {};
+            const clusterId = cluster?.id ?? "";
             const panel = ensureClusterPanelDom();
             const gridEl = panel.querySelector("#clusterPanelGrid");
             const statusEl = panel.querySelector("#clusterPanelStatus");
@@ -1479,7 +1480,7 @@
             const metaEl = panel.querySelector("#clusterPanelMeta");
             const expected = cluster && typeof cluster.count === "number" ? cluster.count : 0;
             CLUSTER_PANEL_STATE = {
-                clusterId: cluster?.id ?? "",
+                clusterId,
                 expected,
                 done: false,
                 map: new Map(),
@@ -1496,7 +1497,7 @@
             panel.setAttribute("data-cluster-id", String(cluster?.id ?? ""));
             panel.focus?.();
             if (Array.isArray(items) && items.length) {
-                renderClusterPanelBatch(items, { expectedCount: expected, done: false });
+                renderClusterPanelBatch(items, { expectedCount: expected, done: false, clusterId });
             } else {
                 renderClusterPanelGrid();
                 updateClusterPanelStatus();
@@ -1505,6 +1506,13 @@
 
         function renderClusterPanelBatch(items, meta) {
             if (!CLUSTER_PANEL_STATE) return;
+            const activeClusterId = String(CLUSTER_PANEL_STATE.clusterId ?? "");
+            const targetClusterId = meta && meta.clusterId !== undefined && meta.clusterId !== null
+                ? String(meta.clusterId)
+                : null;
+            if (targetClusterId !== null && targetClusterId !== activeClusterId) {
+                return;
+            }
             const { map } = CLUSTER_PANEL_STATE;
             let changed = false;
             for (const item of items || []) {
@@ -1536,6 +1544,13 @@
 
         function renderClusterPanelDone(meta) {
             if (!CLUSTER_PANEL_STATE) return;
+            const activeClusterId = String(CLUSTER_PANEL_STATE.clusterId ?? "");
+            const targetClusterId = meta && meta.clusterId !== undefined && meta.clusterId !== null
+                ? String(meta.clusterId)
+                : null;
+            if (targetClusterId !== null && targetClusterId !== activeClusterId) {
+                return;
+            }
             if (meta && typeof meta.expectedCount === "number") {
                 CLUSTER_PANEL_STATE.expected = meta.expectedCount;
             }
@@ -1555,25 +1570,25 @@
             try {
                 let streamState = await streamClusterMembers(
                     clusterId,
-                    ({ items, done }) => renderClusterPanelBatch(items, { expectedCount: expectedCount, done }),
+                    ({ items, done }) => renderClusterPanelBatch(items, { expectedCount: expectedCount, done, clusterId }),
                     { expectedCount: expectedCount, maxFiles: 5, concurrency: 1, reset: true }
                 );
                 while (streamState && !streamState.done) {
                     streamState = await streamClusterMembers(
                         clusterId,
-                        ({ items, done }) => renderClusterPanelBatch(items, { expectedCount: expectedCount, done }),
+                        ({ items, done }) => renderClusterPanelBatch(items, { expectedCount: expectedCount, done, clusterId }),
                         { expectedCount: expectedCount, maxFiles: 20, concurrency: 8 }
                     );
                     if (!streamState || streamState.done) break;
                     await new Promise(resolve => setTimeout(resolve, 16));
                 }
-                renderClusterPanelDone({ expectedCount });
+                renderClusterPanelDone({ expectedCount, clusterId });
             } catch (err) {
                 console.error("Failed to stream cluster panel", clusterId, err);
                 if (CLUSTER_PANEL_STATE) {
                     CLUSTER_PANEL_STATE.errorMessage = "Failed to load cluster members.";
                 }
-                renderClusterPanelDone({ expectedCount });
+                renderClusterPanelDone({ expectedCount, clusterId });
             } finally {
                 updateClusterPanelStatus();
                 CLUSTER_STREAM_STATUS.delete(clusterId);
