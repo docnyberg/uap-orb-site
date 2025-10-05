@@ -1179,10 +1179,7 @@
             await dataReady;
             const expected = Number(opts?.expectedCount) || 0;
             const files = Array.from(new Set(
-                (DATA || []).map(it => {
-                    const jf = it.json_file || deriveJsonFile(it);
-                    return normalizeJsonKey(jf);
-                }).filter(Boolean)
+                (DATA || []).map(it => normalizeJsonKey(it?.json_file || deriveJsonFile(it))).filter(Boolean)
             ));
             const allFileSet = new Set(files);
             const concurrency = Math.max(1, Math.min(8, Number(opts?.concurrency) || 5));
@@ -1811,24 +1808,19 @@
         }
 
         function deriveJsonFile(row) {
-            if (!row || typeof row !== "object") return "";
-            let jf = row.json_file || row.json || "";
+            let jf = row?.json_file || row?.json || "";
             if (!jf) {
-                const vid = row.video_file || row.video || "";
-                if (vid) {
-                    jf = String(vid).replace(/\.[^.]+$/, ".json");
-                }
+                const vid = row?.video_file || row?.video || "";
+                if (vid) jf = String(vid).replace(/\.[^.]+$/, ".json");
             }
             if (!jf) {
-                const baseFromObj = String(row.thumb_obj || "")
+                const baseFromObj = String(row?.thumb_obj || "")
                     .replace(/_obj\.jpg$/i, "")
                     .replace(/\.jpg$/i, "");
-                const baseFromScene = String(row.thumb || "")
+                const baseFromScene = String(row?.thumb || "")
                     .replace(/\.jpg$/i, "");
                 const base = baseFromObj || baseFromScene;
-                if (base) {
-                    jf = `${base}.json`;
-                }
+                if (base) jf = `${base}.json`;
             }
             return normalizeJsonKey(jf);
         }
