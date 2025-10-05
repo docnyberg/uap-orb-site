@@ -387,6 +387,135 @@
             border-radius: 6px
         }
 
+        /* --- Cluster Panel (in-page drawer) --- */
+        .cluster-panel {
+            position: fixed;
+            top: 86px;
+            right: 16px;
+            bottom: 20px;
+            width: min(960px, 80vw);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+            z-index: 40;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .cluster-panel.show {
+            display: flex;
+        }
+
+        .cluster-panel header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .cluster-panel header h2 {
+            font-size: 16px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .cluster-panel header .meta {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .cluster-panel header .close-btn {
+            margin-left: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--chip);
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .cluster-panel header .close-btn:hover {
+            border-color: #395072;
+        }
+
+        .cluster-panel .status-line {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .cluster-panel .grid {
+            padding: 14px;
+            overflow: auto;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }
+
+        .cluster-panel .cluster-card {
+            background: #131722;
+            border: 1px solid #243041;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cluster-panel .cluster-card button {
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .cluster-panel .cluster-card button:focus-visible {
+            outline: 2px solid #58a6ff;
+            outline-offset: 2px;
+        }
+
+        .cluster-panel .cluster-card img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .cluster-panel .cluster-card .meta {
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #c9d3e5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cluster-panel .cluster-card .status {
+            font-size: 11px;
+            color: #9aa3b2;
+        }
+
+        .cluster-panel .cluster-card .chip {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: #1c2330;
+            color: #9aa3b2;
+            font-size: 10px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
         /* Modal */
         .overlay {
             display: none;
@@ -890,7 +1019,6 @@
         const CLUSTER_MEMBERS = new Map();
         const CLUSTER_SOURCES = new Map();
         const CLUSTER_STREAM_STATUS = new Map();
-        const CLUSTER_WINDOW_FEATURES = "width=980,height=720,resizable=yes,scrollbars=yes";
 
         function recordClusterSource(clusterId, jsonFile) {
             if (!Number.isFinite(clusterId) || !jsonFile) return;
@@ -998,7 +1126,7 @@
                     }
                 });
             }).catch(err => {
-                console.warn('cluster mapping failed', err);
+                console.warn(`Cluster mapping failed for "${jsonFile}"`, err);
             });
             sequenceClusterPromises.set(jsonFile, prom);
             return prom;
@@ -1041,8 +1169,10 @@
 
             let status = CLUSTER_STREAM_STATUS.get(clusterId);
             if (!status || reset) {
-                status = { processed: new Set(), seen: new Set(), done: false };
+                status = { processed: new Set(), seen: new Set(), done: false, warnedIncomplete: false };
                 CLUSTER_STREAM_STATUS.set(clusterId, status);
+            } else if (status && typeof status.warnedIncomplete !== "boolean") {
+                status.warnedIncomplete = false;
             }
 
             const sources = CLUSTER_SOURCES.get(clusterId);
@@ -1088,10 +1218,21 @@
                 return Array.isArray(current) && current.length >= expected;
             };
 
+            const maybeWarnIncomplete = () => {
+                if (!expected || status.warnedIncomplete) return;
+                const base = CLUSTER_MEMBERS.get(clusterId) || [];
+                const loaded = Array.isArray(base) ? base.length : 0;
+                if (loaded < expected) {
+                    console.warn(`Cluster ${clusterId} complete: loaded ${loaded} of ${expected} members (some sequences may be missing or incomplete).`);
+                    status.warnedIncomplete = true;
+                }
+            };
+
             emitFresh(false);
             if (hasMetExpected()) {
                 emitFresh(true);
                 status.done = true;
+                maybeWarnIncomplete();
                 status.processed = status.processed || new Set();
                 return { done: true, remaining: 0, total: prioritized.length };
             }
@@ -1099,6 +1240,7 @@
             if (!prioritized.length) {
                 emitFresh(true);
                 status.done = true;
+                maybeWarnIncomplete();
                 return { done: true, remaining: 0, total: 0 };
             }
 
@@ -1108,6 +1250,7 @@
             if (!queue.length) {
                 emitFresh(true);
                 status.done = true;
+                maybeWarnIncomplete();
                 return { done: true, remaining: 0, total: prioritized.length };
             }
 
@@ -1120,12 +1263,23 @@
                 const chunk = queue.slice(cursor, cursor + remaining);
                 processed += chunk.length;
                 cursor += chunk.length;
-                await Promise.all(chunk.map(file => ensureSequenceClusters(file).catch(() => { })));
-                chunk.forEach(file => processedFiles.add(file));
-                emitFresh(false);
+
+                const promises = chunk.map(file =>
+                    ensureSequenceClusters(file).then(() => {
+                        processedFiles.add(file);
+                        emitFresh(false);
+                    }).catch(err => {
+                        processedFiles.add(file);
+                        console.warn(`Failed to process sequence "${file}" for cluster ${clusterId}`, err);
+                    })
+                );
+
+                await Promise.all(promises);
+
                 if (hasMetExpected()) {
                     emitFresh(true);
                     status.done = true;
+                    maybeWarnIncomplete();
                     return { done: true, remaining: Math.max(0, queue.length - cursor), total: prioritized.length };
                 }
             }
@@ -1133,6 +1287,7 @@
             if (cursor >= queue.length) {
                 emitFresh(true);
                 status.done = true;
+                maybeWarnIncomplete();
                 return { done: true, remaining: 0, total: prioritized.length };
             }
 
@@ -1142,349 +1297,286 @@
 
             emitFresh(true);
             status.done = true;
+            maybeWarnIncomplete();
             return { done: true, remaining: Math.max(0, queue.length - cursor), total: prioritized.length };
         }
 
-        async function waitForClusterWindowReady(win, timeoutMs = 5000) {
-            const start = Date.now();
-            while (Date.now() - start < timeoutMs) {
-                if (!win || win.closed) return false;
-                if (typeof win.renderClusterInit === "function" && typeof win.renderClusterBatch === "function") {
-                    return true;
-                }
-                await new Promise(resolve => setTimeout(resolve, 30));
-            }
-            return typeof win?.renderClusterInit === "function" && typeof win?.renderClusterBatch === "function";
+        async function openClusterWindow(cluster /*, preOpenedWindow */) {
+            return openClusterPanel(cluster);
         }
 
-        async function openClusterWindow(cluster, preOpenedWindow) {
-            const name = `codebook_cluster_${cluster?.cluster_id ?? ""}`;
-            const win = preOpenedWindow || window.open("", name, CLUSTER_WINDOW_FEATURES);
-            if (!win) {
-                toast("Please allow pop-ups for cluster viewer.");
+        let CLUSTER_PANEL_STATE = null;
+        let CLUSTER_PANEL_ESCAPE_BOUND = false;
+
+        function clusterPanelHandleEscape(event) {
+            if (event.key === "Escape" && CLUSTER_PANEL_STATE) {
+                event.preventDefault();
+                closeClusterPanel();
+            }
+        }
+
+        function ensureClusterPanelDom() {
+            let panel = document.getElementById("clusterPanel");
+            if (!panel) {
+                panel = document.createElement("section");
+                panel.id = "clusterPanel";
+                panel.className = "cluster-panel";
+                panel.tabIndex = -1;
+                panel.innerHTML = `
+              <header>
+                <h2 id="clusterPanelTitle">Cluster</h2>
+                <span class="meta" id="clusterPanelMeta"></span>
+                <button type="button" class="close-btn" id="clusterPanelClose">Close</button>
+              </header>
+              <div class="status-line" id="clusterPanelStatus">Loading members…</div>
+              <div class="grid" id="clusterPanelGrid" aria-live="polite"></div>
+            `;
+                document.body.appendChild(panel);
+                const closeBtn = panel.querySelector("#clusterPanelClose");
+                if (closeBtn) closeBtn.addEventListener("click", closeClusterPanel);
+            }
+            if (!CLUSTER_PANEL_ESCAPE_BOUND) {
+                document.addEventListener("keydown", clusterPanelHandleEscape);
+                CLUSTER_PANEL_ESCAPE_BOUND = true;
+            }
+            return panel;
+        }
+
+        function closeClusterPanel() {
+            const panel = document.getElementById("clusterPanel");
+            if (panel) {
+                panel.classList.remove("show");
+                panel.removeAttribute("data-cluster-id");
+            }
+            CLUSTER_PANEL_STATE = null;
+            if (location.hash.startsWith("#cluster=")) {
+                try {
+                    history.replaceState(null, "", location.pathname + location.search);
+                } catch { }
+            }
+        }
+
+        function clusterPanelItemKey(item) {
+            if (!item) return "";
+            const thumb = normalizeThumbName(item.thumb_scene || item.thumb_obj || "");
+            const json = (item.json_file || "").toLowerCase();
+            const idx = item.event_index === undefined || item.event_index === null ? "" : String(item.event_index);
+            return `${thumb}|${json}|${idx}`;
+        }
+
+        function clusterPanelSortItems(a, b) {
+            const aj = (a.json_file || "").toLowerCase();
+            const bj = (b.json_file || "").toLowerCase();
+            if (aj && bj && aj !== bj) return aj < bj ? -1 : 1;
+            if (aj && !bj) return -1;
+            if (bj && !aj) return 1;
+            const ai = Number(a.event_index);
+            const bi = Number(b.event_index);
+            const aFinite = Number.isFinite(ai);
+            const bFinite = Number.isFinite(bi);
+            if (aFinite && bFinite && ai !== bi) return ai - bi;
+            if (aFinite && !bFinite) return -1;
+            if (!aFinite && bFinite) return 1;
+            const at = (a.thumb_obj || a.thumb_scene || "").toLowerCase();
+            const bt = (b.thumb_obj || b.thumb_scene || "").toLowerCase();
+            if (at !== bt) return at < bt ? -1 : 1;
+            return 0;
+        }
+
+        function renderClusterPanelGrid() {
+            if (!CLUSTER_PANEL_STATE) return;
+            const { gridEl, map } = CLUSTER_PANEL_STATE;
+            if (!gridEl || !map) return;
+            const items = Array.from(map.values()).sort(clusterPanelSortItems);
+            const frag = document.createDocumentFragment();
+            items.forEach(ref => {
+                const card = document.createElement("article");
+                card.className = "cluster-card";
+                const button = document.createElement("button");
+                button.type = "button";
+                button.addEventListener("click", () => {
+                    if (ref.thumb_obj && typeof window.handleCodebookSelection === "function") {
+                        window.handleCodebookSelection(ref.thumb_obj);
+                    }
+                });
+                const img = document.createElement("img");
+                img.loading = "lazy";
+                img.decoding = "async";
+                let src = "";
+                if (ref.thumb_scene) {
+                    src = assetUrl(`thumbs/${encodeThumbPath(ref.thumb_scene)}`);
+                    img.dataset.previewKind = "scene";
+                } else if (ref.thumb_obj) {
+                    src = assetUrl(`thumbs_obj/${encodeThumbPath(ref.thumb_obj)}`);
+                    img.dataset.previewKind = "object";
+                }
+                if (src) {
+                    img.src = src;
+                    img.alt = ref.thumb_scene || ref.thumb_obj || "Cluster thumbnail";
+                } else {
+                    img.alt = "Missing thumbnail";
+                }
+                button.appendChild(img);
+                const meta = document.createElement("div");
+                meta.className = "meta";
+                if (ref.json_file) {
+                    const title = document.createElement("div");
+                    title.innerHTML = `<strong>${ref.json_file}</strong>`;
+                    meta.appendChild(title);
+                }
+                if (ref.event_index !== undefined && ref.event_index !== null && ref.event_index !== "") {
+                    const info = document.createElement("div");
+                    info.textContent = `Event #${ref.event_index}`;
+                    meta.appendChild(info);
+                }
+                if (ref.dataIdx === null) {
+                    const warn = document.createElement("div");
+                    warn.className = "status";
+                    warn.textContent = "Not present in atlas dataset";
+                    meta.appendChild(warn);
+                }
+                if (ref.isPrototype) {
+                    const chip = document.createElement("div");
+                    chip.className = "chip";
+                    chip.textContent = "Codebook prototype";
+                    meta.appendChild(chip);
+                }
+                button.appendChild(meta);
+                card.appendChild(button);
+                frag.appendChild(card);
+            });
+            gridEl.replaceChildren(frag);
+        }
+
+        function updateClusterPanelStatus() {
+            if (!CLUSTER_PANEL_STATE) return;
+            const { statusEl, map, expected, done, errorMessage } = CLUSTER_PANEL_STATE;
+            if (!statusEl) return;
+            if (errorMessage) {
+                statusEl.textContent = errorMessage;
                 return;
             }
+            const loaded = map ? map.size : 0;
+            let text = "";
+            if (!done) {
+                if (!loaded) text = "Loading members…";
+                else if (expected) text = `Loading members… (${Math.min(loaded, expected)} of ${expected})`;
+                else text = `Loading members… (${loaded})`;
+            } else {
+                if (!loaded) text = "No thumb.obj members were found for this cluster.";
+                else if (expected && loaded < expected) text = `Loaded ${loaded} of ${expected} members.`;
+                else text = "";
+            }
+            statusEl.textContent = text;
+        }
+
+        function renderClusterPanelInit(payload) {
+            const { cluster, items } = payload || {};
+            const panel = ensureClusterPanelDom();
+            const gridEl = panel.querySelector("#clusterPanelGrid");
+            const statusEl = panel.querySelector("#clusterPanelStatus");
+            const titleEl = panel.querySelector("#clusterPanelTitle");
+            const metaEl = panel.querySelector("#clusterPanelMeta");
+            const expected = cluster && typeof cluster.count === "number" ? cluster.count : 0;
+            CLUSTER_PANEL_STATE = {
+                clusterId: cluster?.id ?? "",
+                expected,
+                done: false,
+                map: new Map(),
+                gridEl,
+                statusEl,
+                titleEl,
+                metaEl,
+                errorMessage: ""
+            };
+            const title = cluster?.title || (`Cluster ${cluster?.id ?? ""}`);
+            if (titleEl) titleEl.textContent = title;
+            if (metaEl) metaEl.textContent = expected ? `${expected} total members` : "";
+            panel.classList.add("show");
+            panel.setAttribute("data-cluster-id", String(cluster?.id ?? ""));
+            panel.focus?.();
+            if (Array.isArray(items) && items.length) {
+                renderClusterPanelBatch(items, { expectedCount: expected, done: false });
+            } else {
+                renderClusterPanelGrid();
+                updateClusterPanelStatus();
+            }
+        }
+
+        function renderClusterPanelBatch(items, meta) {
+            if (!CLUSTER_PANEL_STATE) return;
+            const { map } = CLUSTER_PANEL_STATE;
+            let changed = false;
+            for (const item of items || []) {
+                if (!item) continue;
+                const key = clusterPanelItemKey(item);
+                if (!key) continue;
+                const existing = map.get(key);
+                if (existing) {
+                    const merged = Object.assign({}, existing, item);
+                    merged.isPrototype = Boolean(existing.isPrototype || item.isPrototype);
+                    map.set(key, merged);
+                } else {
+                    map.set(key, Object.assign({}, item));
+                }
+                changed = true;
+            }
+            if (meta && typeof meta.expectedCount === "number") {
+                CLUSTER_PANEL_STATE.expected = meta.expectedCount;
+            }
+            if (meta && meta.done) {
+                CLUSTER_PANEL_STATE.done = true;
+            }
+            if (changed) {
+                CLUSTER_PANEL_STATE.errorMessage = "";
+                renderClusterPanelGrid();
+            }
+            updateClusterPanelStatus();
+        }
+
+        function renderClusterPanelDone(meta) {
+            if (!CLUSTER_PANEL_STATE) return;
+            if (meta && typeof meta.expectedCount === "number") {
+                CLUSTER_PANEL_STATE.expected = meta.expectedCount;
+            }
+            CLUSTER_PANEL_STATE.done = true;
+            updateClusterPanelStatus();
+        }
+
+        async function openClusterPanel(cluster) {
+            if (!cluster) return;
+            const clusterId = cluster.cluster_id;
+            const expectedCount = cluster.count || 0;
+            const title = cluster.token ? `Cluster ${clusterId} • ${cluster.token}` : `Cluster ${clusterId}`;
+            renderClusterPanelInit({ cluster: { id: clusterId, title, count: expectedCount }, items: [] });
             try {
-                if (!preOpenedWindow) {
-                    win.document.write("<!doctype html><title>Loading…</title><body style='background:#0b0d12;color:#c9d3e5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Loading cluster…</body>");
-                    win.document.close();
-                }
-                const clusterTitle = cluster.token ? `Cluster ${cluster.cluster_id} • ${cluster.token}` : `Cluster ${cluster.cluster_id}`;
-                const assetBase = (() => {
-                    try { return new URL('.', window.location.href).href; }
-                    catch (err) {
-                        try { return new URL('.', document.baseURI).href; }
-                        catch { return '/'; }
-                    }
-                })();
-                const safeAssetBaseAttr = String(assetBase || '/').replace(/"/g, '&quot;');
-                if (win.closed) return;
-                    const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${clusterTitle}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<base href="${safeAssetBaseAttr}">
-<style>
-:root { color-scheme: dark; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b0d12; color:#e7eaf0; }
-body { margin:0; background:#0b0d12; color:#e7eaf0; }
-header { padding:16px 20px; border-bottom:1px solid #243041; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
-header h1 { font-size:16px; margin:0; }
-header span { font-size:12px; color:#9aa3b2; }
-header button { margin-left:auto; padding:6px 10px; border-radius:999px; border:1px solid #243041; background:#131722; color:#e7eaf0; cursor:pointer; }
-header button:hover { border-color:#395072; }
-main { padding:18px; }
-.grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
-.cluster-card { background:#131722; border:1px solid #243041; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
-.cluster-card button { padding:0; border:0; background:none; color:inherit; text-align:left; cursor:pointer; display:flex; flex-direction:column; height:100%; }
-.cluster-card button:focus-visible { outline:2px solid #58a6ff; outline-offset:2px; }
-.cluster-card img { width:100%; aspect-ratio:1/1; object-fit:cover; background:#000; }
-.cluster-card .meta { padding:10px 12px; font-size:12px; line-height:1.4; color:#c9d3e5; display:flex; flex-direction:column; gap:4px; }
-.cluster-card .status { font-size:11px; color:#9aa3b2; }
-.cluster-card .chip { display:inline-block; padding:2px 6px; border-radius:999px; background:#1c2330; color:#9aa3b2; font-size:10px; letter-spacing:.04em; text-transform:uppercase; }
-.status-line { margin-top:16px; font-size:12px; color:#9aa3b2; }
-.hidden { display:none !important; }
-</style>
-</head>
-<body>
-<header>
-  <h1 id="clusterTitle">${clusterTitle}</h1>
-  <span id="clusterMeta"></span>
-  <button id="focusMain" type="button">Focus main viewer</button>
-</header>
-<main>
-  <div id="clusterStatus" class="status-line">Loading members…</div>
-  <div id="clusterGrid" class="grid hidden" aria-live="polite"></div>
-</main>
-<script>
-const ASSET_BASE = ${JSON.stringify(assetBase || '/')};
-const state = { map: new Map(), expected: 0, done: false };
-const gridEl = document.getElementById('clusterGrid');
-const statusEl = document.getElementById('clusterStatus');
-const metaEl = document.getElementById('clusterMeta');
-function encodePath(name){ return name ? name.split('/').map(encodeURIComponent).join('/') : ''; }
-function assetUrl(path){
-  try {
-    return new URL(path, ASSET_BASE).href;
-  } catch (err) {
-    const base = String(ASSET_BASE || '/');
-    const ensured = base.endsWith('/') ? base : base + '/';
-    const raw = String(path || '');
-    let offset = 0;
-    while (offset < raw.length && raw.charCodeAt(offset) === 47) offset++;
-    return ensured + raw.slice(offset);
-  }
-}
-document.addEventListener('error', (event) => {
-  const target = event && event.target;
-  if (target && target.tagName === 'IMG' && target.dataset && target.dataset.thumbSrc) {
-    console.error('Cluster thumbnail failed to load', target.dataset.thumbSrc);
-  }
-}, true);
-function focusMain(){ if (window.opener && !window.opener.closed){ window.opener.focus(); } }
-function handleClick(name){
-  if (!name) return;
-  if (window.opener && !window.opener.closed && typeof window.opener.handleCodebookSelection === 'function'){
-    window.opener.focus();
-    window.opener.handleCodebookSelection(name);
-  } else {
-    alert('Main viewer not available.');
-  }
-}
-function normalizeName(name){
-  if (!name) return '';
-  const normalized = Array.from(String(name), ch => (ch && ch.charCodeAt(0) === 92 ? '/' : ch)).join('');
-  const parts = normalized.split('/').filter(Boolean);
-  return parts.length ? parts[parts.length - 1].toLowerCase() : normalized.toLowerCase();
-}
-  function itemKey(item){
-    const thumb = normalizeName(item.thumb_scene || item.thumb_obj);
-    const json = (item.json_file || '').toLowerCase();
-    const idx = item.event_index === undefined || item.event_index === null ? '' : String(item.event_index);
-    return thumb + '|' + json + '|' + idx;
-}
-function sortItems(a, b){
-  const aj = (a.json_file || '').toLowerCase();
-  const bj = (b.json_file || '').toLowerCase();
-  if (aj && bj && aj !== bj) return aj < bj ? -1 : 1;
-  if (aj && !bj) return -1;
-  if (bj && !aj) return 1;
-  const ai = Number(a.event_index);
-  const bi = Number(b.event_index);
-  const aFinite = Number.isFinite(ai);
-  const bFinite = Number.isFinite(bi);
-  if (aFinite && bFinite && ai !== bi) return ai - bi;
-  if (aFinite && !bFinite) return -1;
-  if (!aFinite && bFinite) return 1;
-  const at = (a.thumb_obj || a.thumb_scene || '').toLowerCase();
-  const bt = (b.thumb_obj || b.thumb_scene || '').toLowerCase();
-  if (at !== bt) return at < bt ? -1 : 1;
-  return 0;
-}
-function renderGrid(){
-  if (!gridEl) return;
-  const items = Array.from(state.map.values()).sort(sortItems);
-  const frag = document.createDocumentFragment();
-  items.forEach(item => {
-    const card = document.createElement('article');
-    card.className = 'cluster-card';
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.addEventListener('click', () => handleClick(item.thumb_obj));
-    const img = document.createElement('img');
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    let src = '';
-    if (item.thumb_scene){
-      src = assetUrl('thumbs/' + encodePath(item.thumb_scene));
-      img.dataset.previewKind = 'scene';
-    } else if (item.thumb_obj){
-      src = assetUrl('thumbs_obj/' + encodePath(item.thumb_obj));
-      img.dataset.previewKind = 'object';
-    }
-    if (src){
-      img.dataset.thumbSrc = src;
-      img.src = src;
-      img.alt = item.thumb_scene || item.thumb_obj || 'Cluster thumbnail';
-    } else {
-      img.alt = 'Missing thumbnail';
-    }
-    button.appendChild(img);
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    if (item.json_file){
-      const title = document.createElement('div');
-      title.innerHTML = '<strong>' + item.json_file + '</strong>';
-      meta.appendChild(title);
-    }
-    if (item.event_index !== undefined && item.event_index !== null && item.event_index !== ''){
-      const info = document.createElement('div');
-      info.textContent = 'Event #' + item.event_index;
-      meta.appendChild(info);
-    }
-    if (item.dataIdx === null){
-      const warn = document.createElement('div');
-      warn.className = 'status';
-      warn.textContent = 'Not present in atlas dataset';
-      meta.appendChild(warn);
-    }
-    if (item.isPrototype){
-      const chip = document.createElement('div');
-      chip.className = 'chip';
-      chip.textContent = 'Codebook prototype';
-      meta.appendChild(chip);
-    }
-    button.appendChild(meta);
-    card.appendChild(button);
-    frag.appendChild(card);
-  });
-  gridEl.replaceChildren(frag);
-  gridEl.classList.toggle('hidden', !items.length);
-}
-function updateStatus(){
-  if (!statusEl) return;
-  const loaded = state.map.size;
-  let text = '';
-  if (!state.done){
-    if (!loaded) text = 'Loading members…';
-      else if (state.expected){
-        const capped = Math.min(loaded, state.expected);
-        text = 'Loading members… (' + capped + ' of ' + state.expected + ')';
-      } else {
-        text = 'Loading members… (' + loaded + ')';
-      }
-    } else {
-      if (!loaded) text = 'No thumb.obj members were found for this cluster.';
-      else if (state.expected && loaded < state.expected) text = 'Loaded ' + loaded + ' of ' + state.expected + ' members.';
-      else text = '';
-  }
-  statusEl.textContent = text;
-  statusEl.classList.toggle('hidden', !text);
-}
-function mergeItems(items){
-  let changed = false;
-  items.forEach(item => {
-    if (!item) return;
-    const key = itemKey(item);
-    if (!key) return;
-    const existing = state.map.get(key);
-    if (existing){
-      const merged = Object.assign({}, existing, item);
-      merged.isPrototype = Boolean(existing.isPrototype || item.isPrototype);
-      state.map.set(key, merged);
-    } else {
-      state.map.set(key, Object.assign({}, item));
-    }
-    changed = true;
-  });
-  if (changed){
-    renderGrid();
-  }
-}
-window.renderClusterInit = function(payload){
-  const cluster = payload && payload.cluster;
-  if (cluster){
-    const titleEl = document.getElementById('clusterTitle');
-      if (titleEl){
-        titleEl.textContent = cluster.title || ('Cluster ' + cluster.id);
-      }
-      if (metaEl){
-        metaEl.textContent = cluster.count ? (cluster.count + ' total members') : '';
-      }
-    if (typeof cluster.count === 'number'){
-      state.expected = cluster.count;
-    }
-  }
-  if (Array.isArray(payload?.items) && payload.items.length){
-    mergeItems(payload.items);
-  }
-  updateStatus();
-};
-window.renderClusterBatch = function(items, meta){
-  if (meta && typeof meta.expectedCount === 'number'){
-    state.expected = meta.expectedCount;
-  }
-  if (Array.isArray(items) && items.length){
-    mergeItems(items);
-  }
-  if (meta && meta.done){
-    state.done = true;
-  }
-  updateStatus();
-};
-window.renderClusterDone = function(meta){
-  if (meta && typeof meta.expectedCount === 'number'){
-    state.expected = meta.expectedCount;
-  }
-  state.done = true;
-  updateStatus();
-};
-document.getElementById('focusMain').addEventListener('click', focusMain);
-updateStatus();
-<\/script>
-</body>
-</html>`;
-                win.document.open();
-                win.document.write(html);
-                win.document.close();
-
-                const ready = await waitForClusterWindowReady(win);
-                if (!ready || win.closed) return;
-
-                const headerPayload = {
-                    cluster: {
-                        id: cluster.cluster_id,
-                        title: clusterTitle,
-                        token: cluster.token || "",
-                        count: cluster.count || 0
-                    },
-                    items: []
-                };
-                if (typeof win.renderClusterInit === "function") {
-                    win.renderClusterInit(headerPayload);
-                }
-
+                history.replaceState(null, "", `#cluster=${encodeURIComponent(String(clusterId))}`);
+            } catch { }
+            try {
                 let streamState = await streamClusterMembers(
-                    cluster.cluster_id,
-                    ({ items, done }) => {
-                        if (!win || win.closed) return;
-                        if (typeof win.renderClusterBatch === "function") {
-                            win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
-                        }
-                    },
-                    { expectedCount: cluster.count || 0, maxFiles: 5, concurrency: 5, reset: true }
+                    clusterId,
+                    ({ items, done }) => renderClusterPanelBatch(items, { expectedCount: expectedCount, done }),
+                    { expectedCount: expectedCount, maxFiles: 5, concurrency: 1, reset: true }
                 );
-
                 while (streamState && !streamState.done) {
-                    if (!win || win.closed) break;
                     streamState = await streamClusterMembers(
-                        cluster.cluster_id,
-                        ({ items, done }) => {
-                            if (!win || win.closed) return;
-                            if (typeof win.renderClusterBatch === "function") {
-                                win.renderClusterBatch(items, { expectedCount: cluster.count || 0, done });
-                            }
-                        },
-                        { expectedCount: cluster.count || 0, maxFiles: 20, concurrency: 5 }
+                        clusterId,
+                        ({ items, done }) => renderClusterPanelBatch(items, { expectedCount: expectedCount, done }),
+                        { expectedCount: expectedCount, maxFiles: 20, concurrency: 8 }
                     );
-                    if (!streamState || streamState.done) {
-                        break;
-                    }
+                    if (!streamState || streamState.done) break;
                     await new Promise(resolve => setTimeout(resolve, 16));
                 }
-
-                if (!win.closed && typeof win.renderClusterDone === "function") {
-                    win.renderClusterDone({ expectedCount: cluster.count || 0 });
-                }
-                CLUSTER_STREAM_STATUS.delete(cluster.cluster_id);
+                renderClusterPanelDone({ expectedCount });
             } catch (err) {
-                CLUSTER_STREAM_STATUS.delete(cluster?.cluster_id);
-                console.error(err);
-                if (!win || win.closed) return;
-                win.document.open();
-                win.document.write(`<!doctype html><title>Error</title><body style="background:#0b0d12;color:#e7eaf0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;">Failed to load cluster members.<br><br><code>${String(err)}</code></body>`);
-                win.document.close();
+                console.error("Failed to stream cluster panel", clusterId, err);
+                if (CLUSTER_PANEL_STATE) {
+                    CLUSTER_PANEL_STATE.errorMessage = "Failed to load cluster members.";
+                }
+                renderClusterPanelDone({ expectedCount });
+            } finally {
+                updateClusterPanelStatus();
+                CLUSTER_STREAM_STATUS.delete(clusterId);
             }
         }
 
@@ -1549,12 +1641,8 @@ updateStatus();
                 btn.appendChild(infoWrap);
 
                 btn.addEventListener("click", () => {
-                    const w = window.open("", `codebook_cluster_${cluster.cluster_id}`, CLUSTER_WINDOW_FEATURES);
-                    if (!w) { toast("Please allow pop-ups for cluster viewer."); return; }
-                    w.document.write("<!doctype html><title>Loading…</title><body style='background:#0b0d12;color:#c9d3e5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;'>Loading cluster…</body>");
-                    w.document.close();
                     btn.classList.add("busy");
-                    openClusterWindow(cluster, w).finally(() => btn.classList.remove("busy"));
+                    openClusterWindow(cluster).finally(() => btn.classList.remove("busy"));
                 });
                 frag.appendChild(btn);
             });
