@@ -1089,19 +1089,49 @@
                 const text = await res.text();
                 const safe = text.replace(/\bNaN\b/g, "null");
                 const data = JSON.parse(safe);
+
                 const clusters = Array.isArray(data?.clusters) ? data.clusters : [];
-                return clusters.map(cluster => ({
-                    cluster_id: Number(cluster.cluster_id),
-                    token: cluster.token || "",
-                    count: Number(cluster.count) || 0,
-                    thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || ""),
-                    prototype: {
-                        thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || ""),
-                        thumb_scene: cluster?.prototype?.thumb_scene || "",
-                        json_file: normalizeJsonKey(cluster?.prototype?.json_file || ""),
-                        event_index: Number(cluster?.prototype?.event_index ?? "")
-                    }
-                }));
+                const legend = data && typeof data.legend === 'object' && data.legend !== null ? data.legend : {};
+
+                const parseEventIndex = (value) => {
+                    const num = Number(value);
+                    return Number.isFinite(num) ? num : "";
+                };
+
+                const tokenPrototypes = new Map();
+                for (const [token, entry] of Object.entries(legend)) {
+                    const proto = entry?.prototype || {};
+                    tokenPrototypes.set(token, {
+                        thumb_obj: normalizeThumbName(proto.thumb_obj || ""),
+                        thumb_scene: proto.thumb_scene || "",
+                        json_file: normalizeJsonKey(proto.json_file || ""),
+                        event_index: parseEventIndex(proto.e_idx ?? proto.event_index ?? "")
+                    });
+                }
+
+                return clusters.map(cluster => {
+                    const baseProto = cluster?.prototype || {};
+                    const token = cluster.token || "";
+                    const legendProto = tokenPrototypes.get(token) || {};
+                    const normalizedThumb = normalizeThumbName(baseProto.thumb_obj || legendProto.thumb_obj || "");
+                    const normalizedJson = legendProto.json_file || normalizeJsonKey(baseProto.json_file || "");
+                    const eventIndex = Number.isFinite(legendProto.event_index)
+                        ? legendProto.event_index
+                        : parseEventIndex(baseProto.event_index ?? baseProto.e_idx ?? "");
+
+                    return {
+                        cluster_id: Number(cluster.cluster_id),
+                        token,
+                        count: Number(cluster.count) || 0,
+                        thumb_obj: normalizedThumb,
+                        prototype: {
+                            thumb_obj: normalizedThumb,
+                            thumb_scene: baseProto.thumb_scene || legendProto.thumb_scene || "",
+                            json_file: normalizedJson,
+                            event_index: Number.isFinite(eventIndex) ? eventIndex : ""
+                        }
+                    };
+                });
             } catch (err) {
                 console.error('Codebook fetch failed', CODEBOOK_URL, err);
                 return [];
