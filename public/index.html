@@ -1047,14 +1047,15 @@
         }
 
         async function loadSequenceMetadata(jsonFile) {
-            if (!jsonFile) return null;
-            if (SEQ_CACHE.has(jsonFile)) return SEQ_CACHE.get(jsonFile);
+            const key = normalizeJsonKey(jsonFile);
+            if (!key) return null;
+            if (SEQ_CACHE.has(key)) return SEQ_CACHE.get(key);
             const prom = (async () => {
                 try {
-                    const url = sequenceJsonURL(jsonFile);
+                    const url = sequenceJsonURL(key);
                     // lightweight debug for first few requests
                     if (!loadSequenceMetadata._logged) {
-                        console.debug('[seq] fetch', jsonFile, '->', url);
+                        console.debug('[seq] fetch', key, '->', url);
                     }
                     if (!url) return null;
                     const res = await fetch(url, { cache: "force-cache" });
@@ -1068,13 +1069,13 @@
                         .replace(/\b-?Infinity\b/g, "null");
                     return JSON.parse(safe);
                 } catch (err) {
-                    console.error('Sequence fetch failed', jsonFile, err);
+                    console.error('Sequence fetch failed', key, err);
                     return null;
                 } finally {
                     loadSequenceMetadata._logged = true; // only log mapping once
                 }
             })();
-            SEQ_CACHE.set(jsonFile, prom);
+            SEQ_CACHE.set(key, prom);
             return prom;
         }
 
@@ -1097,7 +1098,7 @@
                     prototype: {
                         thumb_obj: normalizeThumbName(cluster?.prototype?.thumb_obj || ""),
                         thumb_scene: cluster?.prototype?.thumb_scene || "",
-                        json_file: cluster?.prototype?.json_file || "",
+                        json_file: normalizeJsonKey(cluster?.prototype?.json_file || ""),
                         event_index: Number(cluster?.prototype?.event_index ?? "")
                     }
                 }));
@@ -1151,7 +1152,7 @@
         function clusterMemberKey(entry) {
             if (!entry) return "";
             const thumb = normalizeThumbName(entry.thumb_obj || entry.thumb_scene || "");
-            const json = (entry.json_file || "").toLowerCase();
+            const json = normalizeJsonKey(entry.json_file || "").toLowerCase();
             const idx = entry.event_index === undefined || entry.event_index === null ? "" : String(entry.event_index);
             return `${thumb}|${json}|${idx}`;
         }
@@ -1168,7 +1169,7 @@
             return {
                 thumb_obj: objectPath,
                 thumb_scene: scenePath,
-                json_file: entry.json_file || (row ? row.json_file : ""),
+                json_file: normalizeJsonKey(entry.json_file || (row ? row.json_file : "")),
                 event_index: entry.event_index ?? (row ? row.event_index : ""),
                 dataIdx: hasIdx ? idx : null
             };
@@ -1178,7 +1179,10 @@
             await dataReady;
             const expected = Number(opts?.expectedCount) || 0;
             const files = Array.from(new Set(
-                (DATA || []).map(it => normalizeJsonKey(it.json_file)).filter(Boolean)
+                (DATA || []).map(it => {
+                    const jf = it.json_file || deriveJsonFile(it);
+                    return normalizeJsonKey(jf);
+                }).filter(Boolean)
             ));
             const allFileSet = new Set(files);
             const concurrency = Math.max(1, Math.min(8, Number(opts?.concurrency) || 5));
@@ -1383,14 +1387,14 @@
         function clusterPanelItemKey(item) {
             if (!item) return "";
             const thumb = normalizeThumbName(item.thumb_scene || item.thumb_obj || "");
-            const json = (item.json_file || "").toLowerCase();
+            const json = normalizeJsonKey(item.json_file || "").toLowerCase();
             const idx = item.event_index === undefined || item.event_index === null ? "" : String(item.event_index);
             return `${thumb}|${json}|${idx}`;
         }
 
         function clusterPanelSortItems(a, b) {
-            const aj = (a.json_file || "").toLowerCase();
-            const bj = (b.json_file || "").toLowerCase();
+            const aj = normalizeJsonKey(a.json_file || "").toLowerCase();
+            const bj = normalizeJsonKey(b.json_file || "").toLowerCase();
             if (aj && bj && aj !== bj) return aj < bj ? -1 : 1;
             if (aj && !bj) return -1;
             if (bj && !aj) return 1;
@@ -1541,15 +1545,18 @@
             let changed = false;
             for (const item of items || []) {
                 if (!item) continue;
-                const key = clusterPanelItemKey(item);
+                const normalizedItem = Object.assign({}, item, {
+                    json_file: normalizeJsonKey(item.json_file || "")
+                });
+                const key = clusterPanelItemKey(normalizedItem);
                 if (!key) continue;
                 const existing = map.get(key);
                 if (existing) {
-                    const merged = Object.assign({}, existing, item);
+                    const merged = Object.assign({}, existing, normalizedItem);
                     merged.isPrototype = Boolean(existing.isPrototype || item.isPrototype);
                     map.set(key, merged);
                 } else {
-                    map.set(key, Object.assign({}, item));
+                    map.set(key, normalizedItem);
                 }
                 changed = true;
             }
@@ -1595,7 +1602,7 @@
                     initialItems.push({
                         thumb_obj: p.thumb_obj || "",
                         thumb_scene: p.thumb_scene || "",
-                        json_file: p.json_file || "",
+                        json_file: normalizeJsonKey(p.json_file || ""),
                         event_index: p.event_index ?? "",
                         isPrototype: true,
                         dataIdx: null
@@ -1799,9 +1806,31 @@
         function normalizeJsonKey(f) {
             if (!f) return "";
             const s = String(f).trim().replace(/\\/g, "/");
-            // keep only the filename (last path segment)
             const parts = s.split("/").filter(Boolean);
             return parts.length ? parts[parts.length - 1] : s;
+        }
+
+        function deriveJsonFile(row) {
+            if (!row || typeof row !== "object") return "";
+            let jf = row.json_file || row.json || "";
+            if (!jf) {
+                const vid = row.video_file || row.video || "";
+                if (vid) {
+                    jf = String(vid).replace(/\.[^.]+$/, ".json");
+                }
+            }
+            if (!jf) {
+                const baseFromObj = String(row.thumb_obj || "")
+                    .replace(/_obj\.jpg$/i, "")
+                    .replace(/\.jpg$/i, "");
+                const baseFromScene = String(row.thumb || "")
+                    .replace(/\.jpg$/i, "");
+                const base = baseFromObj || baseFromScene;
+                if (base) {
+                    jf = `${base}.json`;
+                }
+            }
+            return normalizeJsonKey(jf);
         }
 
         const sanitizeRelativePath = (name) => {
@@ -1878,8 +1907,9 @@
                 const idx = THUMB_TO_INDEX.get(normalized);
                 if (typeof idx !== "number") return;
                 const row = DATA[idx];
-                if (!row || !row.json_file) return;
-                recordClusterSource(cid, row.json_file);
+                if (!row) return;
+                const jf = deriveJsonFile(row);
+                if (jf) recordClusterSource(cid, jf);
             });
         }
 
@@ -1920,7 +1950,12 @@
 
                 hex_img: r.hex_img || r.hex || "",
 
-                json_file: r.json_file || r.json || "",
+                json_file: (() => {
+                    const tmp = r.json_file || r.json || "";
+                    const cleaned = clean(tmp);
+                    const norm = normalizeJsonKey(cleaned || tmp);
+                    return norm;
+                })(),
                 video_file: r.video_file || r.video || "",
                 event_index: r.event_index || r.event || "",
 
@@ -2855,6 +2890,15 @@
                     startStreaming();
                 }
                 if (done){
+                    DATA.forEach(row => {
+                        if (!row || typeof row !== "object") return;
+                        const normalized = normalizeJsonKey(row.json_file || row.json || "");
+                        if (normalized) {
+                            row.json_file = normalized;
+                        } else {
+                            row.json_file = deriveJsonFile(row);
+                        }
+                    });
                     // recompute motion tiers more accurately using percentiles
                     const mvals = DATA.map(it => num(it.motion, null)).filter(v => v !== null);
                     if (mvals.length){
