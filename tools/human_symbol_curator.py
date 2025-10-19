@@ -49,6 +49,16 @@ def load_image_thumb(path: Path, size: int = THUMB_SIZE) -> Optional[ImageTk.Pho
 class Cluster:
     def __init__(self, data: dict):
         self.cluster_id: int = data.get("cluster_id")
+        self.name: str = (
+            data.get("name")
+            or data.get("token")
+            or data.get("canonical_name")
+            or f"Cluster {self.cluster_id}"
+        )
+        proto = data.get("prototype", "")
+        if isinstance(proto, dict):
+            proto = proto.get("thumb_obj", "") or proto.get("thumb", "")
+        self.prototype: str = proto
         self.name: str = data.get("name") or f"Cluster {self.cluster_id}"
         self.prototype: str = data.get("prototype", "")
         self.count: int = data.get("count", 0)
