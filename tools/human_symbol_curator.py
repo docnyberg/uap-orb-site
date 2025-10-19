@@ -59,8 +59,6 @@ class Cluster:
         if isinstance(proto, dict):
             proto = proto.get("thumb_obj", "") or proto.get("thumb", "")
         self.prototype: str = proto
-        self.name: str = data.get("name") or f"Cluster {self.cluster_id}"
-        self.prototype: str = data.get("prototype", "")
         self.count: int = data.get("count", 0)
 
 

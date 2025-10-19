@@ -45,6 +45,15 @@ def compute_hash(img_path: Path, method: str) -> imagehash.ImageHash | None:
     # default average
     return imagehash.average_hash(im)
 
+def _prototype_thumb(data: dict) -> str:
+    proto = data.get("prototype", "")
+    if isinstance(proto, dict):
+        return proto.get("thumb_obj", "") or proto.get("thumb", "") or ""
+    if isinstance(proto, str):
+        return proto
+    return ""
+
+
 def group_by_hash(protos: List[dict], thumbs_root: Path, method: str, thr: int) -> List[List[dict]]:
     """
     O(n^2) grouping by Hamming distance <= thr.
@@ -53,7 +62,7 @@ def group_by_hash(protos: List[dict], thumbs_root: Path, method: str, thr: int) 
     hashes: Dict[int, imagehash.ImageHash] = {}
     items: List[Tuple[int, dict]] = []   # (index, proto dict)
     for i, p in enumerate(protos):
-        thumb = p.get("prototype", {}).get("thumb_obj", "")
+        thumb = _prototype_thumb(p)
         img = thumbs_root / thumb if thumb else None
         h = compute_hash(img, method) if (img and img.exists()) else None
         hashes[i] = h
@@ -207,8 +216,14 @@ def main():
         {
             "group_id": gid,
             "canonical_name": pick_canonical_name(grp),
-            "members": [ {"cluster_id": int(p.get("cluster_id",-1)), "token": p.get("token",""),
-                          "thumb_obj": p.get("prototype",{}).get("thumb_obj","") } for p in grp ]
+            "members": [
+                {
+                    "cluster_id": int(p.get("cluster_id", -1)),
+                    "token": p.get("token", ""),
+                    "thumb_obj": _prototype_thumb(p),
+                }
+                for p in grp
+            ]
         }
         for gid, grp in enumerate(groups, start=1)
     ]
