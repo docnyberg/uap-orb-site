@@ -78,12 +78,34 @@ def hamming64(a: int, b: int) -> int:
     return (a ^ b).bit_count()
 
 def circ_hue_delta(h1, h2, scale=180.0):
-    """Circular hue diff with wraparound (OpenCV HSV: 0..180)."""
+    """Circular hue diff with wraparound (OpenCV HSV: 0..scale).
+
+    The historical implementation assumed that both hue inputs were already
+    confined to the same range as ``scale`` (OpenCV style 0..180).  Recent
+    pipeline updates store hue in true degrees (0..360).  When the caller still
+    used the default 180° scale the previous code would compute ``scale - d``
+    for large separations and happily return a *negative* distance
+    (e.g. 180 - 200 = -20).  Downstream code compared that value against the
+    hue gate, so everything on opposite sides of the color wheel slipped
+    through and the clustering step tried to build a 22k×22k distance matrix.
+
+    Normalise the inputs into the [0, scale) interval before measuring the
+    delta and take the absolute minimal wraparound distance so we never return
+    a negative value regardless of the caller's scale.
+    """
     if np.isnan(h1) or np.isnan(h2):
         return np.nan
-    d = abs(h1 - h2)
-    if d > scale/2:
-        d = scale - d
+
+    s = float(scale)
+    if s <= 0 or np.isnan(s):
+        return np.nan
+
+    # Bring both hues into the 0..scale range before computing their delta.
+    a = float(h1) % s
+    b = float(h2) % s
+    d = abs(a - b)
+    if d > s / 2.0:
+        d = s - d
     return d
 
 def robust_z(x):
