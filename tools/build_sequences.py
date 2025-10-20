@@ -23,6 +23,7 @@ import argparse
 import json
 import math
 import os
+import time
 from pathlib import Path
 from collections import defaultdict, Counter
 
@@ -139,6 +140,21 @@ def read_json(path: Path):
 def write_json(path: Path, obj):
     with path.open("w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=2)
+
+
+def _log(msg: str):
+    print(msg, flush=True)
+
+
+def _mem_mb():
+    # optional memory readout without new deps
+    import os, gc
+    gc.collect()
+    try:
+        import psutil
+        return int(psutil.Process(os.getpid()).memory_info().rss / (1024*1024))
+    except Exception:
+        return None
 
 # === RADIAL + VACUOLE HELPERS (DROP-IN) ======================================
 
@@ -848,24 +864,44 @@ def cluster_records_strict(recs, args):
         hue_bins[hb].append(r)
 
     next_cluster_id = 0
-    for hb, bucket in hue_bins.items():
-        n = len(bucket)
-        if n == 1:
-            # don't assign a cluster yet; treat as tiny/noise-like; tokenization will skip it
+    buckets = list(hue_bins.values())
+    total_b = len(buckets)
+    for bi, bucket in enumerate(buckets, start=1):
+        m = len(bucket)
+        if m == 0:
+            continue
+        if m == 1:
             bucket[0]['cluster'] = None
+            if args.progress_every:
+                mm = _mem_mb()
+                mm_s = f" | RAM≈{mm}MB" if mm is not None else ""
+                _log(f"[cluster] bucket {bi}/{total_b} size={m}{mm_s}")
+                mm = _mem_mb()
+                mm_s = f" | RAM≈{mm}MB" if mm is not None else ""
+                _log(f"[cluster] bucket {bi}/{total_b} done in 0.0s{mm_s}")
             continue
 
-        # pairwise distances in bucket
-        D = np.zeros((n, n), dtype=float)
-        for i in range(n):
-            for j in range(i+1, n):
+        t0 = time.time()
+        if args.progress_every:
+            mm = _mem_mb()
+            mm_s = f" | RAM≈{mm}MB" if mm is not None else ""
+            _log(f"[cluster] bucket {bi}/{total_b} size={m}{mm_s}")
+
+        D = np.zeros((m, m), dtype=float)
+
+        step = max(1, (m * max(1, args.progress_every)) // 100)
+
+        for i in range(m):
+            for j in range(i + 1, m):
                 D[i, j] = D[j, i] = metric.pair_dist(bucket[i], bucket[j], feat_scale)
 
-        # DBSCAN
+            if args.progress_every and (i % step == 0 or i == m - 1):
+                filled_pairs = (i * (i - 1)) // 2
+                _log(f"[cluster]   bucket {bi}/{total_b} rows {i + 1}/{m}  pairs≈{filled_pairs}")
+
         db = DBSCAN(eps=float(args.eps), min_samples=int(args.min_samples), metric='precomputed')
         labels = db.fit_predict(D)
 
-        # Assign clusters; keep noise as None
         unique = np.unique(labels)
         for li in unique:
             idxs = np.where(labels == li)[0]
@@ -873,7 +909,6 @@ def cluster_records_strict(recs, args):
                 for k in idxs:
                     bucket[k]['cluster'] = None
                 continue
-            # select medoid within this component
             subD = D[np.ix_(idxs, idxs)]
             mloc = np.argmin(subD.sum(axis=1))
             med_k = int(idxs[int(mloc)])
@@ -881,9 +916,14 @@ def cluster_records_strict(recs, args):
             next_cluster_id += 1
             for k in idxs:
                 bucket[k]['cluster'] = gid
-            # tag a prototype
             for k in idxs:
                 bucket[k]['is_prototype'] = (k == med_k)
+
+        dt = time.time() - t0
+        if args.progress_every:
+            mm = _mem_mb()
+            mm_s = f" | RAM≈{mm}MB" if mm is not None else ""
+            _log(f"[cluster] bucket {bi}/{total_b} done in {dt:.1f}s{mm_s}")
 
     # Gather clusters (exclude None)
     by_cluster = defaultdict(list)
@@ -1427,6 +1467,11 @@ def main():
 
     ap.add_argument("--min-area", type=int, default=50, help="Ignore blobs with area < this")
 
+    ap.add_argument(
+        "--progress-every", type=int, default=10,
+        help="Percent step for per-bucket progress logs (0 disables)."
+    )
+
     # NEW: radial/vacuole controls
     ap.add_argument("--sectors", type=int, default=8)
     ap.add_argument("--enable-radial", action="store_true", help="Compute orientation8/sector8")
@@ -1515,10 +1560,13 @@ def main():
     print("[sequence] building per-video sequences…")
     seqs = build_sequences(recs, token_map, thumbs_dir, args)
 
+    _log(f"[write] assembling sequences… K={len(by_cluster)} clusters")
+
     # Per-video JSONs
-    for jf, obj in seqs.items():
+    total_seqs = len(seqs)
+    for idx, (jf, obj) in enumerate(seqs.items(), start=1):
         used = sorted(set([c for c in obj['symbol_seq'] if c not in ['_', ' ']]))
-        vid_legend = {k: legend[k] for k in used if k in legend}
+        vid_legend = {tok: legend[tok] for tok in used if tok in legend}
 
         out = {
             "json_file": jf,
@@ -1542,6 +1590,7 @@ def main():
 
         stem = Path(jf).name
         out_path = out_dir / f"{stem}.sequence.json"
+        _log(f"[write] {idx}/{total_seqs} {stem} events={obj['n_events']} → {out_path.name}")
         write_json(out_path, out)
         print(f"[OK] {stem} → {out_path}")
 
