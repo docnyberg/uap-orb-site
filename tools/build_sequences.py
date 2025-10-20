@@ -26,6 +26,7 @@ import os
 import time
 from pathlib import Path
 from collections import defaultdict, Counter
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -37,6 +38,13 @@ except Exception:
     cv2 = None
 
 from sklearn.cluster import DBSCAN
+
+try:
+    import tkinter as tk  # type: ignore
+    from tkinter import filedialog  # type: ignore
+except Exception:
+    tk = None  # type: ignore[assignment]
+    filedialog = None  # type: ignore[assignment]
 
 # ---------------------------
 # Helpers
@@ -517,6 +525,25 @@ class StrictGatedMetric:
         feat_scale: dict with 'log_area_mu','log_area_sigma', etc for z-scaling.
         Returns distance in [0,1].
         """
+        # --- Gemini-powered semantic gates (run before numeric checks) ---
+        def _norm_semantic(value):
+            if value is None:
+                return ""
+            s = str(value).strip().lower()
+            if not s or s == "unknown" or s == "nan":
+                return ""
+            return s
+
+        shape_a = _norm_semantic(a.get('shape_category'))
+        shape_b = _norm_semantic(b.get('shape_category'))
+        if shape_a and shape_b and shape_a != shape_b:
+            return 1.0
+
+        color_a = _norm_semantic(a.get('primary_color'))
+        color_b = _norm_semantic(b.get('primary_color'))
+        if color_a and color_b and color_a != color_b:
+            return 1.0
+
         # Hard gates
         # Hue
         # Our hue values are expressed in full 0-360° space (either read directly
@@ -646,6 +673,9 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
     col_ecc  = pick("eccentricity", "ecc")
     col_ar   = pick("aspect_ratio", "ar")
     col_phash = pick("phash64", "phash")
+    col_primary = pick("primary_color", "gemini_primary_color", "dominant_color")
+    col_shape = pick("shape_category", "gemini_shape", "shape_label")
+    col_texture = pick("texture", "gemini_texture", "surface_texture")
 
     if not col_thumb or not col_json:
         raise ValueError(
@@ -686,6 +716,25 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
 
         col_event = "_e_idx_inferred"
 
+    # Normalise Gemini semantic labels (if present)
+    def _clean_semantic(value: object) -> str:
+        if value is None:
+            return "unknown"
+        try:
+            if pd.isna(value):  # type: ignore[attr-defined]
+                return "unknown"
+        except Exception:
+            pass
+        s = str(value).strip()
+        return s if s else "unknown"
+
+    if col_primary and col_primary in df.columns:
+        df[col_primary] = df[col_primary].apply(_clean_semantic)
+    if col_shape and col_shape in df.columns:
+        df[col_shape] = df[col_shape].apply(_clean_semantic)
+    if col_texture and col_texture in df.columns:
+        df[col_texture] = df[col_texture].apply(_clean_semantic)
+
     # Build records
     recs = []
     for _, row in df.iterrows():
@@ -712,6 +761,9 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
             h=h, s=s, v=v,
             area=area, solidity=sol, ecc=ecc, ar=ar,
             phash64=ph,
+            primary_color=_clean_semantic(row[col_primary]) if col_primary else "unknown",
+            shape_category=_clean_semantic(row[col_shape]) if col_shape else "unknown",
+            texture=_clean_semantic(row[col_texture]) if col_texture else "unknown",
             # include timestamps if your atlas has them
             start_ts=safe_float(row[col_start]) if col_start else None,
             end_ts=safe_float(row[col_end]) if col_end else None,
@@ -1442,12 +1494,82 @@ def most_common_token(cids, token_map):
 # ---------------------------
 
 # ====== MAIN (DROP-IN) ========================================================
+def _create_dialog_root() -> "tk.Tk":  # type: ignore[name-defined]
+    if tk is None or filedialog is None:  # type: ignore[truthy-function]
+        raise RuntimeError(
+            "tkinter is unavailable. Supply the required paths using command-line arguments."
+        )
+
+    try:
+        root = tk.Tk()  # type: ignore[call-arg]
+        root.withdraw()
+        return root
+    except Exception as exc:
+        raise RuntimeError(
+            "Unable to launch a file-selection dialog. Provide the paths explicitly via CLI options."
+        ) from exc
+
+
+def _pick_atlas_csv() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        filename = filedialog.askopenfilename(  # type: ignore[union-attr]
+            title="Select atlas CSV",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        )
+    finally:
+        root.destroy()
+    return Path(filename).expanduser() if filename else None
+
+
+def _pick_thumbs_dir() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        dirname = filedialog.askdirectory(  # type: ignore[union-attr]
+            title="Select thumbnail directory",
+        )
+    finally:
+        root.destroy()
+    return Path(dirname).expanduser() if dirname else None
+
+
+def _pick_out_dir() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        dirname = filedialog.askdirectory(  # type: ignore[union-attr]
+            title="Select output directory for sequences",
+        )
+    finally:
+        root.destroy()
+    return Path(dirname).expanduser() if dirname else None
+
+
+def _resolve_cli_path(
+    value: Optional[str],
+    *,
+    picker: Callable[[], Optional[Path]],
+    descriptor: str,
+) -> Path:
+    if value:
+        return Path(value).expanduser()
+
+    try:
+        selected = picker()
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    if not selected:
+        raise SystemExit(f"No {descriptor} selected; aborting.")
+
+    return selected
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--atlas", required=True, help="Path to atlas.csv")
-    ap.add_argument("--thumbs", required=True, help="Directory containing thumbs (thumbs_obj)")
-    ap.add_argument("--out", required=True, help="Output directory for sequences & codebook")
+    ap.add_argument("--atlas", help="Path to atlas.csv")
+    ap.add_argument("--thumbs", help="Directory containing thumbs (thumbs_obj)")
+    ap.add_argument("--out", help="Output directory for sequences & codebook")
 
     # clustering/tokens (kept)
     ap.add_argument("--min-samples", type=int, default=6, help="DBSCAN min_samples")
@@ -1491,9 +1613,21 @@ def main():
 
     args = ap.parse_args()
 
-    atlas_csv = Path(args.atlas)
-    thumbs_dir = Path(args.thumbs)
-    out_dir = Path(args.out)
+    atlas_csv = _resolve_cli_path(
+        args.atlas,
+        picker=_pick_atlas_csv,
+        descriptor="atlas CSV (--atlas)",
+    )
+    thumbs_dir = _resolve_cli_path(
+        args.thumbs,
+        picker=_pick_thumbs_dir,
+        descriptor="thumbnail directory (--thumbs)",
+    )
+    out_dir = _resolve_cli_path(
+        args.out,
+        picker=_pick_out_dir,
+        descriptor="output directory (--out)",
+    )
     ensure_dir(out_dir)
 
     print(f"[load] atlas: {atlas_csv}")
