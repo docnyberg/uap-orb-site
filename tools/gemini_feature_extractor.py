@@ -22,6 +22,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
+from contextlib import suppress
+
 import pandas as pd
 
 try:
@@ -228,25 +230,66 @@ def enrich_atlas(atlas_path: Path, thumbs_dir: Path, out_path: Path) -> None:
     total = len(df)
     thumbs_dir = thumbs_dir.resolve()
 
-    for idx, row in enumerate(df.itertuples(index=False), start=1):
-        thumb_name = getattr(row, "thumb_obj", None)
-        thumb_path = thumbs_dir / str(thumb_name)
-        print(f"Processing {idx}/{total}: {thumb_path.name}…")
+    ckpt_path = out_path.with_name(out_path.name + ".ckpt.jsonl")
+    processed: Dict[int, Dict[str, Any]] = {}
+    if ckpt_path.exists():
+        with ckpt_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    processed[int(rec["index"])] = rec.get("payload", {})
+                except Exception:
+                    pass
 
-        if not thumb_path.exists():
-            print("  [WARN] Thumbnail not found; skipping Gemini call.")
-            features.append({})
-            continue
+    try:
+        for idx, row in enumerate(df.itertuples(index=False), start=1):
+            thumb_name = getattr(row, "thumb_obj", None)
+            thumb_path = thumbs_dir / str(thumb_name)
+            print(f"Processing {idx}/{total}: {thumb_path.name}…")
 
-        try:
-            blob = image_to_blob(thumb_path)
-        except OSError as exc:
-            print(f"  [WARN] Unable to read thumbnail: {exc}")
-            features.append({})
-            continue
+            if (idx - 1) in processed:
+                features.append(processed[idx - 1])
+                continue
 
-        payload = get_gemini_features(blob)
-        features.append(payload)
+            if not thumb_path.exists():
+                print("  [WARN] Thumbnail not found; skipping Gemini call.")
+                features.append({})
+                with ckpt_path.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps({"index": idx - 1, "payload": {}}) + "\n")
+                continue
+
+            try:
+                blob = image_to_blob(thumb_path)
+            except OSError as exc:
+                print(f"  [WARN] Unable to read thumbnail: {exc}")
+                features.append({})
+                with ckpt_path.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps({"index": idx - 1, "payload": {}}) + "\n")
+                continue
+
+            payload = get_gemini_features(blob)
+            features.append(payload)
+
+            with ckpt_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"index": idx - 1, "payload": payload}) + "\n")
+
+            if idx % 200 == 0:
+                partial = pd.concat(
+                    [df.iloc[:idx].reset_index(drop=True), pd.DataFrame(features)],
+                    axis=1,
+                )
+                partial_out = out_path.with_suffix(".partial.csv")
+                partial.to_csv(partial_out, index=False)
+                print(f"[checkpoint] wrote {partial_out}")
+    except KeyboardInterrupt:
+        partial = pd.concat(
+            [df.iloc[: len(features)].reset_index(drop=True), pd.DataFrame(features)],
+            axis=1,
+        )
+        partial_out = out_path.with_suffix(".partial.csv")
+        partial.to_csv(partial_out, index=False)
+        print(f"\n[INTERRUPTED] Wrote partial to {partial_out}. You can resume later.")
+        sys.exit(130)
 
     enriched = pd.concat([df.reset_index(drop=True), pd.DataFrame(features)], axis=1)
 
@@ -262,6 +305,9 @@ def enrich_atlas(atlas_path: Path, thumbs_dir: Path, out_path: Path) -> None:
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     enriched.to_csv(out_path, index=False)
+    with suppress(Exception):
+        ckpt_path.unlink()
+        out_path.with_suffix(".partial.csv").unlink()
     print(f"\n[OK] Enriched data saved to {out_path}")
 
 
