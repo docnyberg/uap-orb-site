@@ -15,7 +15,6 @@ Example
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import os
 import sys
@@ -27,18 +26,20 @@ import pandas as pd
 
 try:
     from google import genai
+    from google.genai import types
 except ImportError as exc:  # pragma: no cover - dependency error is fatal for runtime use
     raise SystemExit(
         "The google-genai package is required to call the Gemini API. "
         "Install it with `pip install google-genai`."
     ) from exc
 
+MODEL_NAME = "gemini-2.5-flash"
 
 # ---------------------------------------------------------------------------
 # Gemini configuration
 # ---------------------------------------------------------------------------
 
-def _configure_client() -> genai.GenerativeModel:
+def _configure_client() -> genai.Client:
     """Configure the Gemini client using the GOOGLE_API_KEY."""
     api_key = os.getenv("GOOGLE_API_KEY")
 
@@ -57,23 +58,24 @@ def _configure_client() -> genai.GenerativeModel:
             "or store it in Google Colab userdata before running this script."
         )
 
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.Client(api_key=api_key)
 
 
-MODEL = _configure_client()
+CLIENT = _configure_client()
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def image_to_blob(image_path: Path) -> Dict[str, str]:
-    """Return an image in the blob dictionary format expected by Gemini."""
-    return {
-        "mime_type": "image/jpeg",
-        "data": base64.b64encode(image_path.read_bytes()).decode("utf-8"),
-    }
+def image_to_blob(image_path: Path) -> types.Part:
+    """Return an image as a google.genai typed Part/Blob."""
+    return types.Part(
+        inline_data=types.Blob(
+            data=image_path.read_bytes(),
+            mime_type="image/jpeg",
+        )
+    )
 
 
 def _extract_json_payload(response: Any) -> Dict[str, Any]:
@@ -92,7 +94,7 @@ def _extract_json_payload(response: Any) -> Dict[str, Any]:
         return {}
 
 
-def get_gemini_features(image_blob: Dict[str, str], retries: int = 3) -> Dict[str, Any]:
+def get_gemini_features(image_blob: types.Part, retries: int = 3) -> Dict[str, Any]:
     """Call Gemini with retry logic and return the structured labels."""
     prompt = (
         "Analyze the object in this image. Describe it using the following JSON schema:\n"
@@ -106,7 +108,13 @@ def get_gemini_features(image_blob: Dict[str, str], retries: int = 3) -> Dict[st
 
     for attempt in range(1, retries + 1):
         try:
-            response = MODEL.generate_content([prompt, image_blob])
+            response = CLIENT.models.generate_content(
+                model=MODEL_NAME,
+                contents=types.Content(
+                    parts=[types.Part(text=prompt), image_blob]
+                ),
+                config=types.GenerateContentConfig(temperature=0.0),
+            )
             payload = _extract_json_payload(response)
             if payload:
                 return payload
