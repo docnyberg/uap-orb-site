@@ -20,7 +20,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -32,6 +32,13 @@ except ImportError as exc:  # pragma: no cover - dependency error is fatal for r
         "The google-genai package is required to call the Gemini API. "
         "Install it with `pip install google-genai`."
     ) from exc
+
+try:  # pragma: no cover - UI helper is optional and platform-dependent
+    import tkinter as tk
+    from tkinter import filedialog
+except Exception:  # pragma: no cover - tkinter not always available (e.g., headless)
+    tk = None  # type: ignore[assignment]
+    filedialog = None  # type: ignore[assignment]
 
 MODEL_NAME = "gemini-2.5-flash"
 
@@ -76,6 +83,83 @@ def image_to_blob(image_path: Path) -> types.Part:
             mime_type="image/jpeg",
         )
     )
+
+
+def _create_dialog_root() -> "tk.Tk":  # type: ignore[name-defined]
+    """Return a hidden Tk root window for file dialogs."""
+    if tk is None or filedialog is None:  # type: ignore[truthy-function]
+        raise RuntimeError(
+            "tkinter is unavailable. Provide the required path via command-line "
+            "arguments instead of using the picker."
+        )
+
+    try:
+        root = tk.Tk()  # type: ignore[call-arg]
+        root.withdraw()
+        return root
+    except Exception as exc:  # pragma: no cover - GUI init failures are environment-specific
+        raise RuntimeError(
+            "Unable to open a file-selection dialog. Provide the path manually using "
+            "command-line arguments."
+        ) from exc
+
+
+def _pick_atlas_csv() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        filename = filedialog.askopenfilename(  # type: ignore[union-attr]
+            title="Select atlas CSV",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        )
+    finally:
+        root.destroy()
+    return Path(filename).expanduser() if filename else None
+
+
+def _pick_thumbs_dir() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        dirname = filedialog.askdirectory(  # type: ignore[union-attr]
+            title="Select thumbnail directory",
+        )
+    finally:
+        root.destroy()
+    return Path(dirname).expanduser() if dirname else None
+
+
+def _pick_output_csv() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        filename = filedialog.asksaveasfilename(  # type: ignore[union-attr]
+            title="Choose destination for enriched atlas CSV",
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        )
+    finally:
+        root.destroy()
+    return Path(filename).expanduser() if filename else None
+
+
+def _ensure_path(
+    provided: Optional[Path],
+    *,
+    picker: Callable[[], Optional[Path]],
+    descriptor: str,
+) -> Path:
+    """Return a resolved path, using the picker when ``provided`` is missing."""
+
+    if provided is not None:
+        return provided.expanduser()
+
+    try:
+        selection = picker()
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    if not selection:
+        raise SystemExit(f"No {descriptor} selected; aborting.")
+
+    return selection.expanduser()
 
 
 def _extract_json_payload(response: Any) -> Dict[str, Any]:
@@ -185,16 +269,14 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Enrich an atlas CSV with Gemini-generated semantic labels.",
     )
-    parser.add_argument("--atlas", required=True, type=Path, help="Path to the input atlas CSV.")
+    parser.add_argument("--atlas", type=Path, help="Path to the input atlas CSV.")
     parser.add_argument(
         "--thumbs",
-        required=True,
         type=Path,
         help="Directory containing the thumbnail images (thumbs_obj).",
     )
     parser.add_argument(
         "--out",
-        required=True,
         type=Path,
         help="Destination for the enriched CSV (e.g., atlas_gemini.csv).",
     )
@@ -203,7 +285,24 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = parse_args(argv)
-    enrich_atlas(args.atlas, args.thumbs, args.out)
+
+    atlas = _ensure_path(
+        args.atlas,
+        picker=_pick_atlas_csv,
+        descriptor="atlas CSV (--atlas)",
+    )
+    thumbs = _ensure_path(
+        args.thumbs,
+        picker=_pick_thumbs_dir,
+        descriptor="thumbnail directory (--thumbs)",
+    )
+    out_csv = _ensure_path(
+        args.out,
+        picker=_pick_output_csv,
+        descriptor="output CSV (--out)",
+    )
+
+    enrich_atlas(atlas, thumbs, out_csv)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ import os
 import time
 from pathlib import Path
 from collections import defaultdict, Counter
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -37,6 +38,13 @@ except Exception:
     cv2 = None
 
 from sklearn.cluster import DBSCAN
+
+try:
+    import tkinter as tk  # type: ignore
+    from tkinter import filedialog  # type: ignore
+except Exception:
+    tk = None  # type: ignore[assignment]
+    filedialog = None  # type: ignore[assignment]
 
 # ---------------------------
 # Helpers
@@ -1486,12 +1494,82 @@ def most_common_token(cids, token_map):
 # ---------------------------
 
 # ====== MAIN (DROP-IN) ========================================================
+def _create_dialog_root() -> "tk.Tk":  # type: ignore[name-defined]
+    if tk is None or filedialog is None:  # type: ignore[truthy-function]
+        raise RuntimeError(
+            "tkinter is unavailable. Supply the required paths using command-line arguments."
+        )
+
+    try:
+        root = tk.Tk()  # type: ignore[call-arg]
+        root.withdraw()
+        return root
+    except Exception as exc:
+        raise RuntimeError(
+            "Unable to launch a file-selection dialog. Provide the paths explicitly via CLI options."
+        ) from exc
+
+
+def _pick_atlas_csv() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        filename = filedialog.askopenfilename(  # type: ignore[union-attr]
+            title="Select atlas CSV",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        )
+    finally:
+        root.destroy()
+    return Path(filename).expanduser() if filename else None
+
+
+def _pick_thumbs_dir() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        dirname = filedialog.askdirectory(  # type: ignore[union-attr]
+            title="Select thumbnail directory",
+        )
+    finally:
+        root.destroy()
+    return Path(dirname).expanduser() if dirname else None
+
+
+def _pick_out_dir() -> Optional[Path]:
+    root = _create_dialog_root()
+    try:
+        dirname = filedialog.askdirectory(  # type: ignore[union-attr]
+            title="Select output directory for sequences",
+        )
+    finally:
+        root.destroy()
+    return Path(dirname).expanduser() if dirname else None
+
+
+def _resolve_cli_path(
+    value: Optional[str],
+    *,
+    picker: Callable[[], Optional[Path]],
+    descriptor: str,
+) -> Path:
+    if value:
+        return Path(value).expanduser()
+
+    try:
+        selected = picker()
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    if not selected:
+        raise SystemExit(f"No {descriptor} selected; aborting.")
+
+    return selected
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--atlas", required=True, help="Path to atlas.csv")
-    ap.add_argument("--thumbs", required=True, help="Directory containing thumbs (thumbs_obj)")
-    ap.add_argument("--out", required=True, help="Output directory for sequences & codebook")
+    ap.add_argument("--atlas", help="Path to atlas.csv")
+    ap.add_argument("--thumbs", help="Directory containing thumbs (thumbs_obj)")
+    ap.add_argument("--out", help="Output directory for sequences & codebook")
 
     # clustering/tokens (kept)
     ap.add_argument("--min-samples", type=int, default=6, help="DBSCAN min_samples")
@@ -1535,9 +1613,21 @@ def main():
 
     args = ap.parse_args()
 
-    atlas_csv = Path(args.atlas)
-    thumbs_dir = Path(args.thumbs)
-    out_dir = Path(args.out)
+    atlas_csv = _resolve_cli_path(
+        args.atlas,
+        picker=_pick_atlas_csv,
+        descriptor="atlas CSV (--atlas)",
+    )
+    thumbs_dir = _resolve_cli_path(
+        args.thumbs,
+        picker=_pick_thumbs_dir,
+        descriptor="thumbnail directory (--thumbs)",
+    )
+    out_dir = _resolve_cli_path(
+        args.out,
+        picker=_pick_out_dir,
+        descriptor="output directory (--out)",
+    )
     ensure_dir(out_dir)
 
     print(f"[load] atlas: {atlas_csv}")
