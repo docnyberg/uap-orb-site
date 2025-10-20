@@ -517,6 +517,25 @@ class StrictGatedMetric:
         feat_scale: dict with 'log_area_mu','log_area_sigma', etc for z-scaling.
         Returns distance in [0,1].
         """
+        # --- Gemini-powered semantic gates (run before numeric checks) ---
+        def _norm_semantic(value):
+            if value is None:
+                return ""
+            s = str(value).strip().lower()
+            if not s or s == "unknown" or s == "nan":
+                return ""
+            return s
+
+        shape_a = _norm_semantic(a.get('shape_category'))
+        shape_b = _norm_semantic(b.get('shape_category'))
+        if shape_a and shape_b and shape_a != shape_b:
+            return 1.0
+
+        color_a = _norm_semantic(a.get('primary_color'))
+        color_b = _norm_semantic(b.get('primary_color'))
+        if color_a and color_b and color_a != color_b:
+            return 1.0
+
         # Hard gates
         # Hue
         # Our hue values are expressed in full 0-360° space (either read directly
@@ -646,6 +665,9 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
     col_ecc  = pick("eccentricity", "ecc")
     col_ar   = pick("aspect_ratio", "ar")
     col_phash = pick("phash64", "phash")
+    col_primary = pick("primary_color", "gemini_primary_color", "dominant_color")
+    col_shape = pick("shape_category", "gemini_shape", "shape_label")
+    col_texture = pick("texture", "gemini_texture", "surface_texture")
 
     if not col_thumb or not col_json:
         raise ValueError(
@@ -686,6 +708,25 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
 
         col_event = "_e_idx_inferred"
 
+    # Normalise Gemini semantic labels (if present)
+    def _clean_semantic(value: object) -> str:
+        if value is None:
+            return "unknown"
+        try:
+            if pd.isna(value):  # type: ignore[attr-defined]
+                return "unknown"
+        except Exception:
+            pass
+        s = str(value).strip()
+        return s if s else "unknown"
+
+    if col_primary and col_primary in df.columns:
+        df[col_primary] = df[col_primary].apply(_clean_semantic)
+    if col_shape and col_shape in df.columns:
+        df[col_shape] = df[col_shape].apply(_clean_semantic)
+    if col_texture and col_texture in df.columns:
+        df[col_texture] = df[col_texture].apply(_clean_semantic)
+
     # Build records
     recs = []
     for _, row in df.iterrows():
@@ -712,6 +753,9 @@ def load_atlas(atlas_csv: Path, thumbs_dir: Path, min_area_px: int):
             h=h, s=s, v=v,
             area=area, solidity=sol, ecc=ecc, ar=ar,
             phash64=ph,
+            primary_color=_clean_semantic(row[col_primary]) if col_primary else "unknown",
+            shape_category=_clean_semantic(row[col_shape]) if col_shape else "unknown",
+            texture=_clean_semantic(row[col_texture]) if col_texture else "unknown",
             # include timestamps if your atlas has them
             start_ts=safe_float(row[col_start]) if col_start else None,
             end_ts=safe_float(row[col_end]) if col_end else None,
