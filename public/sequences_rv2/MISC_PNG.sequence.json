@@ -1,0 +1,85 @@
+{
+  "json_file": "MISC_PNG",
+  "n_events": 1,
+  "legend": {
+    "B": {
+      "cluster_id": 50,
+      "count": 330,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e073_045950_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.6.json",
+        "e_idx": 73,
+        "h": 221.5,
+        "s": 0.48,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "M": {
+      "cluster_id": 14,
+      "count": 199,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e091_091500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 91,
+        "h": 206.5,
+        "s": 0.52,
+        "v": 0.58,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.067,
+        "phash64": 0
+      }
+    }
+  },
+  "symbol_seq": "BM",
+  "symbol_seq_enhanced": "Unknown↓✦ o4 s0 V0",
+  "binary_seq": "1",
+  "v_threshold": 0.08806213883779401,
+  "events": [
+    {
+      "event_index": 0,
+      "start_ts": null,
+      "end_ts": null,
+      "duration": null,
+      "morphology": "sphere",
+      "color_label": "Unknown",
+      "arrow": "↓",
+      "orientation": "↓",
+      "flash": true,
+      "orientation8": 4,
+      "sector8": 0,
+      "vacuole_count": 0,
+      "vacuole_angles_deg": [],
+      "vacuole_sectors8": [],
+      "vacuole_mask8": 0,
+      "cluster_id": 45,
+      "thumb_obj": "misc_00001_File_000 (1).png",
+      "enhanced_token": "Unknown↓✦ o4 s0 V0"
+    }
+  ],
+  "cycles": [],
+  "clustering": {
+    "eps": 0.28,
+    "min_samples": 6,
+    "weights": {
+      "w_phash": 2.0,
+      "w_hue": 1.0,
+      "w_feat": 1.0
+    },
+    "gates": {
+      "hue_deg": 6.0,
+      "area_ratio": 0.45,
+      "solidity": 0.2,
+      "ecc": 0.28,
+      "aspect_ratio": 0.6
+    },
+    "min_area_px": 50,
+    "method": "strict-gated (hue-bucketed DBSCAN)"
+  }
+}

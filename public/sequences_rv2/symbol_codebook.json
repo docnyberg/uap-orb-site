@@ -1,0 +1,1989 @@
+{
+  "n_clusters": 78,
+  "weights": {
+    "w_phash": 2.0,
+    "w_hue": 1.0,
+    "w_feat": 1.0
+  },
+  "gates": {
+    "hue_deg": 6.0,
+    "area_ratio": 0.45,
+    "solidity": 0.2,
+    "ecc": 0.28,
+    "aspect_ratio": 0.6
+  },
+  "min_area_px": 50,
+  "radial": {
+    "sectors": 8,
+    "enable_radial": true,
+    "enable_vacuoles": true,
+    "band_frac": 0.12,
+    "hough": {
+      "minr_frac": 0.03,
+      "maxr_frac": 0.12,
+      "dp": 1.2,
+      "p1": 80,
+      "p2": 14,
+      "mindist_frac": 0.08
+    },
+    "color_guards": {
+      "s_min": 0.05,
+      "v_min": 0.05
+    },
+    "max_thumb_side": 160
+  },
+  "legend": {
+    "A": {
+      "cluster_id": 46,
+      "count": 401,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e199_099700_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 199,
+        "h": 228.0,
+        "s": 0.49,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "B": {
+      "cluster_id": 50,
+      "count": 330,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e073_045950_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.6.json",
+        "e_idx": 73,
+        "h": 221.5,
+        "s": 0.48,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "C": {
+      "cluster_id": 33,
+      "count": 325,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg",
+        "json_file": "20250812_034218000_iOS2.json",
+        "e_idx": 10,
+        "h": 233.3,
+        "s": 0.53,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "D": {
+      "cluster_id": 3,
+      "count": 298,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e359_179749_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 359,
+        "h": 240.2,
+        "s": 0.49,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.941,
+        "phash64": 0
+      }
+    },
+    "E": {
+      "cluster_id": 21,
+      "count": 291,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d29l69nog65hkej1drug_e072_036250_obj.jpg",
+        "json_file": "v15044gf0000d29l69nog65hkej1drug.json",
+        "e_idx": 72,
+        "h": 215.2,
+        "s": 0.44,
+        "v": 0.61,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.067,
+        "phash64": 0
+      }
+    },
+    "F": {
+      "cluster_id": 7,
+      "count": 286,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e173_086750_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 173,
+        "h": 33.6,
+        "s": 0.42,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 15711692668243515708
+      }
+    },
+    "G": {
+      "cluster_id": 0,
+      "count": 262,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e020_010250_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 20,
+        "h": 39.9,
+        "s": 0.66,
+        "v": 0.52,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.115,
+        "phash64": 11180577941783940325
+      }
+    },
+    "H": {
+      "cluster_id": 36,
+      "count": 261,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS_e035_041900_obj.jpg",
+        "json_file": "20250812_034218000_iOS.json",
+        "e_idx": 35,
+        "h": 248.1,
+        "s": 0.56,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.067,
+        "phash64": 0
+      }
+    },
+    "I": {
+      "cluster_id": 74,
+      "count": 260,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e038_019250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 38,
+        "h": 21.4,
+        "s": 0.94,
+        "v": 0.57,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 11212384644132903369
+      }
+    },
+    "J": {
+      "cluster_id": 10,
+      "count": 240,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e014_007250_obj.jpg",
+        "json_file": "Michelle_orb_video.json",
+        "e_idx": 14,
+        "h": 49.3,
+        "s": 0.62,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.111,
+        "phash64": 10239551217767010103
+      }
+    },
+    "K": {
+      "cluster_id": 11,
+      "count": 225,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e040_040500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 40,
+        "h": 27.1,
+        "s": 0.86,
+        "v": 0.55,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.158,
+        "phash64": 11416169726894460003
+      }
+    },
+    "L": {
+      "cluster_id": 38,
+      "count": 218,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e033_033500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 33,
+        "h": 250.0,
+        "s": 0.57,
+        "v": 0.6,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "M": {
+      "cluster_id": 14,
+      "count": 199,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e091_091500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 91,
+        "h": 206.5,
+        "s": 0.52,
+        "v": 0.58,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.067,
+        "phash64": 0
+      }
+    },
+    "N": {
+      "cluster_id": 18,
+      "count": 195,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e148_074250_obj.jpg",
+        "json_file": "v15044gf0000d2u5stvog65gtfara2j0.json",
+        "e_idx": 148,
+        "h": 57.1,
+        "s": 0.58,
+        "v": 0.38,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.946,
+        "phash64": 0
+      }
+    },
+    "O": {
+      "cluster_id": 16,
+      "count": 190,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e036_036500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 36,
+        "h": 255.8,
+        "s": 0.5,
+        "v": 0.64,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.077,
+        "phash64": 0
+      }
+    },
+    "P": {
+      "cluster_id": 32,
+      "count": 185,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v3fi7og65i63u488qg_e100_050250_obj.jpg",
+        "json_file": "v15044gf0000d2v3fi7og65i63u488qg.json",
+        "e_idx": 100,
+        "h": 210.5,
+        "s": 0.57,
+        "v": 0.47,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.857,
+        "phash64": 0
+      }
+    },
+    "Q": {
+      "cluster_id": 44,
+      "count": 183,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e135_067750_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 135,
+        "h": 18.3,
+        "s": 0.96,
+        "v": 0.46,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.973,
+        "phash64": 11140046644498389148
+      }
+    },
+    "R": {
+      "cluster_id": 4,
+      "count": 168,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e097_048750_obj.jpg",
+        "json_file": "v15044gf0000d2u5stvog65gtfara2j0.json",
+        "e_idx": 97,
+        "h": 66.4,
+        "s": 0.42,
+        "v": 0.37,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.108,
+        "phash64": 0
+      }
+    },
+    "S": {
+      "cluster_id": 27,
+      "count": 166,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e202_101250_obj.jpg",
+        "json_file": "v12044gd0000d2husv7og65snaorfbcg.mp4.json",
+        "e_idx": 202,
+        "h": 55.0,
+        "s": 0.59,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.083,
+        "phash64": 15794797677248695404
+      }
+    },
+    "T": {
+      "cluster_id": 53,
+      "count": 158,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2usptnog65pe6f8a68g_e027_013750_obj.jpg",
+        "json_file": "v15044gf0000d2usptnog65pe6f8a68g.json",
+        "e_idx": 27,
+        "h": 194.4,
+        "s": 0.71,
+        "v": 0.35,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 0
+      }
+    },
+    "U": {
+      "cluster_id": 25,
+      "count": 157,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e127_063750_obj.jpg",
+        "json_file": "v15044gf0000d2u5stvog65gtfara2j0.json",
+        "e_idx": 127,
+        "h": 72.9,
+        "s": 0.42,
+        "v": 0.42,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.138,
+        "phash64": 0
+      }
+    },
+    "V": {
+      "cluster_id": 61,
+      "count": 153,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e069_069500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 69,
+        "h": 306.2,
+        "s": 0.91,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.286,
+        "phash64": 14973958801467403617
+      }
+    },
+    "W": {
+      "cluster_id": 13,
+      "count": 153,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e108_108500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 108,
+        "h": 333.9,
+        "s": 0.87,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.8,
+        "phash64": 10289987602107058589
+      }
+    },
+    "X": {
+      "cluster_id": 31,
+      "count": 151,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2uaminog65ln1ss0a60_e128_064250_obj.jpg",
+        "json_file": "v15044gf0000d2uaminog65ln1ss0a60.json",
+        "e_idx": 128,
+        "h": 261.0,
+        "s": 0.24,
+        "v": 0.28,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.845,
+        "phash64": 0
+      }
+    },
+    "Y": {
+      "cluster_id": 2,
+      "count": 143,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e446_188500_obj.jpg",
+        "json_file": "v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast.json",
+        "e_idx": 446,
+        "h": 198.2,
+        "s": 0.24,
+        "v": 0.49,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.062,
+        "phash64": 0
+      }
+    },
+    "Z": {
+      "cluster_id": 52,
+      "count": 143,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2uaminog65ln1ss0a60_e037_018750_obj.jpg",
+        "json_file": "v15044gf0000d2uaminog65ln1ss0a60.json",
+        "e_idx": 37,
+        "h": 296.6,
+        "s": 0.4,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.171,
+        "phash64": 14725701179166962483
+      }
+    },
+    "AA": {
+      "cluster_id": 48,
+      "count": 141,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e006_006500_obj.jpg",
+        "json_file": "v15044gf0000d2iifsnog65r86tlmk0g.json",
+        "e_idx": 6,
+        "h": 270.9,
+        "s": 0.84,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.944,
+        "phash64": 11104576949207013784
+      }
+    },
+    "AB": {
+      "cluster_id": 42,
+      "count": 141,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e120_120500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 120,
+        "h": 302.5,
+        "s": 0.92,
+        "v": 0.53,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.158,
+        "phash64": 11103736789309381059
+      }
+    },
+    "AC": {
+      "cluster_id": 6,
+      "count": 131,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v12044gd0000d2v2ad7og65qedn7062g_e079_039750_obj.jpg",
+        "json_file": "v12044gd0000d2v2ad7og65qedn7062g.json",
+        "e_idx": 79,
+        "h": 95.3,
+        "s": 0.61,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.036,
+        "phash64": 0
+      }
+    },
+    "AD": {
+      "cluster_id": 34,
+      "count": 130,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e073_005016_obj.jpg",
+        "json_file": "20250815_204153000_iOS2.json",
+        "e_idx": 73,
+        "h": 328.1,
+        "s": 0.69,
+        "v": 0.56,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.082,
+        "phash64": 14851008339538792393
+      }
+    },
+    "AE": {
+      "cluster_id": 5,
+      "count": 129,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e130_065250_obj.jpg",
+        "json_file": "v15044gf0000d2u5stvog65gtfara2j0.json",
+        "e_idx": 130,
+        "h": 77.5,
+        "s": 0.53,
+        "v": 0.46,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.1,
+        "phash64": 0
+      }
+    },
+    "AF": {
+      "cluster_id": 24,
+      "count": 122,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v3fi7og65i63u488qg_e012_006250_obj.jpg",
+        "json_file": "v15044gf0000d2v3fi7og65i63u488qg.json",
+        "e_idx": 12,
+        "h": 82.7,
+        "s": 0.71,
+        "v": 0.57,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.281,
+        "phash64": 0
+      }
+    },
+    "AG": {
+      "cluster_id": 22,
+      "count": 113,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ftmcfog65g2pr51j70_e016_008250_obj.jpg",
+        "json_file": "v15044gf0000d2ftmcfog65g2pr51j70.json",
+        "e_idx": 16,
+        "h": 101.5,
+        "s": 0.87,
+        "v": 0.42,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.255,
+        "phash64": 14635631041069206887
+      }
+    },
+    "AH": {
+      "cluster_id": 29,
+      "count": 111,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gk20nog65g267kppig_e044_022250_obj.jpg",
+        "json_file": "v15044gf0000d2gk20nog65g267kppig.json",
+        "e_idx": 44,
+        "h": 280.0,
+        "s": 0.51,
+        "v": 0.63,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 11154683120820918988
+      }
+    },
+    "AI": {
+      "cluster_id": 23,
+      "count": 110,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e113_113500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 113,
+        "h": 322.1,
+        "s": 0.8,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.12,
+        "phash64": 11113025325907069299
+      }
+    },
+    "AJ": {
+      "cluster_id": 72,
+      "count": 109,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e022_022500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 22,
+        "h": 320.7,
+        "s": 0.92,
+        "v": 0.48,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.097,
+        "phash64": 10290850259164645734
+      }
+    },
+    "AK": {
+      "cluster_id": 26,
+      "count": 108,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e023_023500_obj.jpg",
+        "json_file": "v15044gf0000d2iifsnog65r86tlmk0g.json",
+        "e_idx": 23,
+        "h": 289.2,
+        "s": 0.9,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.026,
+        "phash64": 11428272626957040071
+      }
+    },
+    "AL": {
+      "cluster_id": 69,
+      "count": 106,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e071_071500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 71,
+        "h": 309.3,
+        "s": 0.98,
+        "v": 0.56,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.077,
+        "phash64": 11424054685548597148
+      }
+    },
+    "AM": {
+      "cluster_id": 8,
+      "count": 105,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e151_075750_obj.jpg",
+        "json_file": "v15044gf0000d2u5stvog65gtfara2j0.json",
+        "e_idx": 151,
+        "h": 89.4,
+        "s": 0.56,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.118,
+        "phash64": 0
+      }
+    },
+    "AN": {
+      "cluster_id": 39,
+      "count": 93,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e152_076250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 152,
+        "h": 128.2,
+        "s": 0.87,
+        "v": 0.57,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.154,
+        "phash64": 11163404785553952556
+      }
+    },
+    "AO": {
+      "cluster_id": 1,
+      "count": 91,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e083_041750_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 83,
+        "h": 122.9,
+        "s": 0.97,
+        "v": 0.49,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.097,
+        "phash64": 15805774552787568920
+      }
+    },
+    "AP": {
+      "cluster_id": 40,
+      "count": 88,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v12044gd0000d2v2ad7og65qedn7062g_e086_043250_obj.jpg",
+        "json_file": "v12044gd0000d2v2ad7og65qedn7062g.json",
+        "e_idx": 86,
+        "h": 182.4,
+        "s": 0.7,
+        "v": 0.4,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.861,
+        "phash64": 0
+      }
+    },
+    "AQ": {
+      "cluster_id": 64,
+      "count": 86,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v6invog65i28us10og_e045_022750_obj.jpg",
+        "json_file": "v15044gf0000d2v6invog65i28us10og.json",
+        "e_idx": 45,
+        "h": 278.3,
+        "s": 0.97,
+        "v": 0.49,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.036,
+        "phash64": 14865649204312264165
+      }
+    },
+    "AR": {
+      "cluster_id": 70,
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e146_073250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 146,
+        "h": 171.5,
+        "s": 0.97,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.048,
+        "phash64": 11405755454221163804
+      }
+    },
+    "AS": {
+      "cluster_id": 51,
+      "count": 83,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v24044gl0000d2uqkcfog65nf5bip570_e082_041250_obj.jpg",
+        "json_file": "v24044gl0000d2uqkcfog65nf5bip570.json",
+        "e_idx": 82,
+        "h": 157.6,
+        "s": 0.88,
+        "v": 0.32,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.277,
+        "phash64": 0
+      }
+    },
+    "AT": {
+      "cluster_id": 63,
+      "count": 81,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e095_095500_obj.jpg",
+        "json_file": "v15044gf0000d2ie6rfog65qka6atq7g.json",
+        "e_idx": 95,
+        "h": 341.6,
+        "s": 0.87,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.2,
+        "phash64": 14874881120562760870
+      }
+    },
+    "AU": {
+      "cluster_id": 62,
+      "count": 77,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gkmqvog65j2bgtitqg_e068_034250_obj.jpg",
+        "json_file": "v15044gf0000d2gkmqvog65j2bgtitqg.json",
+        "e_idx": 68,
+        "h": 340.8,
+        "s": 0.52,
+        "v": 0.5,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.3,
+        "phash64": 0
+      }
+    },
+    "AV": {
+      "cluster_id": 57,
+      "count": 71,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e073_073500_obj.jpg",
+        "json_file": "v15044gf0000d2j6b17og65tfia5e8sg.json",
+        "e_idx": 73,
+        "h": 168.8,
+        "s": 0.77,
+        "v": 0.48,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.9,
+        "phash64": 10130972051491768781
+      }
+    },
+    "AW": {
+      "cluster_id": 30,
+      "count": 71,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e008_004250_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 8,
+        "h": 186.1,
+        "s": 0.37,
+        "v": 0.53,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.083,
+        "phash64": 10329111468537698717
+      }
+    },
+    "AX": {
+      "cluster_id": 66,
+      "count": 68,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS3_e025_022050_obj.jpg",
+        "json_file": "20250815_204153000_iOS3.json",
+        "e_idx": 25,
+        "h": 105.0,
+        "s": 0.81,
+        "v": 0.6,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.101,
+        "phash64": 15802115366077253993
+      }
+    },
+    "AY": {
+      "cluster_id": 49,
+      "count": 64,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gkmqvog65j2bgtitqg_e059_029750_obj.jpg",
+        "json_file": "v15044gf0000d2gkmqvog65j2bgtitqg.json",
+        "e_idx": 59,
+        "h": 161.0,
+        "s": 0.79,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.026,
+        "phash64": 11127943765960607846
+      }
+    },
+    "AZ": {
+      "cluster_id": 43,
+      "count": 60,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e051_025750_obj.jpg",
+        "json_file": "v15044gf0000d2iijmvog65i9etndc70.json",
+        "e_idx": 51,
+        "h": 115.1,
+        "s": 0.51,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.0,
+        "phash64": 14607532488845449563
+      }
+    },
+    "BA": {
+      "cluster_id": 54,
+      "count": 59,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e040_020250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 40,
+        "h": 142.2,
+        "s": 0.96,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.073,
+        "phash64": 14652519557985520440
+      }
+    },
+    "BB": {
+      "cluster_id": 60,
+      "count": 53,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e092_046250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 92,
+        "h": 151.7,
+        "s": 0.97,
+        "v": 0.51,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.1,
+        "phash64": 15717111219516512841
+      }
+    },
+    "BC": {
+      "cluster_id": 58,
+      "count": 51,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e063_031750_obj.jpg",
+        "json_file": "v15044gf0000d2v512nog65n12jlhl9g.json",
+        "e_idx": 63,
+        "h": 13.6,
+        "s": 0.82,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.974,
+        "phash64": 11031679882405530733
+      }
+    },
+    "BD": {
+      "cluster_id": 71,
+      "count": 47,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e099_049750_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 99,
+        "h": 132.3,
+        "s": 0.94,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.091,
+        "phash64": 16003085449213397353
+      }
+    },
+    "BE": {
+      "cluster_id": 68,
+      "count": 42,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e050_025250_obj.jpg",
+        "json_file": "v15044gf0000d2js9uvog65r8b9dc63g.json",
+        "e_idx": 50,
+        "h": 139.1,
+        "s": 0.94,
+        "v": 0.54,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.098,
+        "phash64": 11124283878298770537
+      }
+    },
+    "BF": {
+      "cluster_id": 77,
+      "count": 23,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e039_019740_obj.jpg",
+        "json_file": "v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast.json",
+        "e_idx": 39,
+        "h": 5.1,
+        "s": 0.21,
+        "v": 0.38,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.2,
+        "phash64": 0
+      }
+    },
+    "BG": {
+      "cluster_id": 75,
+      "count": 21,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e130_070500_obj.jpg",
+        "json_file": "v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast.json",
+        "e_idx": 130,
+        "h": 345.7,
+        "s": 0.48,
+        "v": 0.59,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 1.091,
+        "phash64": 15162262686674917812
+      }
+    },
+    "BH": {
+      "cluster_id": 12,
+      "count": 16,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2flkovog65hjpqn71f0_e065_032750_obj.jpg",
+        "json_file": "v15044gf0000d2flkovog65hjpqn71f0.json",
+        "e_idx": 65,
+        "h": 30.0,
+        "s": 0.73,
+        "v": 0.4,
+        "area": 249077.5,
+        "solidity": 0.9538777042060961,
+        "ecc": 0.8492692993751105,
+        "ar": 1.583,
+        "phash64": 11356171001798484261
+      }
+    },
+    "BI": {
+      "cluster_id": 20,
+      "count": 15,
+      "prototype": {
+        "thumb_obj": "v24044gl0000d2het8fog65gpmg3gr4g_e125_125500_obj.jpg",
+        "json_file": "v24044gl0000d2het8fog65gpmg3gr4g.json",
+        "e_idx": 125,
+        "h": 58.2,
+        "s": 0.56,
+        "v": 0.43,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 2.347,
+        "phash64": 15212082997288004835
+      }
+    },
+    "BJ": {
+      "cluster_id": 35,
+      "count": 14,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tsac7og65i8muc9e00_e091_045750_obj.jpg",
+        "json_file": "v15044gf0000d2tsac7og65i8muc9e00.json",
+        "e_idx": 91,
+        "h": 331.5,
+        "s": 0.48,
+        "v": 0.62,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.25,
+        "phash64": 0
+      }
+    },
+    "BK": {
+      "cluster_id": 56,
+      "count": 10,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2i0647og65vlmef6qv0_e050_025250_obj.jpg",
+        "json_file": "v12044gd0000d2i0647og65vlmef6qv0.json",
+        "e_idx": 50,
+        "h": 146.8,
+        "s": 0.66,
+        "v": 0.36,
+        "area": 260768.5,
+        "solidity": 0.9986500511257234,
+        "ecc": 0.5211025926618374,
+        "ar": 2.102,
+        "phash64": 10698414335670891059
+      }
+    },
+    "BL": {
+      "cluster_id": 76,
+      "count": 10,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v6invog65i28us10og_e159_079750_obj.jpg",
+        "json_file": "v15044gf0000d2v6invog65i28us10og.json",
+        "e_idx": 159,
+        "h": 351.2,
+        "s": 0.82,
+        "v": 0.32,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.786,
+        "phash64": 10843592448838900435
+      }
+    },
+    "BM": {
+      "cluster_id": 45,
+      "count": 8,
+      "prototype": {
+        "thumb_obj": "misc_00026_IMG_6527.png",
+        "json_file": "MISC_PNG",
+        "e_idx": 0,
+        "h": 19.30002548511311,
+        "s": 0.06750679049953918,
+        "v": 0.0053740535053599285,
+        "area": 3009790.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.4612676056338028,
+        "phash64": 11111169066938846565
+      }
+    },
+    "BN": {
+      "cluster_id": 37,
+      "count": 8,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e069_019200_obj.jpg",
+        "json_file": "20250816_033400000_iOS.json",
+        "e_idx": 69,
+        "h": 247.7,
+        "s": 0.66,
+        "v": 0.65,
+        "area": 171381.5,
+        "solidity": 0.9483366349782534,
+        "ecc": 0.9521088793218409,
+        "ar": 0.966,
+        "phash64": 10194503482141399302
+      }
+    },
+    "BO": {
+      "cluster_id": 65,
+      "count": 7,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e076_020600_obj.jpg",
+        "json_file": "20250816_033400000_iOS.json",
+        "e_idx": 76,
+        "h": 109.2,
+        "s": 0.55,
+        "v": 0.58,
+        "area": 190257.5,
+        "solidity": 0.7286181502062262,
+        "ecc": 0.5495332964795085,
+        "ar": 1.088,
+        "phash64": 15771091517002143984
+      }
+    },
+    "BP": {
+      "cluster_id": 41,
+      "count": 7,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e028_028500_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 28,
+        "h": 180.3,
+        "s": 0.63,
+        "v": 0.56,
+        "area": 252052.0,
+        "solidity": 0.9652689749196732,
+        "ecc": 0.7594614608585117,
+        "ar": 2.125,
+        "phash64": 14974415450053685296
+      }
+    },
+    "BQ": {
+      "cluster_id": 28,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v24044gl0000d2het8fog65gpmg3gr4g_e093_093500_obj.jpg",
+        "json_file": "v24044gl0000d2het8fog65gpmg3gr4g.json",
+        "e_idx": 93,
+        "h": 52.4,
+        "s": 0.54,
+        "v": 0.48,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 2.158,
+        "phash64": 14634505021850925543
+      }
+    },
+    "BR": {
+      "cluster_id": 19,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e048_024250_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 48,
+        "h": 60.6,
+        "s": 0.77,
+        "v": 0.28,
+        "area": 219031.0,
+        "solidity": 0.8388103599480701,
+        "ecc": 0.7238280548859406,
+        "ar": 0.665,
+        "phash64": 9652761788118870570
+      }
+    },
+    "BS": {
+      "cluster_id": 9,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e036_018250_obj.jpg",
+        "json_file": "v15044gf0000d2hjqh7og65nf6193bh0.json",
+        "e_idx": 36,
+        "h": 88.0,
+        "s": 0.32,
+        "v": 0.54,
+        "area": 243320.5,
+        "solidity": 0.9318304540806752,
+        "ecc": 0.544715052127397,
+        "ar": 1.056,
+        "phash64": 15837868432732480568
+      }
+    },
+    "BT": {
+      "cluster_id": 67,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e078_021000_obj.jpg",
+        "json_file": "20250816_033400000_iOS.json",
+        "e_idx": 78,
+        "h": 136.3,
+        "s": 0.48,
+        "v": 0.44,
+        "area": 197883.0,
+        "solidity": 0.7997227605131759,
+        "ecc": 0.5453607287914904,
+        "ar": 1.096,
+        "phash64": 15837305600797808905
+      }
+    },
+    "BU": {
+      "cluster_id": 55,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e082_021799_obj.jpg",
+        "json_file": "20250816_033400000_iOS.json",
+        "e_idx": 82,
+        "h": 141.0,
+        "s": 0.42,
+        "v": 0.47,
+        "area": 242979.5,
+        "solidity": 0.9305245460916587,
+        "ecc": 0.825754623882804,
+        "ar": 1.033,
+        "phash64": 15845181444670889196
+      }
+    },
+    "BV": {
+      "cluster_id": 59,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e068_033950_obj.jpg",
+        "json_file": "20250816_033400000_iOS_conv.json",
+        "e_idx": 68,
+        "h": 148.8,
+        "s": 0.53,
+        "v": 0.53,
+        "area": 261115.0,
+        "solidity": 0.9999770221468208,
+        "ecc": 0.9950129675408921,
+        "ar": 1.818,
+        "phash64": 11205910715457488745
+      }
+    },
+    "BW": {
+      "cluster_id": 15,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e022_022500_obj.jpg",
+        "json_file": "v15044gf0000d2ht9mnog65nf61i3sl0.json",
+        "e_idx": 22,
+        "h": 205.2,
+        "s": 0.77,
+        "v": 0.52,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 3.143,
+        "phash64": 14295896032159938864
+      }
+    },
+    "BX": {
+      "cluster_id": 47,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS4_e075_056834_obj.jpg",
+        "json_file": "20250815_204153000_iOS4.json",
+        "e_idx": 75,
+        "h": 226.6,
+        "s": 0.45,
+        "v": 0.43,
+        "area": 232836.5,
+        "solidity": 0.8916804852922592,
+        "ecc": 0.44508631485613487,
+        "ar": 0.947,
+        "phash64": 11120343757437032907
+      }
+    },
+    "BY": {
+      "cluster_id": 17,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS4_e077_058334_obj.jpg",
+        "json_file": "20250815_204153000_iOS4.json",
+        "e_idx": 77,
+        "h": 256.4,
+        "s": 0.39,
+        "v": 0.56,
+        "area": 233812.5,
+        "solidity": 0.895418216076072,
+        "ecc": 0.818461996835945,
+        "ar": 1.2,
+        "phash64": 9676882876919098925
+      }
+    },
+    "BZ": {
+      "cluster_id": 73,
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2uavtfog65qu5s54ok0_e016_008250_obj.jpg",
+        "json_file": "v15044gf0000d2uavtfog65qu5s54ok0.json",
+        "e_idx": 16,
+        "h": 319.2,
+        "s": 0.3,
+        "v": 0.65,
+        "area": 261121.0,
+        "solidity": 1.0,
+        "ecc": NaN,
+        "ar": 0.263,
+        "phash64": 0
+      }
+    }
+  },
+  "clusters": [
+    {
+      "cluster_id": 46,
+      "token": "A",
+      "count": 401,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e199_099700_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 50,
+      "token": "B",
+      "count": 330,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2.6_e073_045950_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 33,
+      "token": "C",
+      "count": 325,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS2_e010_006600_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 3,
+      "token": "D",
+      "count": 298,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e359_179749_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 21,
+      "token": "E",
+      "count": 291,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d29l69nog65hkej1drug_e072_036250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 7,
+      "token": "F",
+      "count": 286,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e173_086750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 0,
+      "token": "G",
+      "count": 262,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e020_010250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 36,
+      "token": "H",
+      "count": 261,
+      "prototype": {
+        "thumb_obj": "20250812_034218000_iOS_e035_041900_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 74,
+      "token": "I",
+      "count": 260,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e038_019250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 10,
+      "token": "J",
+      "count": 240,
+      "prototype": {
+        "thumb_obj": "Michelle_orb_video_e014_007250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 11,
+      "token": "K",
+      "count": 225,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e040_040500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 38,
+      "token": "L",
+      "count": 218,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e033_033500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 14,
+      "token": "M",
+      "count": 199,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e091_091500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 18,
+      "token": "N",
+      "count": 195,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e148_074250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 16,
+      "token": "O",
+      "count": 190,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e036_036500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 32,
+      "token": "P",
+      "count": 185,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v3fi7og65i63u488qg_e100_050250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 44,
+      "token": "Q",
+      "count": 183,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e135_067750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 4,
+      "token": "R",
+      "count": 168,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e097_048750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 27,
+      "token": "S",
+      "count": 166,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2husv7og65snaorfbcg.mp4_e202_101250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 53,
+      "token": "T",
+      "count": 158,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2usptnog65pe6f8a68g_e027_013750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 25,
+      "token": "U",
+      "count": 157,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e127_063750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 61,
+      "token": "V",
+      "count": 153,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e069_069500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 13,
+      "token": "W",
+      "count": 153,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e108_108500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 31,
+      "token": "X",
+      "count": 151,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2uaminog65ln1ss0a60_e128_064250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 2,
+      "token": "Y",
+      "count": 143,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e446_188500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 52,
+      "token": "Z",
+      "count": 143,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2uaminog65ln1ss0a60_e037_018750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 48,
+      "token": "AA",
+      "count": 141,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e006_006500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 42,
+      "token": "AB",
+      "count": 141,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e120_120500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 6,
+      "token": "AC",
+      "count": 131,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v12044gd0000d2v2ad7og65qedn7062g_e079_039750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 34,
+      "token": "AD",
+      "count": 130,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS2_e073_005016_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 5,
+      "token": "AE",
+      "count": 129,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e130_065250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 24,
+      "token": "AF",
+      "count": 122,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v3fi7og65i63u488qg_e012_006250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 22,
+      "token": "AG",
+      "count": 113,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ftmcfog65g2pr51j70_e016_008250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 29,
+      "token": "AH",
+      "count": 111,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gk20nog65g267kppig_e044_022250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 23,
+      "token": "AI",
+      "count": 110,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e113_113500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 72,
+      "token": "AJ",
+      "count": 109,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e022_022500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 26,
+      "token": "AK",
+      "count": 108,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iifsnog65r86tlmk0g_e023_023500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 69,
+      "token": "AL",
+      "count": 106,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e071_071500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 8,
+      "token": "AM",
+      "count": 105,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2u5stvog65gtfara2j0_e151_075750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 39,
+      "token": "AN",
+      "count": 93,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e152_076250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 1,
+      "token": "AO",
+      "count": 91,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e083_041750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 40,
+      "token": "AP",
+      "count": 88,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v12044gd0000d2v2ad7og65qedn7062g_e086_043250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 64,
+      "token": "AQ",
+      "count": 86,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v6invog65i28us10og_e045_022750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 70,
+      "token": "AR",
+      "count": 85,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e146_073250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 51,
+      "token": "AS",
+      "count": 83,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v24044gl0000d2uqkcfog65nf5bip570_e082_041250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 63,
+      "token": "AT",
+      "count": 81,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ie6rfog65qka6atq7g_e095_095500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 62,
+      "token": "AU",
+      "count": 77,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gkmqvog65j2bgtitqg_e068_034250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 57,
+      "token": "AV",
+      "count": 71,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2j6b17og65tfia5e8sg_e073_073500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 30,
+      "token": "AW",
+      "count": 71,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e008_004250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 66,
+      "token": "AX",
+      "count": 68,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS3_e025_022050_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 49,
+      "token": "AY",
+      "count": 64,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2gkmqvog65j2bgtitqg_e059_029750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 43,
+      "token": "AZ",
+      "count": 60,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2iijmvog65i9etndc70_e051_025750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 54,
+      "token": "BA",
+      "count": 59,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e040_020250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 60,
+      "token": "BB",
+      "count": 53,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e092_046250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 58,
+      "token": "BC",
+      "count": 51,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v512nog65n12jlhl9g_e063_031750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 71,
+      "token": "BD",
+      "count": 47,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e099_049750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 68,
+      "token": "BE",
+      "count": 42,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2js9uvog65r8b9dc63g_e050_025250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 77,
+      "token": "BF",
+      "count": 23,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e039_019740_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 75,
+      "token": "BG",
+      "count": 21,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tq7hnog65n4dbc2500_e010_005250_inlinefast_e130_070500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 12,
+      "token": "BH",
+      "count": 16,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2flkovog65hjpqn71f0_e065_032750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 20,
+      "token": "BI",
+      "count": 15,
+      "prototype": {
+        "thumb_obj": "v24044gl0000d2het8fog65gpmg3gr4g_e125_125500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 35,
+      "token": "BJ",
+      "count": 14,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2tsac7og65i8muc9e00_e091_045750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 56,
+      "token": "BK",
+      "count": 10,
+      "prototype": {
+        "thumb_obj": "v12044gd0000d2i0647og65vlmef6qv0_e050_025250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 76,
+      "token": "BL",
+      "count": 10,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2v6invog65i28us10og_e159_079750_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 45,
+      "token": "BM",
+      "count": 8,
+      "prototype": {
+        "thumb_obj": "misc_00026_IMG_6527.png"
+      }
+    },
+    {
+      "cluster_id": 37,
+      "token": "BN",
+      "count": 8,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e069_019200_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 65,
+      "token": "BO",
+      "count": 7,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e076_020600_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 41,
+      "token": "BP",
+      "count": 7,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e028_028500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 28,
+      "token": "BQ",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v24044gl0000d2het8fog65gpmg3gr4g_e093_093500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 19,
+      "token": "BR",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e048_024250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 9,
+      "token": "BS",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2hjqh7og65nf6193bh0_e036_018250_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 67,
+      "token": "BT",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e078_021000_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 55,
+      "token": "BU",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_e082_021799_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 59,
+      "token": "BV",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250816_033400000_iOS_conv_e068_033950_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 15,
+      "token": "BW",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "v15044gf0000d2ht9mnog65nf61i3sl0_e022_022500_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 47,
+      "token": "BX",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS4_e075_056834_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 17,
+      "token": "BY",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "20250815_204153000_iOS4_e077_058334_obj.jpg"
+      }
+    },
+    {
+      "cluster_id": 73,
+      "token": "BZ",
+      "count": 6,
+      "prototype": {
+        "thumb_obj": "atlas_20250921_233737_v15044gf0000d2uavtfog65qu5s54ok0_e016_008250_obj.jpg"
+      }
+    }
+  ]
+}

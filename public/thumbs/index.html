@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Atlas (quick view)</title>
+<style>
+body{background:#0b0d12;color:#e7eaf0;font-family:system-ui; margin:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{background:#131722;border:1px solid #243041;border-radius:12px;overflow:hidden}
+.thumb{width:100%;aspect-ratio:1/1;object-fit:cover;background:#000}
+.meta{padding:10px;font-size:12px;color:#c9d3e5}
+</style>
+<h2>Atlas quick viewer</h2>
+<div class="grid" id="g"></div>
+<script>
+fetch('atlas.csv').then(r=>r.text()).then(t=>{
+  const rows=t.trim().split(/\r?\n/); const h=rows.shift().split(',');
+  const idx=(k)=>h.indexOf(k);
+  const g=document.getElementById('g');
+  rows.forEach(line=>{
+    const c=line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    const thobj=c[idx('thumb_obj')], th=c[idx('thumb')];
+    const src = thobj?('thumbs_obj/'+thobj): (th?('thumbs/'+th):'');
+    const jf=c[idx('json_file')], vid=c[idx('video_file')], t0=c[idx('start_ts')], t1=c[idx('end_ts')], hex=c[idx('hex_img')];
+    const div=document.createElement('div'); div.className='card';
+    div.innerHTML = `<img class="thumb" src="${src}" onerror="this.style.display='none'">
+      <div class="meta"><div><strong>${jf}</strong></div>
+      <div>${vid} • t=${t0}-${t1}</div><div>${hex}</div></div>`;
+    g.appendChild(div);
+  });
+});
+</script>
