@@ -197,12 +197,15 @@ def _extract_json_payload_from_text(text: str) -> Dict[str, Any]:
 
 
 def _call_with_timeout(fn, timeout_s=60):
-    with ThreadPoolExecutor(max_workers=1) as ex:
-        fut = ex.submit(fn)
-        try:
-            return fut.result(timeout=timeout_s)
-        except FuturesTimeout:
-            return {"__timeout__": True}
+    ex = ThreadPoolExecutor(max_workers=1)
+    fut = ex.submit(fn)
+    try:
+        return fut.result(timeout=timeout_s)
+    except FuturesTimeout:
+        fut.cancel()
+        return {"__timeout__": True}
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
 
 
 def _safe_gemini_generate(prompt_text, image_blob, timeout_s=60, max_retries=2, backoff=2.0):
@@ -212,6 +215,8 @@ def _safe_gemini_generate(prompt_text, image_blob, timeout_s=60, max_retries=2, 
     """
     attempt = 0
     while True:
+        attempt += 1
+
         def _go():
             return CLIENT.models.generate_content(
                 model=MODEL_NAME,
@@ -219,13 +224,21 @@ def _safe_gemini_generate(prompt_text, image_blob, timeout_s=60, max_retries=2, 
                 config=types.GenerateContentConfig(temperature=0.0),
             )
 
-        res = _call_with_timeout(_go, timeout_s=timeout_s)
+        try:
+            res = _call_with_timeout(_go, timeout_s=timeout_s)
+        except Exception as exc:  # pragma: no cover - runtime resilience
+            print(f"  [WARN] Gemini API call failed on attempt {attempt}: {exc}")
+            if attempt > max_retries:
+                return {"status": "error", "error": str(exc)}
+            time.sleep(backoff ** attempt)
+            continue
+
         if isinstance(res, dict) and res.get("__timeout__"):
-            attempt += 1
             if attempt > max_retries:
                 return {"status": "timeout"}
             time.sleep(backoff ** attempt)
             continue
+
         return res
 
 
@@ -341,6 +354,11 @@ def enrich_atlas(
                 print("  [WARN] Gemini timeout; skipping.")
                 features.append({})
                 _ckpt_write(ckpt_path, idx0, key, "timeout", {})
+                continue
+            if isinstance(resp, dict) and resp.get("status") == "error":
+                print("  [WARN] Gemini error; skipping.")
+                features.append({})
+                _ckpt_write(ckpt_path, idx0, key, "error", {})
                 continue
 
             text = _extract_text(resp)
