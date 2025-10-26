@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
@@ -164,9 +165,24 @@ def _ensure_path(
     return selection.expanduser()
 
 
-def _extract_json_payload(response: Any) -> Dict[str, Any]:
-    """Extract a JSON dictionary from a Gemini response object."""
-    text = getattr(response, "text", None)
+def _extract_text(resp) -> str:
+    """Return best-effort text from a google-genai response. Handles empty .text and parts."""
+    t = getattr(resp, "text", None)
+    if isinstance(t, str) and t.strip():
+        return t
+    out: List[str] = []
+    for cand in getattr(resp, "candidates", []) or []:
+        content = getattr(cand, "content", None)
+        if content and getattr(content, "parts", None):
+            for p in content.parts:
+                pt = getattr(p, "text", None)
+                if isinstance(pt, str) and pt:
+                    out.append(pt)
+    return "".join(out).strip()
+
+
+def _extract_json_payload_from_text(text: str) -> Dict[str, Any]:
+    """Extract a JSON dictionary from Gemini response text."""
     if not text:
         return {}
 
@@ -180,42 +196,92 @@ def _extract_json_payload(response: Any) -> Dict[str, Any]:
         return {}
 
 
-def get_gemini_features(image_blob: types.Part, retries: int = 3) -> Dict[str, Any]:
-    """Call Gemini with retry logic and return the structured labels."""
-    prompt = (
-        "Analyze the object in this image. Describe it using the following JSON schema:\n"
-        "{\n"
-        "  \"primary_color\": \"The dominant color name (e.g., 'sky_blue', 'lime_green', 'reddish_orange')\",\n"
-        "  \"shape_category\": \"One of: 'orb', 'streak', 'fragment', 'nebula', 'ring', 'other'\",\n"
-        "  \"texture\": \"A brief description (e.g., 'smooth_glow', 'mottled', 'motion_blur', 'crystalline', 'diffuse')\"\n"
-        "}\n"
-        "Provide only the raw JSON object as your response."
-    )
+def _call_with_timeout(fn, timeout_s=60):
+    ex = ThreadPoolExecutor(max_workers=1)
+    fut = ex.submit(fn)
+    try:
+        return fut.result(timeout=timeout_s)
+    except FuturesTimeout:
+        fut.cancel()
+        return {"__timeout__": True}
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
 
-    for attempt in range(1, retries + 1):
-        try:
-            response = CLIENT.models.generate_content(
+
+def _safe_gemini_generate(prompt_text, image_blob, timeout_s=60, max_retries=2, backoff=2.0):
+    """
+    Call Gemini with timeout and simple retry/backoff. Returns either a response object
+    or {"status":"timeout"} after exhausting retries.
+    """
+    attempt = 0
+    while True:
+        attempt += 1
+
+        def _go():
+            return CLIENT.models.generate_content(
                 model=MODEL_NAME,
-                contents=types.Content(
-                    parts=[types.Part(text=prompt), image_blob]
-                ),
+                contents=types.Content(parts=[types.Part(text=prompt_text), image_blob]),
                 config=types.GenerateContentConfig(temperature=0.0),
             )
-            payload = _extract_json_payload(response)
-            if payload:
-                return payload
-        except Exception as exc:  # pragma: no cover - runtime robustness
-            print(f"  [WARN] Gemini API call failed on attempt {attempt}: {exc}")
-        time.sleep(2)
 
-    return {}
+        try:
+            res = _call_with_timeout(_go, timeout_s=timeout_s)
+        except Exception as exc:  # pragma: no cover - runtime resilience
+            print(f"  [WARN] Gemini API call failed on attempt {attempt}: {exc}")
+            if attempt > max_retries:
+                return {"status": "error", "error": str(exc)}
+            time.sleep(backoff ** attempt)
+            continue
+
+        if isinstance(res, dict) and res.get("__timeout__"):
+            if attempt > max_retries:
+                return {"status": "timeout"}
+            time.sleep(backoff ** attempt)
+            continue
+
+        return res
+
+
+try:
+    _ckpt_write
+except NameError:
+    def _ckpt_write(path, index, key, status, payload):
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(
+                json.dumps({
+                    "index": index,
+                    "key": key,
+                    "status": status,
+                    "payload": payload,
+                })
+                + "\n"
+            )
 
 
 # ---------------------------------------------------------------------------
 # Main routine
 # ---------------------------------------------------------------------------
 
-def enrich_atlas(atlas_path: Path, thumbs_dir: Path, out_path: Path) -> None:
+PROMPT_TEXT = (
+    "Analyze the object in this image. Describe it using the following JSON schema:\n"
+    "{\n"
+    "  \"primary_color\": \"The dominant color name (e.g., 'sky_blue', 'lime_green', 'reddish_orange')\",\n"
+    "  \"shape_category\": \"One of: 'orb', 'streak', 'fragment', 'nebula', 'ring', 'other'\",\n"
+    "  \"texture\": \"A brief description (e.g., 'smooth_glow', 'mottled', 'motion_blur', 'crystalline', 'diffuse')\"\n"
+    "}\n"
+    "Provide only the raw JSON object as your response."
+)
+
+
+def enrich_atlas(
+    atlas_path: Path,
+    thumbs_dir: Path,
+    out_path: Path,
+    *,
+    timeout_seconds: int = 60,
+    max_retries: int = 2,
+    retry_timeouts: bool = False,
+) -> None:
     """Enrich ``atlas_path`` with Gemini features and store it at ``out_path``."""
     df = pd.read_csv(atlas_path)
 
@@ -237,7 +303,7 @@ def enrich_atlas(atlas_path: Path, thumbs_dir: Path, out_path: Path) -> None:
             for line in f:
                 try:
                     rec = json.loads(line)
-                    processed[int(rec["index"])] = rec.get("payload", {})
+                    processed[int(rec["index"])] = rec
                 except Exception:
                     pass
 
@@ -247,31 +313,65 @@ def enrich_atlas(atlas_path: Path, thumbs_dir: Path, out_path: Path) -> None:
             thumb_path = thumbs_dir / str(thumb_name)
             print(f"Processing {idx}/{total}: {thumb_path.name}…")
 
-            if (idx - 1) in processed:
-                features.append(processed[idx - 1])
-                continue
+            idx0 = idx - 1
+            key = str(thumb_name)
+            prev = processed.get(idx0)
+            if prev and prev.get("key") != key:
+                prev = None
+
+            if prev:
+                allowed_statuses = ["ok"] if retry_timeouts else ["ok", "timeout"]
+                if prev.get("status") in allowed_statuses:
+                    features.append(prev.get("payload", {}))
+                    continue
 
             if not thumb_path.exists():
-                print("  [WARN] Thumbnail not found; skipping Gemini call.")
-                features.append({})
-                with ckpt_path.open("a", encoding="utf-8") as f:
-                    f.write(json.dumps({"index": idx - 1, "payload": {}}) + "\n")
-                continue
+                scene_dir = Path(str(thumbs_dir).replace("thumbs_obj", "thumbs"))
+                cand = scene_dir / thumb_path.name.replace("_obj", "")
+                if scene_dir.exists() and cand.exists():
+                    thumb_path = cand
+                else:
+                    print("  [WARN] Thumbnail not found; skipping.")
+                    features.append({})
+                    _ckpt_write(ckpt_path, idx0, key, "missing", {})
+                    continue
 
             try:
                 blob = image_to_blob(thumb_path)
             except OSError as exc:
                 print(f"  [WARN] Unable to read thumbnail: {exc}")
                 features.append({})
-                with ckpt_path.open("a", encoding="utf-8") as f:
-                    f.write(json.dumps({"index": idx - 1, "payload": {}}) + "\n")
+                _ckpt_write(ckpt_path, idx0, key, "ioerror", {})
                 continue
 
-            payload = get_gemini_features(blob)
+            resp = _safe_gemini_generate(
+                prompt_text=PROMPT_TEXT,
+                image_blob=blob,
+                timeout_s=timeout_seconds,
+                max_retries=max_retries,
+            )
+            if isinstance(resp, dict) and resp.get("status") == "timeout":
+                print("  [WARN] Gemini timeout; skipping.")
+                features.append({})
+                _ckpt_write(ckpt_path, idx0, key, "timeout", {})
+                continue
+            if isinstance(resp, dict) and resp.get("status") == "error":
+                print("  [WARN] Gemini error; skipping.")
+                features.append({})
+                _ckpt_write(ckpt_path, idx0, key, "error", {})
+                continue
+
+            text = _extract_text(resp)
+            if not text:
+                print("  [WARN] Empty response; continuing.")
+                features.append({})
+                _ckpt_write(ckpt_path, idx0, key, "empty", {})
+                continue
+
+            payload = _extract_json_payload_from_text(text)
             features.append(payload)
 
-            with ckpt_path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps({"index": idx - 1, "payload": payload}) + "\n")
+            _ckpt_write(ckpt_path, idx0, key, "ok", payload)
 
             if idx % 200 == 0:
                 partial = pd.concat(
@@ -326,6 +426,23 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="Destination for the enriched CSV (e.g., atlas_gemini.csv).",
     )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=60,
+        help="Per-item Gemini call timeout (seconds)",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=2,
+        help="Retries per item when Gemini times out",
+    )
+    parser.add_argument(
+        "--retry-timeouts",
+        action="store_true",
+        help="Retry rows previously marked as status=timeout",
+    )
     return parser.parse_args(argv)
 
 
@@ -348,7 +465,14 @@ def main(argv: Iterable[str] | None = None) -> None:
         descriptor="output CSV (--out)",
     )
 
-    enrich_atlas(atlas, thumbs, out_csv)
+    enrich_atlas(
+        atlas,
+        thumbs,
+        out_csv,
+        timeout_seconds=args.timeout_seconds,
+        max_retries=args.max_retries,
+        retry_timeouts=args.retry_timeouts,
+    )
 
 
 if __name__ == "__main__":
